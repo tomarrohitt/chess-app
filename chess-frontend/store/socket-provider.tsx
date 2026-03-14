@@ -8,22 +8,62 @@ import { User } from "@/types/auth";
 type SocketContextType = {
   joinQueue: (timeControl: string) => void;
   leaveQueue: () => void;
-  makeMove: (gameId: string, from: string, to: string, promotion?: string) => void;
+  makeMove: (
+    gameId: string,
+    from: string,
+    to: string,
+    promotion?: string,
+  ) => void;
   resign: (gameId: string) => void;
   offerDraw: (gameId: string) => void;
   declineDraw: (gameId: string) => void;
   acceptDraw: (gameId: string) => void;
+  offerRematch: (
+    gameId: string,
+    opponentId: string,
+    timeControl: string,
+  ) => void;
+  declineRematch: (
+    gameId: string,
+    opponentId: string,
+    timeControl: string,
+  ) => void;
+  acceptRematch: (
+    gameId: string,
+    opponentId: string,
+    timeControl: string,
+  ) => void;
 };
 
 const SocketContext = createContext<SocketContextType | null>(null);
 
-export function SocketProvider({ user, children }: { user: User; children: React.ReactNode }) {
+export function SocketProvider({
+  user,
+  children,
+}: {
+  user: User;
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
-  const { connect, joinQueue, leaveQueue, makeMove, resign, acceptDraw, declineDraw, offerDraw } = useWebSocket(user);
+  const {
+    connect,
+    joinQueue,
+    leaveQueue,
+    makeMove,
+    resign,
+    acceptDraw,
+    declineDraw,
+    offerDraw,
+    offerRematch,
+    acceptRematch,
+    declineRematch,
+  } = useWebSocket(user);
   const activeGameId = useGameStore((s) => s.activeGame?.gameId);
   const redirectedRef = useRef<string | null>(null);
-  useEffect(() => { connect(); }, [connect]);
+  useEffect(() => {
+    connect();
+  }, [connect]);
 
   useEffect(() => {
     if (!activeGameId) return;
@@ -35,7 +75,20 @@ export function SocketProvider({ user, children }: { user: User; children: React
   }, [activeGameId, pathname, router]);
 
   return (
-    <SocketContext.Provider value={{ joinQueue, leaveQueue, makeMove, resign, acceptDraw, declineDraw, offerDraw }}>
+    <SocketContext.Provider
+      value={{
+        joinQueue,
+        leaveQueue,
+        makeMove,
+        resign,
+        acceptDraw,
+        declineDraw,
+        offerDraw,
+        offerRematch,
+        acceptRematch,
+        declineRematch,
+      }}
+    >
       {children}
     </SocketContext.Provider>
   );

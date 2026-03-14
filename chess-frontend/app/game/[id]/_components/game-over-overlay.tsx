@@ -46,8 +46,10 @@ export function GameOverOverlay({
   userId: string;
 }) {
   const router = useRouter();
-  const { resetGame, activeGame } = useGameStore((s) => s);
-  const { joinQueue } = useSocket();
+  const { resetGame, activeGame, rematchOffer, rematchOfferSent } =
+    useGameStore((s) => s);
+  const { joinQueue, offerRematch, acceptRematch, declineRematch } =
+    useSocket();
   const { emoji, headline, color, bg, border, button } = getResult(
     gameOver,
     userId,
@@ -93,18 +95,102 @@ export function GameOverOverlay({
 
         <div className="w-full h-px bg-white/10 my-2" />
 
-        <button
-          onClick={() => {
-            const timeControl = activeGame?.timeControl;
-            resetGame();
-            if (timeControl) {
-              joinQueue(timeControl);
-            }
-          }}
-          className={`w-full py-3 mt-2 font-bold rounded-xl transition-all duration-200 shadow-lg ${button}`}
-        >
-          Play Again
-        </button>
+        <div className="flex w-full gap-2 mt-2">
+          <button
+            onClick={() => {
+              const timeControl = activeGame?.timeControl;
+              resetGame();
+              if (timeControl) {
+                joinQueue(timeControl);
+              }
+            }}
+            className={`flex-1 py-3 font-bold rounded-xl transition-all duration-200 shadow-lg ${button}`}
+          >
+            New Game
+          </button>
+          {!rematchOffer && !rematchOfferSent && (
+            <button
+              onClick={() => {
+                if (activeGame) {
+                  const opponentId =
+                    activeGame.whiteId === userId
+                      ? activeGame.blackId
+                      : activeGame.whiteId;
+                  offerRematch(
+                    activeGame.gameId,
+                    opponentId,
+                    activeGame.timeControl,
+                  );
+                }
+              }}
+              className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-all"
+            >
+              Rematch
+            </button>
+          )}
+          {rematchOfferSent === "sent" && (
+            <button
+              disabled
+              className="flex-1 py-3 bg-zinc-600 text-zinc-300 font-bold rounded-xl shadow-lg cursor-not-allowed"
+            >
+              Sent...
+            </button>
+          )}
+          {rematchOfferSent === "declined" && (
+            <button
+              disabled
+              className="flex-1 py-3 bg-rose-950 text-rose-400 font-bold rounded-xl shadow-lg cursor-not-allowed"
+            >
+              Declined
+            </button>
+          )}
+        </div>
+
+        {!!rematchOffer && (
+          <div className="w-full mt-2 p-3 bg-zinc-800 rounded-xl flex flex-col gap-2 shadow-lg">
+            <span className="text-zinc-200 text-sm font-bold">
+              Opponent wants a rematch!
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  if (activeGame) {
+                    const opponentId =
+                      activeGame.whiteId === userId
+                        ? activeGame.blackId
+                        : activeGame.whiteId;
+                    acceptRematch(
+                      activeGame.gameId,
+                      opponentId,
+                      activeGame.timeControl,
+                    );
+                  }
+                }}
+                className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-bold"
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => {
+                  if (activeGame) {
+                    const opponentId =
+                      activeGame.whiteId === userId
+                        ? activeGame.blackId
+                        : activeGame.whiteId;
+                    declineRematch(
+                      activeGame.gameId,
+                      opponentId,
+                      activeGame.timeControl,
+                    );
+                  }
+                }}
+                className="flex-1 bg-zinc-600 hover:bg-zinc-500 text-white py-2 rounded-lg font-bold"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

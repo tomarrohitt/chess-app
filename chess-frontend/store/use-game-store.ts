@@ -21,6 +21,8 @@ interface GameStore {
   gameOver: GameOverState | null;
   drawOffer: DrawOfferState | null;
   drawOfferSent: "sent" | "declined" | null;
+  rematchOffer: DrawOfferState | null;
+  rematchOfferSent: "sent" | "declined" | null;
   lastMoveRejectedReason: string | null;
   showAnimations: boolean;
 
@@ -29,6 +31,8 @@ interface GameStore {
   setQueue: (status: QueueStatus, timeControl?: string | null) => void;
   setDrawOffer: (offer: DrawOfferState | null) => void;
   setDrawOfferSent: (status: "sent" | "declined" | null) => void;
+  setRematchOffer: (offer: DrawOfferState | null) => void;
+  setRematchOfferSent: (status: "sent" | "declined" | null) => void;
   setAnimations: (enabled: boolean) => void;
   handleGameStarted: (p: GameStartedPayload) => void;
   handleGameState: (p: GameStatePayload) => void;
@@ -47,6 +51,8 @@ export const useGameStore = create<GameStore>((set) => ({
   gameOver: null,
   drawOffer: null,
   drawOfferSent: null,
+  rematchOffer: null,
+  rematchOfferSent: null,
   lastMoveRejectedReason: null,
   showAnimations: true,
 
@@ -56,6 +62,8 @@ export const useGameStore = create<GameStore>((set) => ({
     set({ queueStatus, queueTimeControl: timeControl }),
   setDrawOffer: (drawOffer) => set({ drawOffer }),
   setDrawOfferSent: (drawOfferSent) => set({ drawOfferSent }),
+  setRematchOffer: (rematchOffer) => set({ rematchOffer }),
+  setRematchOfferSent: (rematchOfferSent) => set({ rematchOfferSent }),
   setAnimations: (showAnimations) => set({ showAnimations }),
 
   handleGameStarted: (p) =>
@@ -66,6 +74,8 @@ export const useGameStore = create<GameStore>((set) => ({
         queueStatus: "idle",
         queueTimeControl: null,
         gameOver: null,
+        rematchOffer: null,
+        rematchOfferSent: null,
         activeGame: {
           gameId: p.gameId,
           fen: p.fen,
@@ -141,6 +151,8 @@ export const useGameStore = create<GameStore>((set) => ({
       gameOver: { status: p.status, winnerId: p.winnerId, reason: p.reason },
       drawOffer: null,
       drawOfferSent: null,
+      rematchOffer: null,
+      rematchOfferSent: null,
     })),
 
   resetGame: () =>
@@ -151,5 +163,7 @@ export const useGameStore = create<GameStore>((set) => ({
       queueTimeControl: null,
       drawOffer: null,
       drawOfferSent: null,
+      rematchOffer: null,
+      rematchOfferSent: null,
     }),
 }));

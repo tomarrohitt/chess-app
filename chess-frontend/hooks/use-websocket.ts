@@ -60,6 +60,16 @@ export function useWebSocket(user: User) {
           reason: msg.payload?.reason || "aborted",
         });
         break;
+      case WsMessageType.OFFER_REMATCH:
+        store.setRematchOffer(msg.payload);
+        break;
+      case WsMessageType.DECLINE_REMATCH:
+        store.setRematchOfferSent("declined");
+        setTimeout(
+          () => useGameStore.getState().setRematchOfferSent(null),
+          5000,
+        );
+        break;
     }
   }, []);
 
@@ -142,6 +152,31 @@ export function useWebSocket(user: User) {
     declineDraw: (gameId: string) => {
       send(WsMessageType.DECLINE_DRAW, { gameId });
       useGameStore.getState().setDrawOffer(null);
+    },
+    offerRematch: (gameId: string, opponentId: string, timeControl: string) => {
+      send(WsMessageType.OFFER_REMATCH, { gameId, opponentId, timeControl });
+      useGameStore.getState().setRematchOfferSent("sent");
+      setTimeout(() => {
+        if (useGameStore.getState().rematchOfferSent === "sent") {
+          useGameStore.getState().setRematchOfferSent(null);
+        }
+      }, 60000);
+    },
+    acceptRematch: (
+      gameId: string,
+      opponentId: string,
+      timeControl: string,
+    ) => {
+      send(WsMessageType.ACCEPT_REMATCH, { gameId, opponentId, timeControl });
+      useGameStore.getState().setRematchOffer(null);
+    },
+    declineRematch: (
+      gameId: string,
+      opponentId: string,
+      timeControl: string,
+    ) => {
+      send(WsMessageType.DECLINE_REMATCH, { gameId, opponentId, timeControl });
+      useGameStore.getState().setRematchOffer(null);
     },
   };
 }

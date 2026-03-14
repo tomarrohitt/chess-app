@@ -5,9 +5,20 @@ const EmptyPayload = z.undefined();
 
 export const JoinQueueSchema = z.object({
   timeControl: z.enum([
-    "1+0", "1+1", "2+1", "3+0", "3+2",
-    "5+0", "5+3", "10+0", "10+5",
-    "15+10", "30+0", "30+20", "60+0", "90+30",
+    "1+0",
+    "1+1",
+    "2+1",
+    "3+0",
+    "3+2",
+    "5+0",
+    "5+3",
+    "10+0",
+    "10+5",
+    "15+10",
+    "30+0",
+    "30+20",
+    "60+0",
+    "90+30",
   ]),
 });
 
@@ -20,6 +31,12 @@ export const MakeMoveSchema = z.object({
 
 export const GameIdOnlySchema = z.object({
   gameId: z.string().uuid(),
+});
+
+export const RematchRequestSchema = z.object({
+  gameId: z.string().uuid(),
+  opponentId: z.string(),
+  timeControl: z.string(),
 });
 
 export const WsMessageSchema = z.discriminatedUnion("type", [
@@ -50,6 +67,18 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(WsMessageType.DECLINE_DRAW),
     payload: GameIdOnlySchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.OFFER_REMATCH),
+    payload: RematchRequestSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.ACCEPT_REMATCH),
+    payload: RematchRequestSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.DECLINE_REMATCH),
+    payload: RematchRequestSchema,
   }),
   z.object({
     type: z.literal(WsMessageType.LEAVE_QUEUE),
