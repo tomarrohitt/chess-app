@@ -109,7 +109,7 @@ export const useGameStore = create<GameStore>((set) => ({
                 ...state.activeGame,
                 fen: p.fen,
                 pgn: p.pgn,
-                turn: state.activeGame.turn === "w" ? "b" : "w",
+                turn: p.turn,
                 whiteTimeMs: p.whiteTimeMs,
                 blackTimeMs: p.blackTimeMs,
             }

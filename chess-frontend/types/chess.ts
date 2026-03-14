@@ -14,6 +14,7 @@ export enum WsMessageType {
   OFFER_DRAW = "OFFER_DRAW",
   ACCEPT_DRAW = "ACCEPT_DRAW",
   DECLINE_DRAW = "DECLINE_DRAW",
+  DRAW_DECLINED = "DRAW_DECLINED",
   GAME_ABORTED = "GAME_ABORTED",
   RESIGN_GAME = "RESIGN_GAME",
   SYNC_GAME = "SYNC_GAME",
@@ -136,6 +137,7 @@ export type ServerMessage =
   | { type: "OFFER_DRAW"; payload: DrawOfferState }
   | { type: "ACCEPT_DRAW"; payload: { gameId: string } }
   | { type: "DECLINE_DRAW"; payload: { gameId: string } }
+  | { type: "DRAW_DECLINED"; payload: { gameId: string; message: string } }
   | { type: "GAME_ABORTED"; payload: { reason: string } }
   | { type: "ERROR"; payload: { message: string } }
 

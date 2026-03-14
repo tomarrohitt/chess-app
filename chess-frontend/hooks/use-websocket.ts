@@ -7,6 +7,7 @@ const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080";
 
 export function useWebSocket(user: User) {
     const wsRef = useRef<WebSocket | null>(null);
+    const drawOfferTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const send = useCallback((type: WsMessageType, payload?: any) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -30,6 +31,9 @@ export function useWebSocket(user: User) {
                 break;
             case WsMessageType.MOVE_REJECTED:
                 store.handleMoveRejected(msg.payload.reason);
+                if (wsRef.current?.readyState === WebSocket.OPEN) {
+                    wsRef.current.send(JSON.stringify({ type: WsMessageType.SYNC_GAME }));
+                }
                 break;
             case WsMessageType.GAME_STARTED: store.handleGameStarted(msg.payload); break;
             case WsMessageType.GAME_STATE: store.handleGameState(msg.payload); break;
@@ -37,10 +41,11 @@ export function useWebSocket(user: User) {
             case WsMessageType.QUEUE_JOINED: store.setQueue(msg.payload.status, msg.payload.timeControl); break;
             case WsMessageType.QUEUE_LEFT: store.setQueue("idle"); break;
             case WsMessageType.OFFER_DRAW: store.setDrawOffer(msg.payload); break;
-            case WsMessageType.DECLINE_DRAW:
+            case WsMessageType.DRAW_DECLINED:
+                console.log("[WS] Draw declined received:", msg.payload);
                 store.setDrawOfferSent("declined");
-                // Clear the "Draw declined" message after 5 seconds
-                setTimeout(() => useGameStore.getState().setDrawOfferSent(null), 5000);
+                if (drawOfferTimeoutRef.current) clearTimeout(drawOfferTimeoutRef.current);
+                drawOfferTimeoutRef.current = setTimeout(() => useGameStore.getState().setDrawOfferSent(null), 4000);
                 break;
         }
     }, []);
@@ -106,8 +111,9 @@ export function useWebSocket(user: User) {
         offerDraw: (gameId: string) => {
             send(WsMessageType.OFFER_DRAW, { gameId });
             useGameStore.getState().setDrawOfferSent("sent");
-            // Expire the draw offer UI after 20 seconds
-            setTimeout(() => {
+
+            if (drawOfferTimeoutRef.current) clearTimeout(drawOfferTimeoutRef.current);
+            drawOfferTimeoutRef.current = setTimeout(() => {
                 if (useGameStore.getState().drawOfferSent === "sent") {
                     useGameStore.getState().setDrawOfferSent(null);
                 }
