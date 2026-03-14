@@ -14,8 +14,6 @@ export enum WsMessageType {
   OFFER_DRAW = "OFFER_DRAW",
   ACCEPT_DRAW = "ACCEPT_DRAW",
   DECLINE_DRAW = "DECLINE_DRAW",
-  DRAW_OFFERED = "DRAW_OFFERED",
-  DRAW_DECLINED = "DRAW_DECLINED",
   GAME_ABORTED = "GAME_ABORTED",
   RESIGN_GAME = "RESIGN_GAME",
   SYNC_GAME = "SYNC_GAME",
@@ -57,20 +55,33 @@ export interface ActiveGame {
   playerColor: PlayerColor
   whiteId: string
   blackId: string
+  whiteName: string
+  blackName: string
+  whiteRating?: number
+  blackRating?: number
+  whiteImage?: string | null
+  blackImage?: string | null
   timeControl: string
   whiteTimeMs: number
   blackTimeMs: number
   status: GameStatus
 }
 
+export interface PlayerInfo {
+  id: string
+  username: string
+  rating: number
+  image: string | null
+}
+
 export interface GameStartedPayload {
   gameId: string
   fen: string
   timeControl: string
-  playerColor: PlayerColor
+  color: "white" | "black"
   players: {
-    white: string
-    black: string
+    white: PlayerInfo
+    black: PlayerInfo
   }
 }
 
@@ -82,6 +93,12 @@ export interface GameStatePayload {
   playerColor: PlayerColor
   whiteId: string
   blackId: string
+  whiteName: string
+  blackName: string
+  whiteRating?: number
+  blackRating?: number
+  whiteImage?: string | null
+  blackImage?: string | null
   timeControl: string
   whiteTimeLeftMs: number
   blackTimeLeftMs: number
@@ -115,6 +132,12 @@ export type ServerMessage =
   | { type: "MOVE_MADE"; payload: MoveMadePayload }
   | { type: "MOVE_REJECTED"; payload: { reason: string } }
   | { type: "GAME_OVER"; payload: GameOverState }
+  | { type: "MOVE_REJECTED"; payload: { reason: string } }
+  | { type: "OFFER_DRAW"; payload: DrawOfferState }
+  | { type: "ACCEPT_DRAW"; payload: { gameId: string } }
+  | { type: "DECLINE_DRAW"; payload: { gameId: string } }
+  | { type: "GAME_ABORTED"; payload: { reason: string } }
+  | { type: "ERROR"; payload: { message: string } }
 
 export enum GameResult {
   d = "d",

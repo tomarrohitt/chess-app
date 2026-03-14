@@ -1,9 +1,11 @@
 "use client";
 import { useGameStore } from "@/store/use-game-store";
+import { useSocket } from "@/store/socket-provider";
 import { Loader2 } from "lucide-react";
 
 export function SearchingModal() {
-  const queueStatus = useGameStore((s) => s.queueStatus);
+  const { queueStatus, queueTimeControl } = useGameStore((s) => s);
+  const { leaveQueue } = useSocket();
 
   if (queueStatus !== "waiting") return null;
 
@@ -19,7 +21,9 @@ export function SearchingModal() {
 
         <div className="text-center">
           <h2 className="text-lg font-bold mb-1">Finding Opponent</h2>
-          <p className="text-zinc-400 text-sm">Searching for a match...</p>
+          <p className="text-zinc-400 text-sm">
+            Searching for a {queueTimeControl ? `${queueTimeControl} ` : ""}match...
+          </p>
         </div>
 
         <div className="flex items-center gap-2 text-zinc-500 text-xs">
@@ -28,9 +32,8 @@ export function SearchingModal() {
         </div>
 
         <button
-          disabled
-          title="Add leaveQueue to the socket hook to enable this"
-          className="text-xs text-zinc-600 cursor-not-allowed underline"
+          onClick={() => leaveQueue()}
+          className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors underline"
         >
           Cancel
         </button>

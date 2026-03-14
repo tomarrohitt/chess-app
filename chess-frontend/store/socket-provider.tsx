@@ -7,8 +7,12 @@ import { User } from "@/types/auth";
 
 type SocketContextType = {
   joinQueue: (timeControl: string) => void;
+  leaveQueue: () => void;
   makeMove: (gameId: string, from: string, to: string, promotion?: string) => void;
   resign: (gameId: string) => void;
+  offerDraw: (gameId: string) => void;
+  declineDraw: (gameId: string) => void;
+  acceptDraw: (gameId: string) => void;
 };
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -16,7 +20,7 @@ const SocketContext = createContext<SocketContextType | null>(null);
 export function SocketProvider({ user, children }: { user: User; children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { connect, joinQueue, makeMove, resign } = useWebSocket(user);
+  const { connect, joinQueue, leaveQueue, makeMove, resign, acceptDraw, declineDraw, offerDraw } = useWebSocket(user);
   const activeGameId = useGameStore((s) => s.activeGame?.gameId);
   const redirectedRef = useRef<string | null>(null);
   useEffect(() => { connect(); }, [connect]);
@@ -31,7 +35,7 @@ export function SocketProvider({ user, children }: { user: User; children: React
   }, [activeGameId, pathname, router]);
 
   return (
-    <SocketContext.Provider value={{ joinQueue, makeMove, resign }}>
+    <SocketContext.Provider value={{ joinQueue, leaveQueue, makeMove, resign, acceptDraw, declineDraw, offerDraw }}>
       {children}
     </SocketContext.Provider>
   );

@@ -1,37 +1,65 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useGameStore } from "@/store/use-game-store";
-import { GameOverState, GameStatus } from "@/types/chess";
+import { GameOverState } from "@/types/chess";
 
 function getResult(gameOver: GameOverState, userId: string) {
-  if (gameOver.status === GameStatus.DRAW)
-    return { emoji: "🤝", headline: "Draw", color: "text-yellow-400" };
+  if (!gameOver.winnerId) {
+    return {
+      emoji: "🤝",
+      headline: "Draw",
+      color: "text-zinc-200",
+      bg: "bg-zinc-900/90",
+      border: "border-zinc-700",
+      button: "bg-zinc-700 hover:bg-zinc-600 text-white"
+    };
+  }
   const won = gameOver.winnerId === userId;
   return {
     emoji: won ? "🏆" : "💀",
-    headline: won ? "You Won!" : "You Lost",
-    color: won ? "text-green-400" : "text-red-400",
+    headline: won ? "Victory" : "Defeat",
+    color: won ? "text-emerald-400" : "text-rose-400",
+    bg: won ? "bg-emerald-950/80" : "bg-rose-950/80",
+    border: won ? "border-emerald-900/60" : "border-rose-900/60",
+    button: won ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20" : "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/20"
   };
 }
 
 export function GameOverOverlay({ gameOver, userId }: { gameOver: GameOverState; userId: string }) {
   const router = useRouter();
-  const resetGame = useGameStore((s) => s.resetGame);
-  const { emoji, headline, color } = getResult(gameOver, userId);
+  const { resetGame, activeGame } = useGameStore((s) => s);
+  const { emoji, headline, color, bg, border, button } = getResult(gameOver, userId);
+
+  // Determine which color won for the descriptive subtitle
+  const winnerColor = gameOver.winnerId
+    ? (gameOver.winnerId === activeGame?.whiteId ? "White" : "Black")
+    : null;
 
   return (
-    <div className="absolute inset-0 bg-black/65 backdrop-blur-[2px] flex items-center justify-center rounded-sm z-10">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl px-10 py-8 flex flex-col items-center gap-3 shadow-2xl text-center">
-        <span className="text-5xl">{emoji}</span>
-        <h2 className={`text-3xl font-bold ${color}`}>{headline}</h2>
-        {gameOver.reason && (
-          <p className="text-zinc-500 text-sm capitalize">{gameOver.reason}</p>
-        )}
+    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center rounded-sm z-50">
+      <div className={`border ${border} ${bg} rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl text-center w-[90%] max-w-85 transform transition-all scale-100`}>
+
+        <div className="text-6xl drop-shadow-lg mb-2">{emoji}</div>
+
+        <div className="space-y-1">
+          <h2 className={`text-4xl font-black tracking-tight uppercase ${color}`}>
+            {headline}
+          </h2>
+          <div className="text-zinc-300 font-medium">
+            {winnerColor ? `${winnerColor} won` : "Game drawn"}
+            {gameOver.reason && (
+              <span className="text-zinc-400 font-normal"> by {gameOver.reason.toLowerCase()}</span>
+            )}
+          </div>
+        </div>
+
+        <div className="w-full h-px bg-white/10 my-2" />
+
         <button
           onClick={() => { resetGame(); router.push("/game"); }}
-          className="mt-3 px-7 py-2.5 bg-green-700 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors text-sm"
+          className={`w-full py-3 mt-2 font-bold rounded-xl transition-all duration-200 shadow-lg ${button}`}
         >
-          New Game
+          Play Again
         </button>
       </div>
     </div>

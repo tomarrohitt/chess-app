@@ -10,14 +10,10 @@ export function useWebSocket(user: User) {
 
     const send = useCallback((type: WsMessageType, payload?: any) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
-            // Start with just the type
             const message: { type: WsMessageType; payload?: any } = { type };
-
-            // Only attach payload if it has actual data
             if (payload !== undefined && payload !== null) {
                 message.payload = payload;
             }
-
             wsRef.current.send(JSON.stringify(message));
         } else {
             console.warn(`[WS] Cannot send ${type}, socket is not OPEN.`);
@@ -27,7 +23,6 @@ export function useWebSocket(user: User) {
     const handleMessage = useCallback((event: MessageEvent) => {
         const msg = JSON.parse(event.data);
         const store = useGameStore.getState();
-        // Always get the freshest store actions
 
         switch (msg.type) {
             case WsMessageType.MOVE_MADE:
@@ -39,15 +34,20 @@ export function useWebSocket(user: User) {
             case WsMessageType.GAME_STARTED: store.handleGameStarted(msg.payload); break;
             case WsMessageType.GAME_STATE: store.handleGameState(msg.payload); break;
             case WsMessageType.GAME_OVER: store.handleGameOver(msg.payload); break;
-            case WsMessageType.QUEUE_JOINED: store.setQueue("waiting"); break;
+            case WsMessageType.QUEUE_JOINED: store.setQueue(msg.payload.status, msg.payload.timeControl); break;
             case WsMessageType.QUEUE_LEFT: store.setQueue("idle"); break;
+            case WsMessageType.OFFER_DRAW: store.setDrawOffer(msg.payload); break;
+            case WsMessageType.DECLINE_DRAW:
+                store.setDrawOfferSent("declined");
+                // Clear the "Draw declined" message after 5 seconds
+                setTimeout(() => useGameStore.getState().setDrawOfferSent(null), 5000);
+                break;
         }
     }, []);
 
     const connect = useCallback(() => {
         const store = useGameStore.getState();
 
-        // FIX 1: Prevent Strict Mode from opening a 2nd connection while the 1st is still connecting
         if (
             wsRef.current &&
             (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)
@@ -71,10 +71,9 @@ export function useWebSocket(user: User) {
 
         ws.onmessage = handleMessage;
 
-        // FIX 2: Add explicit error and close logging to catch backend rejections
         ws.onerror = (error) => {
             console.error("[WS] Connection Error:", error);
-            store.setConnection("error");
+            store.setConnection("disconnected");
         };
 
         ws.onclose = (event) => {
@@ -82,9 +81,8 @@ export function useWebSocket(user: User) {
             store.setConnection("disconnected");
             wsRef.current = null;
         };
-    }, [handleMessage, user]); // Added user to dependencies
+    }, [handleMessage, user]);
 
-    // FIX 3: Cleanup function to close socket when component unmounts
     useEffect(() => {
         return () => {
             if (wsRef.current) {
@@ -98,8 +96,30 @@ export function useWebSocket(user: User) {
     return {
         connect,
         joinQueue: (timeControl: string) => send(WsMessageType.JOIN_QUEUE, { timeControl }),
+        leaveQueue: () => {
+            send(WsMessageType.LEAVE_QUEUE);
+            useGameStore.getState().setQueue("idle");
+        },
         makeMove: (gameId: string, from: string, to: string, promotion?: string) =>
             send(WsMessageType.MAKE_MOVE, { gameId, from, to, promotion }),
         resign: (gameId: string) => send(WsMessageType.RESIGN_GAME, { gameId }),
+        offerDraw: (gameId: string) => {
+            send(WsMessageType.OFFER_DRAW, { gameId });
+            useGameStore.getState().setDrawOfferSent("sent");
+            // Expire the draw offer UI after 20 seconds
+            setTimeout(() => {
+                if (useGameStore.getState().drawOfferSent === "sent") {
+                    useGameStore.getState().setDrawOfferSent(null);
+                }
+            }, 20000);
+        },
+        acceptDraw: (gameId: string) => {
+            send(WsMessageType.ACCEPT_DRAW, { gameId });
+            useGameStore.getState().setDrawOffer(null);
+        },
+        declineDraw: (gameId: string) => {
+            send(WsMessageType.DECLINE_DRAW, { gameId });
+            useGameStore.getState().setDrawOffer(null);
+        },
     };
 }

@@ -3,6 +3,7 @@ import { Chess } from "chess.js";
 
 interface MoveListProps {
     pgn: string;
+    timeControl: string;
 }
 
 interface MoveDetail {
@@ -22,7 +23,7 @@ function clkToSeconds(clk: string): number {
     return parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3]);
 }
 
-function parsePgnWithTimes(pgn: string): MovePair[] {
+function parsePgnWithTimes(pgn: string, timeControl: string): MovePair[] {
     if (!pgn) return [];
     try {
         const chess = new Chess();
@@ -31,31 +32,39 @@ function parsePgnWithTimes(pgn: string): MovePair[] {
 
         const clkMatches = [...pgn.matchAll(/\[%clk (\d+:\d{2}:\d{2})\]/g)].map(m => clkToSeconds(m[1]));
 
+        let initialSeconds = 300;
+        let increment = 0;
+        if (timeControl) {
+            const [mins, inc] = timeControl.split("+").map(Number);
+            if (!isNaN(mins)) initialSeconds = mins * 60;
+            if (!isNaN(inc)) increment = inc;
+        }
+
         const pairs: MovePair[] = [];
-        let lastWhiteClk = 300;
-        let lastBlackClk = 300;
+        let lastWhiteClk = initialSeconds;
+        let lastBlackClk = initialSeconds;
 
         for (let i = 0; i < history.length; i += 2) {
             const whiteClk = clkMatches[i];
             const blackClk = clkMatches[i + 1];
 
-            const whiteDiff = whiteClk ? lastWhiteClk - whiteClk : 0;
-            const blackDiff = blackClk ? lastBlackClk - blackClk : 0;
+            const whiteDiff = whiteClk !== undefined ? lastWhiteClk - whiteClk + increment : undefined;
+            const blackDiff = blackClk !== undefined ? lastBlackClk - blackClk + increment : undefined;
 
             pairs.push({
                 number: Math.floor(i / 2) + 1,
                 white: {
                     san: history[i],
-                    timeSpent: whiteDiff > 0 ? `${whiteDiff}s` : undefined
+                    timeSpent: whiteDiff !== undefined ? `${Math.max(0, whiteDiff)}s` : undefined
                 },
                 black: history[i + 1] ? {
                     san: history[i + 1],
-                    timeSpent: blackDiff > 0 ? `${blackDiff}s` : undefined
+                    timeSpent: blackDiff !== undefined ? `${Math.max(0, blackDiff)}s` : undefined
                 } : undefined,
             });
 
-            lastWhiteClk = whiteClk || lastWhiteClk;
-            lastBlackClk = blackClk || lastBlackClk;
+            lastWhiteClk = whiteClk !== undefined ? whiteClk : lastWhiteClk;
+            lastBlackClk = blackClk !== undefined ? blackClk : lastBlackClk;
         }
         return pairs;
     } catch {
@@ -63,9 +72,9 @@ function parsePgnWithTimes(pgn: string): MovePair[] {
     }
 }
 
-export function MoveList({ pgn }: MoveListProps) {
+export function MoveList({ pgn, timeControl }: MoveListProps) {
     const bottomRef = useRef<HTMLDivElement>(null);
-    const pairs = parsePgnWithTimes(pgn);
+    const pairs = parsePgnWithTimes(pgn, timeControl);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -78,7 +87,7 @@ export function MoveList({ pgn }: MoveListProps) {
             </p>
             <div className="flex-1 overflow-y-auto pr-1 space-y-0.5 scrollbar-thin bg-gray-900 rounded-md">
                 {pairs.length === 0 ? (
-                    <p className="text-zinc-700 text-xs italic px-1 pt-1">Waiting for first move...</p>
+                    <p className="text-zinc-200 text-xs italic px-1 py-4 text-center">Waiting for first move...</p>
                 ) : (
                     pairs.map((pair) => (
                         <div key={pair.number} className="flex items-center text-sm group">
@@ -86,22 +95,20 @@ export function MoveList({ pgn }: MoveListProps) {
                                 {pair.number}.
                             </span>
 
-                            {/* White Move */}
                             <div className="flex-1 flex justify-between items-center px-2 py-1 hover:bg-zinc-800/50 rounded transition-colors group/m">
                                 <span className="text-zinc-200 font-medium">{pair.white.san}</span>
                                 {pair.white.timeSpent && (
-                                    <span className="text-[9px] text-zinc-600 font-mono opacity-0 group-hover/m:opacity-100 transition-opacity">
+                                    <span className="text-[9px] text-zinc-200 font-mono group-hover/m:opacity-100 transition-opacity">
                                         {pair.white.timeSpent}
                                     </span>
                                 )}
                             </div>
 
-                            {/* Black Move */}
                             {pair.black ? (
                                 <div className="flex-1 flex justify-between items-center px-2 py-1 hover:bg-zinc-800/50 rounded transition-colors group/m">
                                     <span className="text-zinc-200 font-medium">{pair.black.san}</span>
                                     {pair.black.timeSpent && (
-                                        <span className="text-[9px] text-zinc-600 font-mono opacity-0 group-hover/m:opacity-100 transition-opacity">
+                                        <span className="text-[9px] text-zinc-100 font-mono ">
                                             {pair.black.timeSpent}
                                         </span>
                                     )}

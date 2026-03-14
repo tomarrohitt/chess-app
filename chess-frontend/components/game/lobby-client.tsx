@@ -44,9 +44,9 @@ export function LobbyClient({ user }: { user: User }) {
           <span className="text-2xl select-none">♟</span>
           <span className="font-bold text-lg tracking-tight">Chess</span>
         </div>
-        <div className="text-sm text-zinc-400">
+        <div className="text-sm text-gray-800 font-semibold">
           Playing as{" "}
-          <span className="text-white font-semibold">{user.username}</span>
+          <span className="text-gray-800 font-semibold">{user.username}</span>
         </div>
       </header>
 
