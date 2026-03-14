@@ -14,7 +14,6 @@ export enum WsMessageType {
   OFFER_DRAW = "OFFER_DRAW",
   ACCEPT_DRAW = "ACCEPT_DRAW",
   DECLINE_DRAW = "DECLINE_DRAW",
-  DRAW_DECLINED = "DRAW_DECLINED",
   GAME_ABORTED = "GAME_ABORTED",
   RESIGN_GAME = "RESIGN_GAME",
   SYNC_GAME = "SYNC_GAME",
@@ -40,91 +39,89 @@ export type WsConnectionStatus =
   | "idle"
   | "connecting"
   | "connected"
-  | "disconnected"
+  | "disconnected";
 
-export type QueueStatus =
-  | "idle"
-  | "waiting"
+export type QueueStatus = "idle" | "waiting";
 
-export type PlayerColor = "w" | "b"
+export type PlayerColor = "w" | "b";
 
 export interface ActiveGame {
-  gameId: string
-  fen: string
-  pgn: string
-  turn: PlayerColor
-  playerColor: PlayerColor
-  whiteId: string
-  blackId: string
-  whiteName: string
-  blackName: string
-  whiteRating?: number
-  blackRating?: number
-  whiteImage?: string | null
-  blackImage?: string | null
-  timeControl: string
-  whiteTimeMs: number
-  blackTimeMs: number
-  status: GameStatus
+  gameId: string;
+  fen: string;
+  pgn: string;
+  turn: PlayerColor;
+  playerColor: PlayerColor;
+  whiteId: string;
+  blackId: string;
+  whiteName: string;
+  blackName: string;
+  whiteRating?: number;
+  blackRating?: number;
+  whiteImage?: string | null;
+  blackImage?: string | null;
+  timeControl: string;
+  whiteTimeMs: number;
+  blackTimeMs: number;
+  status: GameStatus;
 }
 
 export interface PlayerInfo {
-  id: string
-  username: string
-  rating: number
-  image: string | null
+  id: string;
+  username: string;
+  rating: number;
+  image: string | null;
 }
 
 export interface GameStartedPayload {
-  gameId: string
-  fen: string
-  timeControl: string
-  color: "white" | "black"
+  gameId: string;
+  fen: string;
+  timeControl: string;
+  color: "white" | "black";
   players: {
-    white: PlayerInfo
-    black: PlayerInfo
-  }
+    white: PlayerInfo;
+    black: PlayerInfo;
+  };
 }
 
 export interface GameStatePayload {
-  gameId: string
-  fen: string
-  pgn?: string
-  turn: PlayerColor
-  playerColor: PlayerColor
-  whiteId: string
-  blackId: string
-  whiteName: string
-  blackName: string
-  whiteRating?: number
-  blackRating?: number
-  whiteImage?: string | null
-  blackImage?: string | null
-  timeControl: string
-  whiteTimeLeftMs: number
-  blackTimeLeftMs: number
+  gameId: string;
+  fen: string;
+  pgn?: string;
+  turn: PlayerColor;
+  playerColor: PlayerColor;
+  whiteId: string;
+  blackId: string;
+  whiteName: string;
+  blackName: string;
+  whiteRating?: number;
+  blackRating?: number;
+  whiteImage?: string | null;
+  blackImage?: string | null;
+  timeControl: string;
+  whiteTimeLeftMs: number;
+  blackTimeLeftMs: number;
 }
 
 export interface MoveMadePayload {
-  gameId: string
-  fen: string
-  pgn: string
-  move: string
-  turn: PlayerColor
-  whiteTimeMs: number
-  blackTimeMs: number
-  isGameOver: boolean
+  gameId: string;
+  fen: string;
+  pgn: string;
+  move: string;
+  turn: PlayerColor;
+  whiteTimeMs: number;
+  blackTimeMs: number;
+  isGameOver: boolean;
 }
 
 export interface GameOverState {
-  status: GameStatus
-  winnerId?: string
-  reason?: string
+  status: GameStatus;
+  winnerId?: string;
+  reason?: string;
 }
 
 export interface DrawOfferState {
-  gameId: string
-  offeredBy: string
+  gameId: string;
+  offeredBy: string;
 }
 
 export type ServerMessage =
@@ -137,9 +134,8 @@ export type ServerMessage =
   | { type: "OFFER_DRAW"; payload: DrawOfferState }
   | { type: "ACCEPT_DRAW"; payload: { gameId: string } }
   | { type: "DECLINE_DRAW"; payload: { gameId: string } }
-  | { type: "DRAW_DECLINED"; payload: { gameId: string; message: string } }
   | { type: "GAME_ABORTED"; payload: { reason: string } }
-  | { type: "ERROR"; payload: { message: string } }
+  | { type: "ERROR"; payload: { message: string } };
 
 export enum GameResult {
   d = "d",

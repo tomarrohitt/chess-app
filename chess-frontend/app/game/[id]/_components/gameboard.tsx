@@ -1,7 +1,6 @@
 "use client";
 import { useGameStore } from "@/store/use-game-store";
 import { Chessboard } from "react-chessboard";
-import { Chess } from "chess.js";
 import { User } from "@/types/auth";
 
 import { GameStatus } from "@/types/chess";
@@ -59,25 +58,10 @@ export function Gameboard({ gameId, user }: GameboardProps) {
                 position: activeGame.fen,
                 showAnimations: true,
                 boardOrientation: isWhite ? "white" : "black",
-                onPieceDrop: (sourceSquare, targetSquare) => {
-                  const game = new Chess(activeGame.fen);
-                  try {
-                    // Optimistic update locally to prevent snapping back and ensure smooth animations
-                    const move = game.move({
-                      from: sourceSquare,
-                      to: targetSquare,
-                      promotion: "q",
-                    });
-
-                    if (move) {
-                      useGameStore.setState((state) => ({
-                        activeGame: state.activeGame ? { ...state.activeGame, fen: game.fen() } : null,
-                      }));
-                      makeMove(activeGame.gameId, sourceSquare, targetSquare, move.promotion);
-                      return true;
-                    }
-                  } catch { }
-                  return false;
+                onPieceDrop: ({ sourceSquare, targetSquare }) => {
+                  if (!targetSquare) return false;
+                  makeMove(activeGame.gameId, sourceSquare, targetSquare);
+                  return true;
                 },
                 darkSquareStyle: { backgroundColor: "#4a7c59" },
                 lightSquareStyle: { backgroundColor: "#f0d9b5" },
