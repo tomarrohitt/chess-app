@@ -9,6 +9,12 @@ import {
   GameStartedPayload,
   GameStatePayload,
   MoveMadePayload,
+  PLAYER_COLOR,
+  COLOR,
+  QUEUE_STATUS,
+  DRAW_OFFER,
+  WS_CONNECTION_STATUS,
+  RematchOfferState,
 } from "@/types/chess";
 import { User } from "@/types/auth";
 
@@ -18,21 +24,27 @@ interface GameStore {
   queueStatus: QueueStatus;
   queueTimeControl: string | null;
   activeGame: ActiveGame | null;
+  expectedGameId: string | null;
   gameOver: GameOverState | null;
   drawOffer: DrawOfferState | null;
-  drawOfferSent: "sent" | "declined" | null;
-  rematchOffer: DrawOfferState | null;
-  rematchOfferSent: "sent" | "declined" | null;
+  drawOfferSent: DRAW_OFFER.SENT | DRAW_OFFER.DECLINE | null;
+  rematchOffer: RematchOfferState | null;
+  rematchOfferSent: DRAW_OFFER.SENT | DRAW_OFFER.DECLINE | null;
   lastMoveRejectedReason: string | null;
   showAnimations: boolean;
 
   setConnection: (status: WsConnectionStatus) => void;
   setUser: (user: User | null) => void;
   setQueue: (status: QueueStatus, timeControl?: string | null) => void;
+  setExpectedGameId: (gameId: string | null) => void;
   setDrawOffer: (offer: DrawOfferState | null) => void;
-  setDrawOfferSent: (status: "sent" | "declined" | null) => void;
-  setRematchOffer: (offer: DrawOfferState | null) => void;
-  setRematchOfferSent: (status: "sent" | "declined" | null) => void;
+  setDrawOfferSent: (
+    status: DRAW_OFFER.SENT | DRAW_OFFER.DECLINE | null,
+  ) => void;
+  setRematchOffer: (offer: RematchOfferState | null) => void;
+  setRematchOfferSent: (
+    status: DRAW_OFFER.SENT | DRAW_OFFER.DECLINE | null,
+  ) => void;
   setAnimations: (enabled: boolean) => void;
   handleGameStarted: (p: GameStartedPayload) => void;
   handleGameState: (p: GameStatePayload) => void;
@@ -43,11 +55,12 @@ interface GameStore {
 }
 
 export const useGameStore = create<GameStore>((set) => ({
-  connectionStatus: "idle",
+  connectionStatus: WS_CONNECTION_STATUS.IDLE,
   user: null,
-  queueStatus: "idle",
+  queueStatus: QUEUE_STATUS.IDLE,
   queueTimeControl: null,
   activeGame: null,
+  expectedGameId: null,
   gameOver: null,
   drawOffer: null,
   drawOfferSent: null,
@@ -60,6 +73,7 @@ export const useGameStore = create<GameStore>((set) => ({
   setUser: (user) => set({ user }),
   setQueue: (queueStatus, timeControl = null) =>
     set({ queueStatus, queueTimeControl: timeControl }),
+  setExpectedGameId: (expectedGameId) => set({ expectedGameId }),
   setDrawOffer: (drawOffer) => set({ drawOffer }),
   setDrawOfferSent: (drawOfferSent) => set({ drawOfferSent }),
   setRematchOffer: (rematchOffer) => set({ rematchOffer }),
@@ -67,11 +81,11 @@ export const useGameStore = create<GameStore>((set) => ({
   setAnimations: (showAnimations) => set({ showAnimations }),
 
   handleGameStarted: (p) =>
-    set((state) => {
+    set(() => {
       const [mins] = p.timeControl.split("+").map(Number);
       const baseMs = mins * 60 * 1000;
       return {
-        queueStatus: "idle",
+        queueStatus: QUEUE_STATUS.IDLE,
         queueTimeControl: null,
         gameOver: null,
         rematchOffer: null,
@@ -80,47 +94,43 @@ export const useGameStore = create<GameStore>((set) => ({
           gameId: p.gameId,
           fen: p.fen,
           pgn: "",
-          turn: "w",
-          playerColor: p.color === "white" ? "w" : "b",
-          whiteId: p.players.white.id,
-          blackId: p.players.black.id,
-          whiteName: p.players.white.username,
-          blackName: p.players.black.username,
-          whiteRating: p.players.white.rating,
-          blackRating: p.players.black.rating,
-          whiteImage: p.players.white.image,
-          blackImage: p.players.black.image,
+          turn: PLAYER_COLOR.WHITE,
+          playerColor:
+            p.color === COLOR.WHITE ? PLAYER_COLOR.WHITE : PLAYER_COLOR.BLACK,
+          white: { ...p.white, timeLeftMs: baseMs, capturedPieces: [] },
+          black: { ...p.black, timeLeftMs: baseMs, capturedPieces: [] },
+
           timeControl: p.timeControl,
-          whiteTimeMs: baseMs,
-          blackTimeMs: baseMs,
           status: GameStatus.IN_PROGRESS,
         },
       };
     }),
 
   handleGameState: (p) =>
-    set((state) => ({
-      activeGame: {
-        gameId: p.gameId,
-        fen: p.fen,
-        pgn: p.pgn ?? "",
-        turn: p.turn,
-        playerColor:
-          p.playerColor || (state.user?.id === p.whiteId ? "w" : "b"),
-        whiteId: p.whiteId,
-        blackId: p.blackId,
-        whiteName: p.whiteName || "White",
-        blackName: p.blackName || "Black",
-        whiteRating: p.whiteRating,
-        blackRating: p.blackRating,
-        whiteImage: p.whiteImage,
-        blackImage: p.blackImage,
-        timeControl: p.timeControl,
-        whiteTimeMs: p.whiteTimeLeftMs,
-        blackTimeMs: p.blackTimeLeftMs,
-        status: GameStatus.IN_PROGRESS,
-      },
-    })),
+    set((state) => {
+      if (
+        state.activeGame &&
+        state.activeGame.gameId !== p.gameId &&
+        state.expectedGameId !== p.gameId
+      ) {
+        return state;
+      }
+      return {
+        activeGame: {
+          ...state.activeGame,
+          gameId: p.gameId,
+          fen: p.fen,
+          pgn: p.pgn,
+          turn: p.turn,
+          playerColor: p.playerColor,
+          white: p.white,
+          black: p.black,
+          timeControl: p.timeControl,
+          status: state.gameOver ? state.gameOver.status : p.status,
+        } as ActiveGame,
+        expectedGameId: null,
+      };
+    }),
 
   handleMoveMade: (p) =>
     set((state) => {
@@ -131,9 +141,21 @@ export const useGameStore = create<GameStore>((set) => ({
           ...state.activeGame,
           fen: p.fen,
           pgn: p.pgn,
-          turn: state.activeGame.turn === "w" ? "b" : "w",
-          whiteTimeMs: p.whiteTimeMs,
-          blackTimeMs: p.blackTimeMs,
+          turn:
+            state.activeGame.turn === PLAYER_COLOR.WHITE
+              ? PLAYER_COLOR.BLACK
+              : PLAYER_COLOR.WHITE,
+          white: {
+            ...state.activeGame.white,
+            timeLeftMs: p.white.timeLeftMs,
+            capturedPieces: p.white.capturedPieces,
+          },
+          black: {
+            ...state.activeGame.black,
+            timeLeftMs: p.black.timeLeftMs,
+            capturedPieces: p.black.capturedPieces,
+          },
+          status: p.isGameOver ? GameStatus.CHECKMATE : GameStatus.IN_PROGRESS,
         },
       };
     }),
@@ -158,8 +180,9 @@ export const useGameStore = create<GameStore>((set) => ({
   resetGame: () =>
     set({
       activeGame: null,
+      expectedGameId: null,
       gameOver: null,
-      queueStatus: "idle",
+      queueStatus: QUEUE_STATUS.IDLE,
       queueTimeControl: null,
       drawOffer: null,
       drawOfferSent: null,

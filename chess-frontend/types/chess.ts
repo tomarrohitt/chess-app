@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export enum WsMessageType {
   JOIN_QUEUE = "JOIN_QUEUE",
   LEAVE_QUEUE = "LEAVE_QUEUE",
@@ -21,6 +23,8 @@ export enum WsMessageType {
   RESIGN_GAME = "RESIGN_GAME",
   SYNC_GAME = "SYNC_GAME",
   GAME_STATE = "GAME_STATE",
+  SPECTATE_GAME = "SPECTATE_GAME",
+  LEAVE_SPECTATOR = "LEAVE_SPECTATOR",
   ERROR = "ERROR",
 }
 
@@ -43,102 +47,206 @@ export type WsConnectionStatus =
   | "connecting"
   | "connected"
   | "disconnected";
+export enum WS_CONNECTION_STATUS {
+  IDLE = "idle",
+  CONNECTING = "connecting",
+  CONNECTED = "connected",
+  DISCONNECTED = "disconnected",
+}
 
 export type QueueStatus = "idle" | "waiting";
 
-export type PlayerColor = "w" | "b";
+export enum QUEUE_STATUS {
+  IDLE = "idle",
+  WAITING = "waiting",
+}
+
+export enum PLAYER_COLOR {
+  WHITE = "w",
+  BLACK = "b",
+}
+
+export enum COLOR {
+  WHITE = "white",
+  BLACK = "black",
+}
+
+export enum DRAW_OFFER {
+  SENT = "sent",
+  DECLINE = "decline",
+}
 
 export interface ActiveGame {
   gameId: string;
   fen: string;
   pgn: string;
-  turn: PlayerColor;
-  playerColor: PlayerColor;
-  whiteId: string;
-  blackId: string;
-  whiteName: string;
-  blackName: string;
-  whiteRating?: number;
-  blackRating?: number;
-  whiteImage?: string | null;
-  blackImage?: string | null;
+  turn: PLAYER_COLOR;
+  playerColor: PLAYER_COLOR;
+  white: GameStateUser;
+  black: GameStateUser;
   timeControl: string;
-  whiteTimeMs: number;
-  blackTimeMs: number;
   status: GameStatus;
 }
 
-export interface PlayerInfo {
-  id: string;
-  username: string;
-  rating: number;
-  image: string | null;
-}
+export const PlayerInfoSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  rating: z.number(),
+  image: z.string().nullable(),
+});
+export type PlayerInfo = z.infer<typeof PlayerInfoSchema>;
 
-export interface GameStartedPayload {
-  gameId: string;
-  fen: string;
-  timeControl: string;
-  color: "white" | "black";
-  players: {
-    white: PlayerInfo;
-    black: PlayerInfo;
-  };
-}
+export const GameStateUserSchema = PlayerInfoSchema.extend({
+  timeLeftMs: z.number(),
+  capturedPieces: z.array(z.string()).optional().default([]),
+});
 
-export interface GameStatePayload {
-  gameId: string;
-  fen: string;
-  pgn?: string;
-  turn: PlayerColor;
-  playerColor: PlayerColor;
-  whiteId: string;
-  blackId: string;
-  whiteName: string;
-  blackName: string;
-  whiteRating?: number;
-  blackRating?: number;
-  whiteImage?: string | null;
-  blackImage?: string | null;
-  timeControl: string;
-  whiteTimeLeftMs: number;
-  blackTimeLeftMs: number;
-}
+export type GameStateUser = z.infer<typeof GameStateUserSchema>;
 
-export interface MoveMadePayload {
-  gameId: string;
-  fen: string;
-  pgn: string;
-  move: string;
-  turn: PlayerColor;
-  whiteTimeMs: number;
-  blackTimeMs: number;
-  isGameOver: boolean;
-}
+export const MoveMadeUserSchema = z.object({
+  id: z.string(),
+  timeLeftMs: z.number(),
+  capturedPieces: z.array(z.string()).optional().default([]),
+});
 
-export interface GameOverState {
-  status: GameStatus;
-  winnerId?: string;
-  reason?: string;
-}
+export const GameStartedPayloadSchema = z.object({
+  gameId: z.string(),
+  fen: z.string(),
+  timeControl: z.string(),
+  color: z.union([z.enum(COLOR), z.string()]),
+  white: PlayerInfoSchema,
+  black: PlayerInfoSchema,
+});
+export type GameStartedPayload = z.infer<typeof GameStartedPayloadSchema>;
 
-export interface DrawOfferState {
-  gameId: string;
-  offeredBy: string;
-}
+export const GameStatePayloadSchema = z.object({
+  gameId: z.string(),
+  fen: z.string(),
+  pgn: z.string(),
+  turn: z.enum(PLAYER_COLOR),
+  playerColor: z.enum(PLAYER_COLOR),
+  status: z.enum(GameStatus),
+  white: GameStateUserSchema,
+  black: GameStateUserSchema,
+  timeControl: z.string(),
+});
+export type GameStatePayload = z.infer<typeof GameStatePayloadSchema>;
 
-export type ServerMessage =
-  | { type: "GAME_STARTED"; payload: GameStartedPayload }
-  | { type: "GAME_STATE"; payload: GameStatePayload }
-  | { type: "MOVE_MADE"; payload: MoveMadePayload }
-  | { type: "MOVE_REJECTED"; payload: { reason: string } }
-  | { type: "GAME_OVER"; payload: GameOverState }
-  | { type: "MOVE_REJECTED"; payload: { reason: string } }
-  | { type: "OFFER_DRAW"; payload: DrawOfferState }
-  | { type: "ACCEPT_DRAW"; payload: { gameId: string } }
-  | { type: "DECLINE_DRAW"; payload: { gameId: string } }
-  | { type: "GAME_ABORTED"; payload: { reason: string } }
-  | { type: "ERROR"; payload: { message: string } };
+export const MoveMadePayloadSchema = z.object({
+  gameId: z.string(),
+  fen: z.string(),
+  pgn: z.string(),
+  move: z.string(),
+  white: MoveMadeUserSchema,
+  black: MoveMadeUserSchema,
+  isGameOver: z.boolean(),
+});
+export type MoveMadePayload = z.infer<typeof MoveMadePayloadSchema>;
+
+export const GameOverStateSchema = z.object({
+  status: z.enum(GameStatus),
+  winnerId: z.string().optional(),
+  reason: z.string().optional(),
+});
+export type GameOverState = z.infer<typeof GameOverStateSchema>;
+
+export const DrawOfferStateSchema = z.object({
+  gameId: z.string(),
+  offeredBy: z.string().optional(),
+});
+
+export const RematchOfferStateSchema = z.object({
+  gameId: z.string(),
+  offeredBy: PlayerInfoSchema,
+  timeControl: z.string(),
+});
+
+export type RematchOfferState = z.infer<typeof RematchOfferStateSchema>;
+
+export type DrawOfferState = z.infer<typeof DrawOfferStateSchema>;
+
+export const ServerMessageSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal(WsMessageType.GAME_STARTED),
+    payload: GameStartedPayloadSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.GAME_STATE),
+    payload: GameStatePayloadSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.MOVE_MADE),
+    payload: MoveMadePayloadSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.MOVE_REJECTED),
+    payload: z.object({ reason: z.string() }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.GAME_OVER),
+    payload: GameOverStateSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.OFFER_DRAW),
+    payload: DrawOfferStateSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.ACCEPT_DRAW),
+    payload: z.object({ gameId: z.string() }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.DECLINE_DRAW),
+    payload: z.object({ gameId: z.string(), message: z.string().optional() }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.GAME_ABORTED),
+    payload: z.object({
+      gameId: z.string().optional(),
+      reason: z.string().optional(),
+    }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.OFFER_REMATCH),
+    payload: RematchOfferStateSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.ACCEPT_REMATCH),
+    payload: z.object({ gameId: z.string() }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.DECLINE_REMATCH),
+    payload: z.object({ gameId: z.string(), message: z.string().optional() }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.SPECTATE_GAME),
+    payload: z.object({ gameId: z.string() }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.LEAVE_SPECTATOR),
+    payload: z.object({ gameId: z.string() }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.QUEUE_JOINED),
+    payload: z.object({
+      status: z.enum(["waiting", "idle"]),
+      timeControl: z.string(),
+    }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.QUEUE_LEFT),
+    payload: z.unknown().optional(),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.MATCHMAKING_TIMEOUT),
+    payload: z.object({ message: z.string() }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.ERROR),
+    payload: z.union([z.string(), z.object({ message: z.string() })]),
+  }),
+]);
+
+export type ServerMessage = z.infer<typeof ServerMessageSchema>;
 
 export enum GameResult {
   d = "d",

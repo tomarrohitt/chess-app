@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useRef, useMemo } from "react";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useGameStore } from "@/store/use-game-store";
 import { useRouter, usePathname } from "next/navigation";
@@ -33,6 +33,8 @@ type SocketContextType = {
     opponentId: string,
     timeControl: string,
   ) => void;
+  spectateGame: (gameId: string) => void;
+  leaveSpectator: (gameId: string) => void;
 };
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -46,49 +48,55 @@ export function SocketProvider({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const {
-    connect,
-    joinQueue,
-    leaveQueue,
-    makeMove,
-    resign,
-    acceptDraw,
-    declineDraw,
-    offerDraw,
-    offerRematch,
-    acceptRematch,
-    declineRematch,
-  } = useWebSocket(user);
+  const wsApi = useWebSocket(user);
   const activeGameId = useGameStore((s) => s.activeGame?.gameId);
   const redirectedRef = useRef<string | null>(null);
   useEffect(() => {
-    connect();
-  }, [connect]);
+    wsApi.connect();
+  }, [wsApi.connect]);
+
+  console.log({ activeGameId });
 
   useEffect(() => {
     if (!activeGameId) return;
     if (redirectedRef.current === activeGameId) return;
-    if (pathname === `/game/${activeGameId}`) return;
+    if (
+      pathname === `/game/${activeGameId}` ||
+      pathname === `/game/${activeGameId}/spectate`
+    )
+      return;
 
-    redirectedRef.current = activeGameId;
-    router.push(`/game/${activeGameId}`);
+    const state = useGameStore.getState();
+    const isPlayer =
+      state.user?.id === state.activeGame?.white.id ||
+      state.user?.id === state.activeGame?.black.id;
+
+    if (isPlayer) {
+      redirectedRef.current = activeGameId;
+      router.push(`/game/${activeGameId}`);
+    }
   }, [activeGameId, pathname, router]);
 
+  const contextValue = useMemo(
+    () => ({
+      joinQueue: wsApi.joinQueue,
+      leaveQueue: wsApi.leaveQueue,
+      makeMove: wsApi.makeMove,
+      resign: wsApi.resign,
+      offerDraw: wsApi.offerDraw,
+      declineDraw: wsApi.declineDraw,
+      acceptDraw: wsApi.acceptDraw,
+      offerRematch: wsApi.offerRematch,
+      declineRematch: wsApi.declineRematch,
+      acceptRematch: wsApi.acceptRematch,
+      spectateGame: wsApi.spectateGame,
+      leaveSpectator: wsApi.leaveSpectator,
+    }),
+    [wsApi],
+  );
+
   return (
-    <SocketContext.Provider
-      value={{
-        joinQueue,
-        leaveQueue,
-        makeMove,
-        resign,
-        acceptDraw,
-        declineDraw,
-        offerDraw,
-        offerRematch,
-        acceptRematch,
-        declineRematch,
-      }}
-    >
+    <SocketContext.Provider value={contextValue}>
       {children}
     </SocketContext.Provider>
   );

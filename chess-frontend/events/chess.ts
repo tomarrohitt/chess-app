@@ -23,18 +23,18 @@ export const JoinQueueSchema = z.object({
 });
 
 export const MakeMoveSchema = z.object({
-  gameId: z.string().uuid(),
+  gameId: z.uuid(),
   from: z.string().regex(/^[a-h][1-8]$/),
   to: z.string().regex(/^[a-h][1-8]$/),
   promotion: z.enum(["q", "r", "b", "n"]).optional(),
 });
 
 export const GameIdOnlySchema = z.object({
-  gameId: z.string().uuid(),
+  gameId: z.uuid(),
 });
 
 export const RematchRequestSchema = z.object({
-  gameId: z.string().uuid(),
+  gameId: z.uuid(),
   opponentId: z.string(),
   timeControl: z.string(),
 });
@@ -87,6 +87,14 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(WsMessageType.SYNC_GAME),
     payload: EmptyPayload,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.SPECTATE_GAME),
+    payload: GameIdOnlySchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.LEAVE_SPECTATOR),
+    payload: GameIdOnlySchema,
   }),
 ]);
 
