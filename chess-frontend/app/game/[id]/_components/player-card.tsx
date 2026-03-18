@@ -1,12 +1,13 @@
 "use client";
 
+import { PLAYER_COLOR } from "@/types/chess";
 import { Clock } from "./clock";
 
 interface PlayerCardProps {
   username: string;
   rating?: number;
   image?: string | null;
-  color: "w" | "b";
+  color: PLAYER_COLOR.WHITE | PLAYER_COLOR.BLACK;
   timeMs: number;
   isActive: boolean;
 }
@@ -37,7 +38,7 @@ export function PlayerCard({
         ) : (
           <div
             className={`w-9 h-9 rounded-md border shrink-0 flex items-center justify-center font-bold text-sm ${
-              color === "w"
+              color === PLAYER_COLOR.WHITE
                 ? "bg-zinc-200 border-zinc-300 text-zinc-800"
                 : "bg-zinc-800 border-zinc-600 text-zinc-200"
             }`}

@@ -1,14 +1,19 @@
 import { useEffect, useRef } from "react";
 import { Chess } from "chess.js";
+import { cn } from "@/lib/utils";
 
 interface MoveListProps {
   pgn: string;
   timeControl: string;
+  state: "playing" | "finished";
+  currentMoveIndex?: number;
+  onMoveClick?: (index: number) => void;
 }
 
 interface MoveDetail {
   san: string;
   timeSpent?: string;
+  index: number;
 }
 
 interface MovePair {
@@ -67,6 +72,7 @@ function parsePgnWithTimes(pgn: string, timeControl: string): MovePair[] {
           san: history[i],
           timeSpent:
             whiteDiff !== undefined ? `${Math.max(0, whiteDiff)}s` : undefined,
+          index: i,
         },
         black: history[i + 1]
           ? {
@@ -75,6 +81,7 @@ function parsePgnWithTimes(pgn: string, timeControl: string): MovePair[] {
                 blackDiff !== undefined
                   ? `${Math.max(0, blackDiff)}s`
                   : undefined,
+              index: i + 1,
             }
           : undefined,
       });
@@ -88,20 +95,39 @@ function parsePgnWithTimes(pgn: string, timeControl: string): MovePair[] {
   }
 }
 
-export function MoveList({ pgn, timeControl }: MoveListProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+export function MoveList({
+  pgn,
+  timeControl,
+  state = "playing",
+  currentMoveIndex,
+  onMoveClick,
+}: MoveListProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const pairs = parsePgnWithTimes(pgn, timeControl);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [pairs.length]);
+    if (state === "playing" && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [pairs.length, state]);
 
   return (
-    <div className="flex flex-col h-full">
-      <p className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase px-1 pb-2">
+    <div
+      className={cn(
+        "flex flex-col overflow-hidden min-h-0",
+        state === "finished" ? "h-80" : "h-140 scroll-smooth",
+      )}
+    >
+      <p className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase px-1 pb-2 shrink-0">
         Move History
       </p>
-      <div className="flex-1 overflow-y-auto pr-1 space-y-0.5 scrollbar-thin bg-gray-700 rounded-md">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-0.5 scrollbar-thin bg-gray-700 rounded-md"
+      >
         {pairs.length === 0 ? (
           <p className="text-zinc-200 text-xs italic px-1 py-4 text-center">
             Waiting for first move...
@@ -116,10 +142,16 @@ export function MoveList({ pgn, timeControl }: MoveListProps) {
                 {pair.number}.
               </span>
 
-              <div className="ml-3 flex justify-between items-center py-1  rounded transition-colors group/m w-20 bg-gray-200 px-1">
-                <span className="text-zinc-800 font-medium">
-                  {pair.white.san}
-                </span>
+              <div
+                className={cn(
+                  "ml-3 flex justify-between items-center py-1 rounded transition-colors group/m w-20 px-1 font-bold cursor-pointer",
+                  currentMoveIndex === pair.white.index
+                    ? "bg-amber-500 text-zinc-900"
+                    : "bg-gray-400 text-zinc-800 hover:bg-gray-300",
+                )}
+                onClick={() => onMoveClick?.(pair.white.index)}
+              >
+                <span className="text-zinc-800">{pair.white.san}</span>
                 {pair.white.timeSpent && (
                   <span className="text-[9px] text-zinc-800 font-mono group-hover/m:opacity-100 transition-opacity">
                     {pair.white.timeSpent}
@@ -128,10 +160,18 @@ export function MoveList({ pgn, timeControl }: MoveListProps) {
               </div>
 
               {pair.black ? (
-                <div className="ml-3 flex justify-between items-center px-2 py-1  rounded transition-colors group/m w-20 bg-gray-900">
-                  <span className="text-zinc-200 font-medium">
-                    {pair.black.san}
-                  </span>
+                <div
+                  className={cn(
+                    "ml-3 flex justify-between items-center px-2 py-1 rounded transition-colors group/m w-20 font-bold cursor-pointer",
+                    currentMoveIndex === pair.black.index
+                      ? "bg-amber-500 text-zinc-900"
+                      : "bg-gray-800 text-zinc-200 hover:bg-gray-700",
+                  )}
+                  onClick={() => {
+                    if (pair.black) onMoveClick?.(pair.black.index);
+                  }}
+                >
+                  <span className="text-zinc-200">{pair.black.san}</span>
                   {pair.black.timeSpent && (
                     <span className="text-[9px] text-zinc-100 font-mono ">
                       {pair.black.timeSpent}
@@ -144,7 +184,6 @@ export function MoveList({ pgn, timeControl }: MoveListProps) {
             </div>
           ))
         )}
-        <div ref={bottomRef} />
       </div>
     </div>
   );

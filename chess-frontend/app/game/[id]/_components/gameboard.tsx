@@ -1,14 +1,16 @@
 "use client";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useGameStore } from "@/store/use-game-store";
-import { Chessboard } from "react-chessboard";
+import { Chess } from "chess.js";
 import { User } from "@/types/auth";
 
-import { GameStatus } from "@/types/chess";
+import { GameStatus, PLAYER_COLOR } from "@/types/chess";
 import { useSocket } from "@/store/socket-provider";
-import { PlayerCard } from "./player-card";
-import { GameOverOverlay } from "./game-over-overlay";
-import { MoveList } from "./move-list";
 import { LobbyClient } from "@/components/game/lobby-client";
+import { GameSidebar } from "./game-sidebar";
+import { ActiveBoard } from "./active-board";
+import { PlayerArea } from "./player-area";
+import { getPlayerAdvantages, getCapturedPieces } from "./advantage";
 
 interface GameboardProps {
   gameId: string;
@@ -16,231 +18,230 @@ interface GameboardProps {
 }
 
 export function Gameboard({ gameId, user }: GameboardProps) {
-  const {
-    activeGame,
-    gameOver,
-    lastMoveRejectedReason,
-    drawOffer,
-    drawOfferSent,
-    rematchOffer,
-    rematchOfferSent,
-  } = useGameStore((s) => s);
-  const {
-    makeMove,
-    resign,
-    offerDraw,
-    acceptDraw,
-    declineDraw,
-    offerRematch,
-    acceptRematch,
-    declineRematch,
-  } = useSocket();
-  const isWhite = activeGame?.playerColor === "w";
+  const { activeGame, gameOver, lastMoveRejectedReason } = useGameStore(
+    (s) => s,
+  );
+  const { spectateGame, leaveSpectator } = useSocket();
 
-  const topColor = isWhite ? "b" : "w";
-  const bottomColor = isWhite ? "w" : "b";
+  const [spectatorFlipped, setSpectatorFlipped] = useState(false);
 
-  const opponentId = isWhite ? activeGame?.blackId : activeGame?.whiteId;
+  const isPlayer =
+    user.id === activeGame?.white.id || user.id === activeGame?.black.id;
+  const isWhite = isPlayer
+    ? user.id === activeGame?.white.id
+    : !spectatorFlipped;
 
-  const topName =
-    topColor === "w" ? activeGame?.whiteName : activeGame?.blackName;
-  const bottomName =
-    bottomColor === "w" ? activeGame?.whiteName : activeGame?.blackName;
+  const topColor = isWhite ? PLAYER_COLOR.BLACK : PLAYER_COLOR.WHITE;
+  const bottomColor = isWhite ? PLAYER_COLOR.WHITE : PLAYER_COLOR.BLACK;
 
-  const topRating =
-    topColor === "w" ? activeGame?.whiteRating : activeGame?.blackRating;
-  const bottomRating =
-    bottomColor === "w" ? activeGame?.whiteRating : activeGame?.blackRating;
+  const opponentId = isWhite ? activeGame?.black.id : activeGame?.white.id;
 
-  const topImage =
-    topColor === "w" ? activeGame?.whiteImage : activeGame?.blackImage;
-  const bottomImage =
-    bottomColor === "w" ? activeGame?.whiteImage : activeGame?.blackImage;
+  // Generate the timeline of FENs from the live PGN
+  const timeline = useMemo(() => {
+    const chess = new Chess();
+    if (activeGame?.pgn) {
+      chess.loadPgn(activeGame.pgn);
+    }
+    const history = chess.history();
+
+    const temp = new Chess();
+    const fens = [temp.fen({ forceEnpassantSquare: true })]; // Start position
+    for (const move of history) {
+      temp.move(move);
+      fens.push(temp.fen({ forceEnpassantSquare: true }));
+    }
+    return { history, fens };
+  }, [activeGame?.pgn]);
+
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
+  const latestIndex = timeline.history.length - 1;
+
+  // Listen for keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        setViewingIndex((prev) => {
+          const currentIndex = prev !== null ? prev : latestIndex;
+          return Math.max(-1, currentIndex - 1);
+        });
+      } else if (e.key === "ArrowRight") {
+        setViewingIndex((prev) => {
+          const currentIndex = prev !== null ? prev : latestIndex;
+          const nextIndex = Math.min(latestIndex, currentIndex + 1);
+          return nextIndex === latestIndex ? null : nextIndex;
+        });
+      } else if (e.key === "ArrowUp") {
+        setViewingIndex(-1); // Jump to start
+      } else if (e.key === "ArrowDown") {
+        setViewingIndex(null); // Jump to end
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [latestIndex]);
+
+  const handleMoveClick = (index: number) => {
+    setViewingIndex(index === latestIndex ? null : index);
+  };
+
+  const currentMoveIndex = viewingIndex !== null ? viewingIndex : latestIndex;
+
+  // Track the history length to detect when a new move is actually played
+  const prevHistoryLength = useRef(timeline.history.length);
+  const prevMoveIndex = useRef(currentMoveIndex);
+
+  useEffect(() => {
+    const currentLength = timeline.history.length;
+    let soundFile: string | null = null;
+
+    if (currentLength > prevHistoryLength.current) {
+      const lastMove = timeline.history[currentLength - 1];
+
+      const isWhiteMove = currentLength % 2 !== 0;
+      const isMyMove = isPlayer && isWhiteMove === isWhite;
+      soundFile = isMyMove ? "/move-self.mp3" : "/move-opponent.mp3";
+
+      if (lastMove.includes("=")) {
+        soundFile = "/promote.mp3";
+      } else if (lastMove.includes("+") || lastMove.includes("#")) {
+        soundFile = "/move-check.mp3";
+      } else if (lastMove.includes("O-O")) {
+        soundFile = "/castle.mp3";
+      } else if (lastMove.includes("x")) {
+        soundFile = "/capture.mp3";
+      }
+    } else if (currentMoveIndex !== prevMoveIndex.current) {
+      if (currentMoveIndex >= 0) {
+        const currentMove = timeline.history[currentMoveIndex];
+        const isWhiteMove = (currentMoveIndex + 1) % 2 !== 0;
+        const isMyMove = isPlayer && isWhiteMove === isWhite;
+
+        soundFile = isMyMove ? "/move-self.mp3" : "/move-opponent.mp3";
+        if (!isPlayer) soundFile = "/move-self.mp3";
+
+        if (currentMove.includes("=")) {
+          soundFile = "/promote.mp3";
+        } else if (currentMove.includes("+") || currentMove.includes("#")) {
+          soundFile = "/move-check.mp3";
+        } else if (currentMove.includes("O-O")) {
+          soundFile = "/castle.mp3";
+        } else if (currentMove.includes("x")) {
+          soundFile = "/capture.mp3";
+        }
+      } else {
+        soundFile = "/move-self.mp3";
+      }
+    }
+
+    if (soundFile) {
+      const audio = new Audio(soundFile);
+      audio
+        .play()
+        .catch((e) => console.log("Audio play blocked by browser:", e));
+    }
+
+    prevHistoryLength.current = currentLength;
+    prevMoveIndex.current = currentMoveIndex;
+  }, [timeline.history, currentMoveIndex, isPlayer, isWhite]);
+
+  // Track game over state to play end-of-match sounds
+  const prevGameOver = useRef<boolean>(false);
+  useEffect(() => {
+    if (gameOver && !prevGameOver.current) {
+      let soundFile = "/game-draw.mp3"; // Default to draw
+
+      if (gameOver.winnerId === user.id) {
+        soundFile = "/game-win.mp3";
+      } else if (gameOver.winnerId) {
+        soundFile = "/game-lose.mp3";
+      }
+
+      const audio = new Audio(soundFile);
+      audio
+        .play()
+        .catch((e) => console.log("Audio play blocked by browser:", e));
+      prevGameOver.current = true;
+    }
+  }, [gameOver, user.id]);
+
+  useEffect(() => {
+    spectateGame(gameId);
+    return () => {
+      leaveSpectator(gameId);
+    };
+  }, [gameId, spectateGame, leaveSpectator]);
 
   if (!activeGame || activeGame.gameId !== gameId) {
     return <LobbyClient user={user} />;
   }
 
+  const currentFen = timeline.fens[currentMoveIndex + 1] || activeGame.fen;
+  const isViewingHistory = viewingIndex !== null;
+
+  const { capturedByWhite, capturedByBlack } = getCapturedPieces(currentFen);
+  const dynamicWhite = { ...activeGame.white, capturedPieces: capturedByWhite };
+  const dynamicBlack = { ...activeGame.black, capturedPieces: capturedByBlack };
+
+  const topPlayer =
+    topColor === PLAYER_COLOR.WHITE ? dynamicWhite : dynamicBlack;
+  const bottomPlayer =
+    bottomColor === PLAYER_COLOR.WHITE ? dynamicWhite : dynamicBlack;
+
+  const { topAdvantage, bottomAdvantage } = getPlayerAdvantages(
+    dynamicWhite.capturedPieces,
+    dynamicBlack.capturedPieces,
+    topColor,
+  );
+
+  const currentTurnStr = activeGame.fen.split(" ")[1];
+  const isTopActive = topColor === currentTurnStr;
+  const isBottomActive = bottomColor === currentTurnStr;
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="flex gap-4 items-start w-full max-w-5xl">
         <div className="flex flex-col gap-2 min-w-0 flex-1 max-w-140">
-          <PlayerCard
-            username={topName ?? "Opponent"}
-            rating={topRating}
-            image={topImage}
+          <PlayerArea
+            player={topPlayer!}
             color={topColor}
-            timeMs={
-              topColor === "w" ? activeGame.whiteTimeMs : activeGame.blackTimeMs
-            }
             isActive={
-              activeGame.turn === topColor &&
-              activeGame.status === GameStatus.IN_PROGRESS
+              isTopActive && activeGame.status === GameStatus.IN_PROGRESS
             }
+            materialAdvantage={topAdvantage}
+            position="top"
           />
 
-          <div className="relative">
-            <Chessboard
-              options={{
-                position: activeGame.fen,
-                showAnimations: true,
-                boardOrientation: isWhite ? "white" : "black",
-                onPieceDrop: ({ sourceSquare, targetSquare }) => {
-                  if (!targetSquare) return false;
-                  makeMove(activeGame.gameId, sourceSquare, targetSquare);
-                  return true;
-                },
-                darkSquareStyle: { backgroundColor: "#4a7c59" },
-                lightSquareStyle: { backgroundColor: "#f0d9b5" },
-              }}
-            />
+          <ActiveBoard
+            activeGame={activeGame}
+            isPlayer={isPlayer}
+            isWhite={isWhite}
+            lastMoveRejectedReason={lastMoveRejectedReason}
+            gameOver={gameOver}
+            userId={user.id}
+            currentFen={currentFen}
+            isViewingHistory={isViewingHistory}
+          />
 
-            {lastMoveRejectedReason && (
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600/90 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap">
-                {lastMoveRejectedReason}
-              </div>
-            )}
-
-            {gameOver && (
-              <GameOverOverlay gameOver={gameOver} userId={user.id} />
-            )}
-          </div>
-
-          <PlayerCard
-            username={bottomName ?? "Opponent"}
-            rating={bottomRating}
-            image={bottomImage}
+          <PlayerArea
+            player={bottomPlayer!}
             color={bottomColor}
-            timeMs={
-              bottomColor === "w"
-                ? activeGame.whiteTimeMs
-                : activeGame.blackTimeMs
-            }
             isActive={
-              activeGame.turn === bottomColor &&
-              activeGame.status === GameStatus.IN_PROGRESS
+              isBottomActive && activeGame.status === GameStatus.IN_PROGRESS
             }
+            materialAdvantage={bottomAdvantage}
+            position="bottom"
           />
         </div>
 
-        <div className="flex flex-col gap-3 w-60 shrink-0">
-          <MoveList pgn={activeGame.pgn} timeControl={activeGame.timeControl} />
-
-          {!gameOver && !drawOfferSent && (
-            <button
-              onClick={() => offerDraw(activeGame.gameId)}
-              className="w-full py-2.5 rounded-lg bg-zinc-900 hover:bg-red-950/60 border border-zinc-900 hover:border-red-800 text-zinc-400 hover:text-red-400 text-sm font-medium transition-all duration-150"
-            >
-              Draw
-            </button>
-          )}
-
-          {!gameOver && drawOfferSent === "sent" && (
-            <div className="w-full py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-center">
-              <p className="text-sm text-zinc-400">Draw offer sent...</p>
-            </div>
-          )}
-
-          {!gameOver && drawOfferSent === "declined" && (
-            <div className="w-full py-2.5 bg-red-950/60 border border-red-800 rounded-lg text-center">
-              <p className="text-sm text-red-400">Draw declined</p>
-            </div>
-          )}
-
-          {!gameOver && (
-            <button
-              onClick={() => resign(activeGame.gameId)}
-              className="w-full py-2.5 rounded-lg bg-red-500 text-white hover:bg-red-950/60 border border-zinc-900 hover:border-red-800 hover:text-red-400 text-sm font-medium transition-all duration-150"
-            >
-              Resign
-            </button>
-          )}
-
-          {!!drawOffer && (
-            <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg flex flex-col gap-3">
-              <p className="text-sm text-zinc-300 text-center">
-                Opponent offered a draw
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => acceptDraw(activeGame.gameId)}
-                  className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded transition-colors"
-                >
-                  Accept
-                </button>
-                <button
-                  onClick={() => declineDraw(activeGame.gameId)}
-                  className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold rounded transition-colors"
-                >
-                  Decline
-                </button>
-              </div>
-            </div>
-          )}
-
-          {gameOver && !rematchOfferSent && !rematchOffer && (
-            <button
-              onClick={() =>
-                offerRematch(
-                  activeGame.gameId,
-                  opponentId!,
-                  activeGame.timeControl,
-                )
-              }
-              className="w-full py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 shadow-lg text-sm font-bold transition-all duration-150 mt-2"
-            >
-              Rematch
-            </button>
-          )}
-
-          {gameOver && rematchOfferSent === "sent" && (
-            <div className="w-full py-2.5 bg-zinc-800 rounded-lg text-center mt-2">
-              <p className="text-sm text-zinc-400 font-bold">
-                Rematch offer sent...
-              </p>
-            </div>
-          )}
-
-          {gameOver && rematchOfferSent === "declined" && (
-            <div className="w-full py-2.5 bg-red-950/60 border border-red-800 rounded-lg text-center mt-2">
-              <p className="text-sm text-red-400 font-bold">Rematch declined</p>
-            </div>
-          )}
-
-          {!!rematchOffer && gameOver && (
-            <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg flex flex-col gap-3 mt-2">
-              <p className="text-sm text-zinc-300 text-center font-bold">
-                Opponent wants a rematch!
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() =>
-                    acceptRematch(
-                      activeGame.gameId,
-                      opponentId!,
-                      activeGame.timeControl,
-                    )
-                  }
-                  className="flex-1 py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded transition-colors"
-                >
-                  Accept
-                </button>
-                <button
-                  onClick={() =>
-                    declineRematch(
-                      activeGame.gameId,
-                      opponentId!,
-                      activeGame.timeControl,
-                    )
-                  }
-                  className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold rounded transition-colors"
-                >
-                  Decline
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <GameSidebar
+          isPlayer={isPlayer}
+          opponentId={opponentId}
+          setSpectatorFlipped={setSpectatorFlipped}
+          {...({
+            currentMoveIndex,
+            onMoveClick: handleMoveClick,
+          } as any)}
+        />
       </div>
     </div>
   );
