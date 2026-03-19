@@ -40,7 +40,7 @@ export function CapturedPieces({
   );
 
   return (
-    <div className="flex flex-wrap items-center min-h-8 px-1 gap-y-1">
+    <div className="flex flex-wrap items-center min-h-8 px-1">
       {sortedPieces.map((piece, i) => {
         const pieceKey =
           color === PLAYER_COLOR.WHITE
@@ -59,7 +59,7 @@ export function CapturedPieces({
         return (
           <div
             key={i}
-            className={`w-6 h-6 sm:w-7 sm:h-7 drop-shadow-md ${marginClass}`}
+            className={`w-4 h-4 sm:w-5 sm:h-5 drop-shadow-md ${marginClass}`}
           >
             {PieceSvg && <PieceSvg />}
           </div>

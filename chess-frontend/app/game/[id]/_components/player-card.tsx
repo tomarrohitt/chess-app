@@ -2,6 +2,7 @@
 
 import { PLAYER_COLOR } from "@/types/chess";
 import { Clock } from "./clock";
+import { cn } from "@/lib/utils";
 
 interface PlayerCardProps {
   username: string;
@@ -10,6 +11,7 @@ interface PlayerCardProps {
   color: PLAYER_COLOR.WHITE | PLAYER_COLOR.BLACK;
   timeMs: number;
   isActive: boolean;
+  pieces: React.ReactNode;
 }
 
 export function PlayerCard({
@@ -19,47 +21,63 @@ export function PlayerCard({
   color,
   timeMs,
   isActive,
+  pieces,
 }: PlayerCardProps) {
   return (
     <div
-      className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-colors duration-200 ${
-        isActive
-          ? "bg-zinc-800 border-zinc-600"
-          : "bg-zinc-900/60 border-zinc-800"
-      }`}
+      className={cn(
+        "flex items-center justify-between px-3 py-2 rounded-lg border transition-colors duration-200 shadow-sm",
+        color === PLAYER_COLOR.WHITE ? "bg-zinc-300" : "bg-zinc-800",
+      )}
     >
       <div className="flex items-center gap-3 min-w-0">
         {image ? (
           <img
             src={image}
             alt={username}
-            className="w-9 h-9 rounded-md object-cover shrink-0 border border-zinc-700 bg-zinc-800"
+            className="w-11 h-11 rounded-md object-cover shrink-0 border border-zinc-700 bg-zinc-800"
           />
         ) : (
           <div
-            className={`w-9 h-9 rounded-md border shrink-0 flex items-center justify-center font-bold text-sm ${
+            className={cn(
+              "w-11 h-11 rounded-md border shrink-0 flex items-center justify-center font-bold text-sm",
               color === PLAYER_COLOR.WHITE
-                ? "bg-zinc-200 border-zinc-300 text-zinc-800"
-                : "bg-zinc-800 border-zinc-600 text-zinc-200"
-            }`}
+                ? "bg-white border-zinc-300 text-zinc-800"
+                : "bg-zinc-900 border-zinc-600 text-zinc-200",
+            )}
           >
             {username.charAt(0).toUpperCase()}
           </div>
         )}
-        <div className="flex flex-col min-w-0 leading-tight">
+        <div className="flex flex-col min-w-0 leading-tight mt-1">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-zinc-200 truncate">
+            <span
+              className={cn(
+                "text-sm font-bold truncate",
+                color === PLAYER_COLOR.WHITE
+                  ? "text-zinc-900"
+                  : "text-zinc-100",
+              )}
+            >
               {username}
             </span>
+            {rating !== undefined && (
+              <span
+                className={cn(
+                  "text-xs font-medium",
+                  color === PLAYER_COLOR.WHITE
+                    ? "text-zinc-500"
+                    : "text-zinc-400",
+                )}
+              >
+                ({rating})
+              </span>
+            )}
             {isActive && (
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
             )}
           </div>
-          {rating !== undefined && (
-            <span className="text-xs font-medium text-zinc-400">
-              ({rating})
-            </span>
-          )}
+          {pieces}
         </div>
       </div>
       <Clock timeMs={timeMs} isRunning={isActive} />

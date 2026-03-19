@@ -19,6 +19,13 @@ export function PlayerArea({
   materialAdvantage,
   position,
 }: PlayerAreaProps) {
+  const pieces = (
+    <CapturedPieces
+      capturedPieces={player.capturedPieces}
+      color={color}
+      materialAdvantage={materialAdvantage}
+    />
+  );
   const card = (
     <PlayerCard
       username={player.username ?? "Opponent"}
@@ -27,30 +34,13 @@ export function PlayerArea({
       color={color}
       timeMs={player.timeLeftMs}
       isActive={isActive}
-    />
-  );
-
-  const pieces = (
-    <CapturedPieces
-      capturedPieces={player.capturedPieces}
-      color={color}
-      materialAdvantage={materialAdvantage}
+      pieces={pieces}
     />
   );
 
   return (
     <div className="flex flex-col gap-1">
-      {position === "top" ? (
-        <>
-          {card}
-          {pieces}
-        </>
-      ) : (
-        <>
-          {pieces}
-          {card}
-        </>
-      )}
+      {position === "top" ? <>{card}</> : <>{card}</>}
     </div>
   );
 }

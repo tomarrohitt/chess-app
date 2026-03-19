@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Chessboard } from "react-chessboard";
-import { Chess } from "chess.js";
 import { User } from "@/types/auth";
 import { COLOR, GameStatus, PLAYER_COLOR } from "@/types/chess";
 import { PlayerArea } from "./player-area";
 import { MoveList } from "./move-list";
 import { getPlayerAdvantages, getCapturedPieces } from "./advantage";
+import { playAudio, getMoveSoundFile } from "@/lib/audio";
+import { sharedBoardOptions } from "./board-theme";
+import { useTimeline } from "@/hooks/use-timeline";
+import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation";
 
 export interface GamePlayer {
   id: string;
@@ -57,49 +60,26 @@ export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
   const topColor = isWhite ? PLAYER_COLOR.BLACK : PLAYER_COLOR.WHITE;
   const bottomColor = isWhite ? PLAYER_COLOR.WHITE : PLAYER_COLOR.BLACK;
 
-  // Generate the timeline of FENs from the PGN
-  const timeline = useMemo(() => {
-    const chess = new Chess();
-    chess.loadPgn(gameData.pgn);
-    const history = chess.history();
-
-    const temp = new Chess();
-    const fens = [temp.fen({ forceEnpassantSquare: true })]; // Start position
-    for (const move of history) {
-      temp.move(move);
-      fens.push(temp.fen({ forceEnpassantSquare: true }));
-    }
-    return { history, fens };
-  }, [gameData.pgn]);
+  const timeline = useTimeline(gameData.pgn);
 
   const [currentMoveIndex, setCurrentMoveIndex] = useState(
     timeline.history.length - 1,
   );
 
-  // Listen for keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") {
-        setCurrentMoveIndex((prev) => Math.max(-1, prev - 1));
-      } else if (e.key === "ArrowRight") {
-        setCurrentMoveIndex((prev) =>
-          Math.min(timeline.history.length - 1, prev + 1),
-        );
-      } else if (e.key === "ArrowUp") {
-        setCurrentMoveIndex(-1); // Jump to start
-      } else if (e.key === "ArrowDown") {
-        setCurrentMoveIndex(timeline.history.length - 1); // Jump to end
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [timeline.history.length]);
+  useKeyboardNavigation({
+    onArrowLeft: () => setCurrentMoveIndex((prev) => Math.max(-1, prev - 1)),
+    onArrowRight: () =>
+      setCurrentMoveIndex((prev) =>
+        Math.min(timeline.history.length - 1, prev + 1),
+      ),
+    onArrowUp: () => setCurrentMoveIndex(-1),
+    onArrowDown: () => setCurrentMoveIndex(timeline.history.length - 1),
+  });
 
-  // Play sound effect when stepping through moves
   const prevMoveIndex = useRef(currentMoveIndex);
   useEffect(() => {
     if (currentMoveIndex !== prevMoveIndex.current) {
-      let soundFile = "/move-self.mp3"; // Default for start position
+      let soundFile = "/move-self.mp3";
 
       if (currentMoveIndex >= 0) {
         const currentMove = timeline.history[currentMoveIndex];
@@ -107,35 +87,14 @@ export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
         const isWhiteMove = (currentMoveIndex + 1) % 2 !== 0;
         const isMyMove = isPlayer && isWhiteMove === playerIsWhite;
 
-        soundFile = isMyMove ? "/move-self.mp3" : "/move-opponent.mp3";
-        if (!isPlayer) soundFile = "/move-self.mp3"; // Default for viewers
+        soundFile = getMoveSoundFile(currentMove, isMyMove, !isPlayer);
 
-        if (currentMove.includes("=")) {
-          soundFile = "/promote.mp3";
-        } else if (currentMove.includes("+") || currentMove.includes("#")) {
-          soundFile = "/move-check.mp3";
-        } else if (currentMove.includes("O-O")) {
-          soundFile = "/castle.mp3";
-        } else if (currentMove.includes("x")) {
-          soundFile = "/capture.mp3";
-        }
-
-        // Play game-end sound if we reach the final move
         if (currentMoveIndex === timeline.history.length - 1) {
-          if (gameData.winnerId === user.id) {
-            soundFile = "/game-win.mp3";
-          } else if (gameData.winnerId) {
-            soundFile = "/game-lose.mp3";
-          } else {
-            soundFile = "/game-draw.mp3";
-          }
+          soundFile = "/game-end.mp3";
         }
       }
 
-      const audio = new Audio(soundFile);
-      audio
-        .play()
-        .catch((e) => console.log("Audio play blocked by browser:", e));
+      playAudio(soundFile);
     }
 
     prevMoveIndex.current = currentMoveIndex;
@@ -148,16 +107,14 @@ export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
     playerIsWhite,
   ]);
 
-  const currentFen = timeline.fens[currentMoveIndex + 1]; // +1 because fens[0] is the start position
+  const currentFen = timeline.fens[currentMoveIndex + 1];
   const boardOptions = {
     position: currentFen,
-    animationDurationInMs: 200,
     boardOrientation: isWhite ? COLOR.WHITE : COLOR.BLACK,
     allowDragging: false,
     allowDrawingArrows: true,
     clearArrowsOnPositionChange: true,
-    darkSquareStyle: { backgroundColor: "#4a7c59" },
-    lightSquareStyle: { backgroundColor: "#f0d9b5" },
+    ...sharedBoardOptions,
   };
 
   const { capturedByWhite, capturedByBlack } = getCapturedPieces(currentFen);

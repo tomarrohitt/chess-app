@@ -22,11 +22,41 @@ interface MovePair {
   black?: MoveDetail;
 }
 
+interface MoveButtonProps {
+  move: MoveDetail;
+  isActive: boolean;
+  isWhite?: boolean;
+  onClick?: (index: number) => void;
+}
+
+function MoveButton({ move, isActive, isWhite, onClick }: MoveButtonProps) {
+  return (
+    <div
+      className={cn(
+        "ml-3 flex justify-between items-center px-1.5 py-1 rounded transition-colors group/m w-20 font-bold cursor-pointer",
+        isActive
+          ? "bg-amber-500 text-zinc-900"
+          : isWhite
+            ? "bg-gray-400 text-zinc-800 hover:bg-gray-300"
+            : "bg-gray-800 text-zinc-200 hover:bg-gray-700",
+      )}
+      onClick={() => onClick?.(move.index)}
+    >
+      <span>{move.san}</span>
+      {move.timeSpent && (
+        <span className="text-xs font-mono opacity-80 group-hover/m:opacity-100 transition-opacity">
+          {move.timeSpent}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function clkToSeconds(clk: string): number {
-  const match = clk.match(/(\d+):(\d{2}):(\d{2})/);
+  const match = clk.match(/(\d+):(\d{2}):(\d+(?:\.\d+)?)/);
   if (!match) return 0;
   return (
-    parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3])
+    parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseFloat(match[3])
   );
 }
 
@@ -37,9 +67,9 @@ function parsePgnWithTimes(pgn: string, timeControl: string): MovePair[] {
     chess.loadPgn(pgn);
     const history = chess.history();
 
-    const clkMatches = [...pgn.matchAll(/\[%clk (\d+:\d{2}:\d{2})\]/g)].map(
-      (m) => clkToSeconds(m[1]),
-    );
+    const clkMatches = [
+      ...pgn.matchAll(/\[%clk (\d+:\d{2}:\d+(?:\.\d+)?)\]/g),
+    ].map((m) => clkToSeconds(m[1]));
 
     let initialSeconds = 300;
     let increment = 0;
@@ -71,7 +101,9 @@ function parsePgnWithTimes(pgn: string, timeControl: string): MovePair[] {
         white: {
           san: history[i],
           timeSpent:
-            whiteDiff !== undefined ? `${Math.max(0, whiteDiff)}s` : undefined,
+            whiteDiff !== undefined
+              ? `${Math.max(0.1, whiteDiff).toFixed(1)}s`
+              : undefined,
           index: i,
         },
         black: history[i + 1]
@@ -79,7 +111,7 @@ function parsePgnWithTimes(pgn: string, timeControl: string): MovePair[] {
               san: history[i + 1],
               timeSpent:
                 blackDiff !== undefined
-                  ? `${Math.max(0, blackDiff)}s`
+                  ? `${Math.max(0.1, blackDiff).toFixed(1)}s`
                   : undefined,
               index: i + 1,
             }
@@ -117,7 +149,7 @@ export function MoveList({
   return (
     <div
       className={cn(
-        "flex flex-col overflow-hidden min-h-0",
+        "flex flex-col overflow-hidden min-h-0 w-100",
         state === "finished" ? "h-80" : "h-140 scroll-smooth",
       )}
     >
@@ -142,42 +174,19 @@ export function MoveList({
                 {pair.number}.
               </span>
 
-              <div
-                className={cn(
-                  "ml-3 flex justify-between items-center py-1 rounded transition-colors group/m w-20 px-1 font-bold cursor-pointer",
-                  currentMoveIndex === pair.white.index
-                    ? "bg-amber-500 text-zinc-900"
-                    : "bg-gray-400 text-zinc-800 hover:bg-gray-300",
-                )}
-                onClick={() => onMoveClick?.(pair.white.index)}
-              >
-                <span className="text-zinc-800">{pair.white.san}</span>
-                {pair.white.timeSpent && (
-                  <span className="text-[9px] text-zinc-800 font-mono group-hover/m:opacity-100 transition-opacity">
-                    {pair.white.timeSpent}
-                  </span>
-                )}
-              </div>
+              <MoveButton
+                move={pair.white}
+                isActive={currentMoveIndex === pair.white.index}
+                isWhite={true}
+                onClick={onMoveClick}
+              />
 
               {pair.black ? (
-                <div
-                  className={cn(
-                    "ml-3 flex justify-between items-center px-2 py-1 rounded transition-colors group/m w-20 font-bold cursor-pointer",
-                    currentMoveIndex === pair.black.index
-                      ? "bg-amber-500 text-zinc-900"
-                      : "bg-gray-800 text-zinc-200 hover:bg-gray-700",
-                  )}
-                  onClick={() => {
-                    if (pair.black) onMoveClick?.(pair.black.index);
-                  }}
-                >
-                  <span className="text-zinc-200">{pair.black.san}</span>
-                  {pair.black.timeSpent && (
-                    <span className="text-[9px] text-zinc-100 font-mono ">
-                      {pair.black.timeSpent}
-                    </span>
-                  )}
-                </div>
+                <MoveButton
+                  move={pair.black}
+                  isActive={currentMoveIndex === pair.black.index}
+                  onClick={onMoveClick}
+                />
               ) : (
                 <div className="flex-1" />
               )}

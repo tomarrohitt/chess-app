@@ -239,7 +239,8 @@ export async function getSpectatorState(
     !gameState.blackUser ||
     !gameState.fen
   )
-    return null;
+
+    return null
 
   const now = Date.now();
   const lastMoveAt = parseInt(gameState.lastMoveTimestamp || "0", 10);

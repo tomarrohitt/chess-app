@@ -4,10 +4,12 @@ import { GameStatus, PLAYER_COLOR } from "../../types/types";
 import { NotYourTurnError, IllegalMoveError } from "../../lib/errors";
 
 export function formatPgnTime(ms: number): string {
-  const totalSeconds = Math.floor(Math.max(0, ms) / 1000);
+  const timeMs = Math.max(0, ms);
+  const totalSeconds = Math.floor(timeMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  return `0:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  const fraction = timeMs % 1000;
+  return `0:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${fraction.toString().padStart(3, "0")}`;
 }
 
 export function getCapturedPieces(fen: string) {
