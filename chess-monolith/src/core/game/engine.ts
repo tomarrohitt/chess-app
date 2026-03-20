@@ -50,6 +50,8 @@ export async function processMove(
 
   await cancelTimer(gameId);
 
+  await redis.del(Keys.drawOffer(gameId));
+
   if (isTimeout) {
     const winnerId = isWhiteTurn ? state.black.id : state.white.id;
     const status = GameStatus.TIME_OUT;
@@ -239,8 +241,7 @@ export async function getSpectatorState(
     !gameState.blackUser ||
     !gameState.fen
   )
-
-    return null
+    return null;
 
   const now = Date.now();
   const lastMoveAt = parseInt(gameState.lastMoveTimestamp || "0", 10);

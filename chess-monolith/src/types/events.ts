@@ -1,5 +1,10 @@
 import * as z from "zod";
-import { RematchOfferStateSchema, WsMessageType } from "./types";
+import {
+  GameIdOnlySchema,
+  MakeMoveSchema,
+  RematchRequestSchema,
+  WsMessageType,
+} from "./types";
 
 const EmptyPayload = z.undefined();
 
@@ -20,23 +25,6 @@ export const JoinQueueSchema = z.object({
     "60+0",
     "90+30",
   ]),
-});
-
-export const MakeMoveSchema = z.object({
-  gameId: z.uuid(),
-  from: z.string().regex(/^[a-h][1-8]$/),
-  to: z.string().regex(/^[a-h][1-8]$/),
-  promotion: z.enum(["q", "r", "b", "n"]).optional(),
-});
-
-export const GameIdOnlySchema = z.object({
-  gameId: z.uuid(),
-});
-
-export const RematchOfferRequestSchema = z.object({
-  gameId: z.string(),
-  opponentId: z.string(),
-  timeControl: z.string(),
 });
 
 export const WsMessageSchema = z.discriminatedUnion("type", [
@@ -70,15 +58,15 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal(WsMessageType.OFFER_REMATCH),
-    payload: RematchOfferRequestSchema,
+    payload: RematchRequestSchema,
   }),
   z.object({
     type: z.literal(WsMessageType.ACCEPT_REMATCH),
-    payload: RematchOfferRequestSchema,
+    payload: RematchRequestSchema,
   }),
   z.object({
     type: z.literal(WsMessageType.DECLINE_REMATCH),
-    payload: RematchOfferRequestSchema,
+    payload: RematchRequestSchema,
   }),
   z.object({
     type: z.literal(WsMessageType.LEAVE_QUEUE),

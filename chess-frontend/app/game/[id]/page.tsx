@@ -16,14 +16,10 @@ export default async function GamePage({
 
   let initialGameData = null;
 
-  try {
-    const res = await api(`/games/${id}`);
-    const json = await res.json();
-    if (json.success) {
-      initialGameData = json.data;
-    }
-  } catch (error) {
-    console.log({ error });
+  const res = await api(`/games/${id}`);
+  const json = await res.json();
+  if (json.success) {
+    initialGameData = json.data;
   }
 
   if (initialGameData) {

@@ -137,6 +137,8 @@ export const useGameStore = create<GameStore>((set) => ({
       if (!state.activeGame || state.activeGame.gameId !== p.gameId)
         return state;
       return {
+        drawOffer: null,
+        drawOfferSent: null,
         activeGame: {
           ...state.activeGame,
           fen: p.fen,

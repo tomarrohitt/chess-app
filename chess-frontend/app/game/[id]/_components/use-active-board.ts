@@ -4,7 +4,7 @@ import {
   SquareHandlerArgs,
   fenStringToPositionObject,
 } from "react-chessboard";
-import { Chess } from "chess.js";
+import { Chess, Square } from "chess.js";
 import { useSocket } from "@/store/socket-provider";
 import { COLOR, ActiveGame, GameOverState } from "@/types/chess";
 import { playAudio } from "@/lib/audio";
@@ -19,7 +19,14 @@ export interface UseActiveBoardProps {
   isViewingHistory?: boolean;
 }
 
-function buildPositionObject(displayedFen: string, premoves: any[]) {
+export interface Premove {
+  sourceSquare: string;
+  targetSquare: string;
+  piece?: string;
+  promotion?: string;
+}
+
+function buildPositionObject(displayedFen: string, premoves: Premove[]) {
   const pos = fenStringToPositionObject(displayedFen, 8, 8) as Record<
     string,
     { pieceType: string }
@@ -39,7 +46,7 @@ function buildPositionObject(displayedFen: string, premoves: any[]) {
 
 function buildCombinedOptionSquares(
   optionSquares: Record<string, React.CSSProperties>,
-  premoves: any[],
+  premoves: Premove[],
 ) {
   const styles: Record<string, React.CSSProperties> = { ...optionSquares };
   for (const premove of premoves) {
@@ -57,48 +64,9 @@ function buildCombinedOptionSquares(
   return styles;
 }
 
-function isPremoveLegal(
-  source: string,
-  target: string,
-  displayedFen: string,
-  isWhite: boolean,
-  premovesRef: React.MutableRefObject<any[]>,
-) {
-  const tempGame = new Chess();
-  try {
-    let fenParts = displayedFen.split(" ");
-    fenParts[1] = isWhite ? "w" : "b";
-    fenParts[3] = "-";
-    tempGame.load(fenParts.join(" "));
-    for (const pm of premovesRef.current) {
-      const p = tempGame.get(pm.sourceSquare as any);
-      if (p) {
-        tempGame.remove(pm.sourceSquare as any);
-        tempGame.put(p, pm.targetSquare as any);
-      }
-    }
-
-    let moves = tempGame.moves({ verbose: true });
-    if (moves.some((m) => m.from === source && m.to === target)) return true;
-
-    if (tempGame.get(target as any)?.type !== "k") {
-      tempGame.remove(target as any);
-      moves = tempGame.moves({ verbose: true });
-      if (moves.some((m) => m.from === source && m.to === target)) return true;
-      const enemyColor = isWhite ? "b" : "w";
-      tempGame.put({ type: "p", color: enemyColor }, target as any);
-      moves = tempGame.moves({ verbose: true });
-      if (moves.some((m) => m.from === source && m.to === target)) return true;
-    }
-  } catch {
-    return false;
-  }
-  return false;
-}
-
 function getValidMoveOptions(game: Chess, square: string) {
   const moves = game.moves({
-    square: square as any,
+    square: square as Square,
     verbose: true,
   });
 
@@ -107,8 +75,8 @@ function getValidMoveOptions(game: Chess, square: string) {
   const newSquares: Record<string, React.CSSProperties> = {};
   for (const move of moves) {
     const isCapture =
-      game.get(move.to as any) &&
-      game.get(move.to as any)?.color !== game.get(square as any)?.color;
+      game.get(move.to as Square) &&
+      game.get(move.to as Square)?.color !== game.get(square as Square)?.color;
 
     newSquares[move.to] = {
       background: isCapture
@@ -146,8 +114,8 @@ export function useActiveBoard({
     isPremove?: boolean;
   } | null>(null);
 
-  const [premoves, setPremoves] = useState<any[]>([]);
-  const premovesRef = useRef<any[]>([]);
+  const [premoves, setPremoves] = useState<Premove[]>([]);
+  const premovesRef = useRef<Premove[]>([]);
   const lastProcessedFen = useRef<string | null>(null);
   const prevRejectedReason = useRef<string | null>(null);
 
@@ -261,7 +229,9 @@ export function useActiveBoard({
     if (turnColor !== playerColor) {
       if (!moveFrom) {
         const pieceStr =
-          typeof piece === "string" ? piece : (piece as any)?.pieceType;
+          typeof piece === "string"
+            ? piece
+            : (piece as { pieceType?: string })?.pieceType;
         if (pieceStr && pieceStr[0] === (isWhite ? "w" : "b")) {
           setMoveFrom(square);
           setOptionSquares({
@@ -272,30 +242,23 @@ export function useActiveBoard({
       }
 
       if (moveFrom !== square) {
-        if (
-          isPremoveLegal(moveFrom, square, displayedFen, isWhite, premovesRef)
-        ) {
-          const pieceStr = position[moveFrom]?.pieceType;
-          const isPawn = pieceStr && pieceStr[1] === "P";
-          const isPromotion =
-            isPawn && (square[1] === "8" || square[1] === "1");
+        const pieceStr = position[moveFrom]?.pieceType;
+        const isPawn = pieceStr && pieceStr[1] === "P";
+        const isPromotion = isPawn && (square[1] === "8" || square[1] === "1");
 
-          if (isPromotion) {
-            setPromotionMove({
-              sourceSquare: moveFrom,
-              targetSquare: square,
-              isPremove: true,
-            });
-          } else {
-            premovesRef.current.push({
-              sourceSquare: moveFrom,
-              targetSquare: square,
-              piece: pieceStr,
-            });
-            setPremoves([...premovesRef.current]);
-          }
+        if (isPromotion) {
+          setPromotionMove({
+            sourceSquare: moveFrom,
+            targetSquare: square,
+            isPremove: true,
+          });
         } else {
-          playIllegalMoveSound();
+          premovesRef.current.push({
+            sourceSquare: moveFrom,
+            targetSquare: square,
+            piece: pieceStr,
+          });
+          setPremoves([...premovesRef.current]);
         }
       }
       setMoveFrom("");
@@ -308,7 +271,7 @@ export function useActiveBoard({
       return;
     }
 
-    const moves = game.moves({ square: moveFrom as any, verbose: true });
+    const moves = game.moves({ square: moveFrom as Square, verbose: true });
     const foundMove = moves.find((m) => m.from === moveFrom && m.to === square);
 
     if (!foundMove) {
@@ -344,9 +307,8 @@ export function useActiveBoard({
     }
   }
 
-  const onPieceDrop = (args: any) => {
-    const { sourceSquare, targetSquare, piece } =
-      args as PieceDropHandlerArgs & { piece?: any };
+  const onPieceDrop = (args: PieceDropHandlerArgs & { piece?: unknown }) => {
+    const { sourceSquare, targetSquare, piece } = args;
     if (
       !isPlayer ||
       isViewingHistory ||
@@ -358,7 +320,10 @@ export function useActiveBoard({
     const turnColor = game.turn() === "w" ? COLOR.WHITE : COLOR.BLACK;
     const playerColor = isWhite ? COLOR.WHITE : COLOR.BLACK;
 
-    const pieceStr = typeof piece === "string" ? piece : piece?.pieceType;
+    const pieceStr =
+      typeof piece === "string"
+        ? piece
+        : (piece as { pieceType?: string })?.pieceType;
     const pieceColor = pieceStr
       ? pieceStr[0] === "w"
         ? COLOR.WHITE
@@ -368,33 +333,21 @@ export function useActiveBoard({
     if (pieceColor !== playerColor) return false;
 
     if (turnColor !== playerColor) {
-      if (
-        isPremoveLegal(
+      const isPawn = pieceStr && pieceStr[1] === "P";
+      const isPromotion =
+        isPawn && (targetSquare[1] === "8" || targetSquare[1] === "1");
+
+      if (isPromotion) {
+        setPromotionMove({ sourceSquare, targetSquare, isPremove: true });
+      } else {
+        premovesRef.current.push({
           sourceSquare,
           targetSquare,
-          displayedFen,
-          isWhite,
-          premovesRef,
-        )
-      ) {
-        const isPawn = pieceStr && pieceStr[1] === "P";
-        const isPromotion =
-          isPawn && (targetSquare[1] === "8" || targetSquare[1] === "1");
-
-        if (isPromotion) {
-          setPromotionMove({ sourceSquare, targetSquare, isPremove: true });
-        } else {
-          premovesRef.current.push({
-            sourceSquare,
-            targetSquare,
-            piece: pieceStr,
-          });
-          setPremoves([...premovesRef.current]);
-        }
-        return true;
+          piece: pieceStr,
+        });
+        setPremoves([...premovesRef.current]);
       }
-      playIllegalMoveSound();
-      return false;
+      return true;
     }
 
     try {

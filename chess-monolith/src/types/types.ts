@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 export enum WsMessageType {
   JOIN_QUEUE = "JOIN_QUEUE",
@@ -65,6 +65,17 @@ export enum COLOR {
   BLACK = "black",
 }
 
+export const MakeMoveSchema = z.object({
+  gameId: z.uuid(),
+  from: z.string().regex(/^[a-h][1-8]$/),
+  to: z.string().regex(/^[a-h][1-8]$/),
+  promotion: z.enum(["q", "r", "b", "n"]).optional(),
+});
+
+export const GameIdOnlySchema = z.object({
+  gameId: z.uuid(),
+});
+
 export const PlayerInfoSchema = z.object({
   id: z.string(),
   username: z.string(),
@@ -74,17 +85,24 @@ export const PlayerInfoSchema = z.object({
 
 export type PlayerInfo = z.infer<typeof PlayerInfoSchema>;
 
-export const RematchOfferStateSchema = z.object({
+export const RematchRequestSchema = z.object({
+  gameId: z.string(),
+  timeControl: z.string(),
+});
+
+export type RematchRequest = z.infer<typeof RematchRequestSchema>;
+
+export const RematchEventSchema = z.object({
   gameId: z.string(),
   offeredBy: PlayerInfoSchema,
   timeControl: z.string(),
 });
 
-export type RematchOfferState = z.infer<typeof RematchOfferStateSchema>;
+export type RematchEvent = z.infer<typeof RematchEventSchema>;
 
 export const GameUserSchema = PlayerInfoSchema.extend({
   timeLeftMs: z.number().optional(),
-  capturedPieces: z.array(z.string()).default([]).optional(),
+  capturedPieces: z.array(z.string()).default([]),
 });
 
 export type GameUser = z.infer<typeof GameUserSchema>;

@@ -3,42 +3,32 @@
 import { useGameStore } from "@/store/use-game-store";
 import { useSocket } from "@/store/socket-provider";
 import { MoveList } from "./move-list";
-import { DRAW_OFFER } from "@/types/chess";
+import { ActiveGame, DRAW_OFFER, GameOverState } from "@/types/chess";
 import { Dispatch, SetStateAction } from "react";
+import { RematchToast } from "./rematch-toast";
 
 interface GameSidebarProps {
+  activeGame: ActiveGame;
   isPlayer: boolean;
-  opponentId: string | undefined;
   setSpectatorFlipped: Dispatch<SetStateAction<boolean>>;
   currentMoveIndex?: number;
   onMoveClick?: (index: number) => void;
+  gameOver: GameOverState | null;
 }
 
 export function GameSidebar({
+  activeGame,
   isPlayer,
-  opponentId,
   setSpectatorFlipped,
   currentMoveIndex,
   onMoveClick,
+  gameOver,
 }: GameSidebarProps) {
-  const {
-    activeGame,
-    gameOver,
-    drawOffer,
-    drawOfferSent,
-    rematchOffer,
-    rematchOfferSent,
-  } = useGameStore();
+  const { drawOffer, drawOfferSent, rematchOffer, rematchOfferSent } =
+    useGameStore();
 
-  const {
-    resign,
-    offerDraw,
-    acceptDraw,
-    declineDraw,
-    offerRematch,
-    acceptRematch,
-    declineRematch,
-  } = useSocket();
+  const { resign, offerDraw, acceptDraw, declineDraw, offerRematch } =
+    useSocket();
 
   if (!activeGame) return null;
 
@@ -49,7 +39,6 @@ export function GameSidebar({
         timeControl={activeGame.timeControl}
         currentMoveIndex={currentMoveIndex}
         onMoveClick={onMoveClick}
-        state="playing"
       />
 
       {!isPlayer && (
@@ -116,7 +105,7 @@ export function GameSidebar({
       {isPlayer && gameOver && !rematchOfferSent && !rematchOffer && (
         <button
           onClick={() =>
-            offerRematch(activeGame.gameId, opponentId!, activeGame.timeControl)
+            offerRematch(activeGame.gameId, activeGame.timeControl)
           }
           className="w-full py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 shadow-lg text-sm font-bold transition-all duration-150 mt-2"
         >
@@ -138,39 +127,7 @@ export function GameSidebar({
         </div>
       )}
 
-      {isPlayer && !!rematchOffer && gameOver && (
-        <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg flex flex-col gap-3 mt-2">
-          <p className="text-sm text-zinc-300 text-center font-bold">
-            Opponent wants a rematch!
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() =>
-                acceptRematch(
-                  activeGame.gameId,
-                  opponentId!,
-                  activeGame.timeControl,
-                )
-              }
-              className="flex-1 py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded transition-colors"
-            >
-              Accept
-            </button>
-            <button
-              onClick={() =>
-                declineRematch(
-                  activeGame.gameId,
-                  opponentId!,
-                  activeGame.timeControl,
-                )
-              }
-              className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold rounded transition-colors"
-            >
-              Decline
-            </button>
-          </div>
-        </div>
-      )}
+      {rematchOffer && <RematchToast rematchOffer={rematchOffer} />}
     </div>
   );
 }

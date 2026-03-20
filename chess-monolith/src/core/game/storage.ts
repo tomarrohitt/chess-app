@@ -43,14 +43,23 @@ export async function flushGameToDatabase(
   const scoreA =
     winnerId === whiteUser.id ? 1 : winnerId === blackUser.id ? 0 : 0.5;
 
-  const { diffA, diffB, newRatingA, newRatingB } = calculateNewRatings(
-    whiteUser.rating,
-    blackUser.rating,
-    scoreA,
-  );
+  const isAbandoned = status === GameStatus.ABANDONED;
+  let diffA = 0,
+    diffB = 0;
+  let newRatingA = whiteUser.rating,
+    newRatingB = blackUser.rating;
 
-  const resultSymbol =
-    winnerId === whiteUser.id
+  if (!isAbandoned) {
+    const elo = calculateNewRatings(whiteUser.rating, blackUser.rating, scoreA);
+    diffA = elo.diffA;
+    diffB = elo.diffB;
+    newRatingA = elo.newRatingA;
+    newRatingB = elo.newRatingB;
+  }
+
+  const resultSymbol = isAbandoned
+    ? "*"
+    : winnerId === whiteUser.id
       ? "1-0"
       : winnerId === blackUser.id
         ? "0-1"
@@ -116,7 +125,8 @@ export async function flushGameToDatabase(
           wins: winnerId === whiteUser.id ? sql`${user.wins} + 1` : user.wins,
           losses:
             winnerId === blackUser.id ? sql`${user.losses} + 1` : user.losses,
-          draws: !winnerId ? sql`${user.draws} + 1` : user.draws,
+          draws:
+            !winnerId && !isAbandoned ? sql`${user.draws} + 1` : user.draws,
         })
         .where(eq(user.id, whiteUser.id));
 
@@ -127,7 +137,8 @@ export async function flushGameToDatabase(
           wins: winnerId === blackUser.id ? sql`${user.wins} + 1` : user.wins,
           losses:
             winnerId === whiteUser.id ? sql`${user.losses} + 1` : user.losses,
-          draws: !winnerId ? sql`${user.draws} + 1` : user.draws,
+          draws:
+            !winnerId && !isAbandoned ? sql`${user.draws} + 1` : user.draws,
         })
         .where(eq(user.id, blackUser.id));
     });

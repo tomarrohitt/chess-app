@@ -21,8 +21,8 @@ export function useWebSocket(user: User) {
     userRef.current = user;
   }, [user]);
 
-  const send = useCallback((type: WsMessageType, payload?: any) => {
-    const message: { type: WsMessageType; payload?: any } = { type };
+  const send = useCallback((type: WsMessageType, payload?: unknown) => {
+    const message: { type: WsMessageType; payload?: unknown } = { type };
     if (payload !== undefined && payload !== null) {
       message.payload = payload;
     }
@@ -141,8 +141,15 @@ export function useWebSocket(user: User) {
     return () => {
       if (wsRef.current) {
         console.log("[WS] Component unmounted, closing socket.");
+        wsRef.current.onopen = null;
+        wsRef.current.onerror = null;
+        wsRef.current.onclose = null;
+        wsRef.current.onmessage = null;
         wsRef.current.close(1000, "Component unmounted");
         wsRef.current = null;
+        useGameStore
+          .getState()
+          .setConnection(WS_CONNECTION_STATUS.DISCONNECTED);
       }
     };
   }, []);
@@ -167,11 +174,6 @@ export function useWebSocket(user: User) {
         const store = useGameStore.getState();
         send(WsMessageType.OFFER_DRAW, { gameId });
         store.setDrawOfferSent(DRAW_OFFER.SENT);
-        setTimeout(() => {
-          if (useGameStore.getState().drawOfferSent === DRAW_OFFER.SENT) {
-            store.setDrawOfferSent(null);
-          }
-        }, 20000);
       },
       acceptDraw: (gameId: string) => {
         send(WsMessageType.ACCEPT_DRAW, { gameId });
@@ -181,36 +183,23 @@ export function useWebSocket(user: User) {
         send(WsMessageType.DECLINE_DRAW, { gameId });
         useGameStore.getState().setDrawOffer(null);
       },
-      offerRematch: (
-        gameId: string,
-        opponentId: string,
-        timeControl: string,
-      ) => {
+      offerRematch: (gameId: string, timeControl: string) => {
         const store = useGameStore.getState();
-        send(WsMessageType.OFFER_REMATCH, { gameId, opponentId, timeControl });
+        send(WsMessageType.OFFER_REMATCH, { gameId, timeControl });
         store.setRematchOfferSent(DRAW_OFFER.SENT);
         setTimeout(() => {
           if (useGameStore.getState().rematchOfferSent === DRAW_OFFER.SENT) {
             store.setRematchOfferSent(null);
           }
-        }, 60000);
+        }, 15000);
       },
-      acceptRematch: (
-        gameId: string,
-        opponentId: string,
-        timeControl: string,
-      ) => {
-        send(WsMessageType.ACCEPT_REMATCH, { gameId, opponentId, timeControl });
+      acceptRematch: (gameId: string, timeControl: string) => {
+        send(WsMessageType.ACCEPT_REMATCH, { gameId, timeControl });
         useGameStore.getState().setRematchOffer(null);
       },
-      declineRematch: (
-        gameId: string,
-        opponentId: string,
-        timeControl: string,
-      ) => {
+      declineRematch: (gameId: string, timeControl: string) => {
         send(WsMessageType.DECLINE_REMATCH, {
           gameId,
-          opponentId,
           timeControl,
         });
         useGameStore.getState().setRematchOffer(null);

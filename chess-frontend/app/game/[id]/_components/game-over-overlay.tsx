@@ -40,8 +40,7 @@ export function GameOverOverlay({
 }) {
   const { resetGame, activeGame, rematchOffer, rematchOfferSent } =
     useGameStore((s) => s);
-  const { joinQueue, offerRematch, acceptRematch, declineRematch } =
-    useSocket();
+  const { joinQueue, offerRematch } = useSocket();
   const { color, bg, border, button } = getResult(gameOver, userId);
 
   const winnerColor = gameOver.winnerId
@@ -99,15 +98,7 @@ export function GameOverOverlay({
             <button
               onClick={() => {
                 if (activeGame) {
-                  const opponentId =
-                    activeGame.white.id === userId
-                      ? activeGame.black.id
-                      : activeGame.white.id;
-                  offerRematch(
-                    activeGame.gameId,
-                    opponentId,
-                    activeGame.timeControl,
-                  );
+                  offerRematch(activeGame.gameId, activeGame.timeControl);
                 }
               }}
               className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-all"
@@ -115,7 +106,7 @@ export function GameOverOverlay({
               Rematch
             </button>
           )}
-          {rematchOfferSent === "sent" && (
+          {rematchOfferSent === DRAW_OFFER.SENT && (
             <button
               disabled
               className="flex-1 py-3 bg-zinc-600 text-zinc-300 font-bold rounded-xl shadow-lg cursor-not-allowed"

@@ -96,6 +96,21 @@ export const PlayerInfoSchema = z.object({
 });
 export type PlayerInfo = z.infer<typeof PlayerInfoSchema>;
 
+export const DrawOfferStateSchema = z.object({
+  gameId: z.string(),
+  offeredBy: z.string(),
+});
+
+export const RematchOfferStateSchema = z.object({
+  gameId: z.string(),
+  offeredBy: PlayerInfoSchema,
+  timeControl: z.string(),
+});
+
+export type RematchOfferState = z.infer<typeof RematchOfferStateSchema>;
+
+export type DrawOfferState = z.infer<typeof DrawOfferStateSchema>;
+
 export const GameStateUserSchema = PlayerInfoSchema.extend({
   timeLeftMs: z.number(),
   capturedPieces: z.array(z.string()).optional().default([]),
@@ -149,21 +164,6 @@ export const GameOverStateSchema = z.object({
   reason: z.string().optional(),
 });
 export type GameOverState = z.infer<typeof GameOverStateSchema>;
-
-export const DrawOfferStateSchema = z.object({
-  gameId: z.string(),
-  offeredBy: z.string().optional(),
-});
-
-export const RematchOfferStateSchema = z.object({
-  gameId: z.string(),
-  offeredBy: PlayerInfoSchema,
-  timeControl: z.string(),
-});
-
-export type RematchOfferState = z.infer<typeof RematchOfferStateSchema>;
-
-export type DrawOfferState = z.infer<typeof DrawOfferStateSchema>;
 
 export const ServerMessageSchema = z.discriminatedUnion("type", [
   z.object({

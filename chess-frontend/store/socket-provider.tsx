@@ -1,5 +1,13 @@
 "use client";
-import { createContext, useContext, useEffect, useRef, useMemo } from "react";
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useMemo,
+  useState,
+} from "react";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useGameStore } from "@/store/use-game-store";
 import { useRouter, usePathname } from "next/navigation";
@@ -18,21 +26,9 @@ type SocketContextType = {
   offerDraw: (gameId: string) => void;
   declineDraw: (gameId: string) => void;
   acceptDraw: (gameId: string) => void;
-  offerRematch: (
-    gameId: string,
-    opponentId: string,
-    timeControl: string,
-  ) => void;
-  declineRematch: (
-    gameId: string,
-    opponentId: string,
-    timeControl: string,
-  ) => void;
-  acceptRematch: (
-    gameId: string,
-    opponentId: string,
-    timeControl: string,
-  ) => void;
+  offerRematch: (gameId: string, timeControl: string) => void;
+  declineRematch: (gameId: string, timeControl: string) => void;
+  acceptRematch: (gameId: string, timeControl: string) => void;
   spectateGame: (gameId: string) => void;
   leaveSpectator: (gameId: string) => void;
 };
@@ -50,21 +46,42 @@ export function SocketProvider({
   const pathname = usePathname();
   const wsApi = useWebSocket(user);
   const activeGameId = useGameStore((s) => s.activeGame?.gameId);
+  const queueStatus = useGameStore((s) => s.queueStatus);
   const redirectedRef = useRef<string | null>(null);
+  const wasInQueue = useRef(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
   useEffect(() => {
     wsApi.connect();
   }, [wsApi.connect]);
 
-  console.log({ activeGameId });
+  useEffect(() => {
+    if (queueStatus === "waiting") {
+      wasInQueue.current = true;
+    }
+  }, [queueStatus]);
+
+  useEffect(() => {
+    if (pathname === `/game/${activeGameId}`) {
+      setIsTransitioning(false);
+    }
+  }, [pathname, activeGameId]);
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (isTransitioning) {
+      timeout = setTimeout(() => setIsTransitioning(false), 5000);
+    }
+    return () => clearTimeout(timeout);
+  }, [isTransitioning]);
 
   useEffect(() => {
     if (!activeGameId) return;
     if (redirectedRef.current === activeGameId) return;
-    if (
-      pathname === `/game/${activeGameId}` ||
-      pathname === `/game/${activeGameId}/spectate`
-    )
+    if (pathname === `/game/${activeGameId}`) {
+      redirectedRef.current = activeGameId;
       return;
+    }
 
     const state = useGameStore.getState();
     const isPlayer =
@@ -73,7 +90,12 @@ export function SocketProvider({
 
     if (isPlayer) {
       redirectedRef.current = activeGameId;
-      router.push(`/game/${activeGameId}`);
+
+      if (wasInQueue.current || pathname.startsWith("/game/")) {
+        wasInQueue.current = false;
+        setIsTransitioning(true);
+        router.push(`/game/${activeGameId}`);
+      }
     }
   }, [activeGameId, pathname, router]);
 
@@ -97,7 +119,18 @@ export function SocketProvider({
 
   return (
     <SocketContext.Provider value={contextValue}>
-      {children}
+      {isTransitioning ? (
+        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">
+          <div className="flex flex-col items-center gap-4 animate-pulse">
+            <span className="text-6xl drop-shadow-lg select-none">♟</span>
+            <p className="text-zinc-400 font-mono text-sm font-semibold tracking-widest uppercase">
+              Entering Game...
+            </p>
+          </div>
+        </div>
+      ) : (
+        children
+      )}
     </SocketContext.Provider>
   );
 }

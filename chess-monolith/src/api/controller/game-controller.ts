@@ -5,8 +5,7 @@ import {
   getUserMatchHistory,
 } from "../repository/game-repository";
 import { toFetchHeaders } from "../../lib/utils/to-fetch-headers";
-import { GameIdOnlySchema } from "../../types/events";
-import { success } from "zod";
+import { GameIdOnlySchema } from "../../types/types";
 
 export async function getUserMatchDetail(req: Request, res: Response) {
   const { gameId } = req.params;

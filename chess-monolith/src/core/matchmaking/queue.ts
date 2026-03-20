@@ -7,6 +7,7 @@ import {
   GameStatus,
   GameUser,
   PLAYER_COLOR,
+  PlayerInfo,
 } from "../../types/types";
 import { Keys } from "../../lib/keys";
 import { db } from "../../infrastructure/db/db";
@@ -132,8 +133,8 @@ export async function handleLeaveQueue(userId: string): Promise<void> {
 }
 
 export async function createNewMatch(
-  player1: GameUser,
-  player2: GameUser,
+  player1: PlayerInfo,
+  player2: PlayerInfo,
   timeControl: string,
   forceP1White?: boolean,
 ): Promise<void> {

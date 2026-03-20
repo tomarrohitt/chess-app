@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 interface MoveListProps {
   pgn: string;
   timeControl: string;
-  state: "playing" | "finished";
   currentMoveIndex?: number;
   onMoveClick?: (index: number) => void;
 }
@@ -25,29 +24,23 @@ interface MovePair {
 interface MoveButtonProps {
   move: MoveDetail;
   isActive: boolean;
-  isWhite?: boolean;
   onClick?: (index: number) => void;
 }
 
-function MoveButton({ move, isActive, isWhite, onClick }: MoveButtonProps) {
+function MoveButton({ move, isActive, onClick }: MoveButtonProps) {
   return (
     <div
       className={cn(
-        "ml-3 flex justify-between items-center px-1.5 py-1 rounded transition-colors group/m w-20 font-bold cursor-pointer",
-        isActive
-          ? "bg-amber-500 text-zinc-900"
-          : isWhite
-            ? "bg-gray-400 text-zinc-800 hover:bg-gray-300"
-            : "bg-gray-800 text-zinc-200 hover:bg-gray-700",
+        "ml-3 flex justify-between items-center px-1.5 py-1 rounded transition-colors group/m w-30 font-bold cursor-pointer text-white",
+        isActive && "bg-gray-800",
       )}
+      data-active={isActive ? "true" : undefined}
       onClick={() => onClick?.(move.index)}
     >
       <span>{move.san}</span>
-      {move.timeSpent && (
-        <span className="text-xs font-mono opacity-80 group-hover/m:opacity-100 transition-opacity">
-          {move.timeSpent}
-        </span>
-      )}
+      <span className="text-xs font-mono opacity-80 group-hover/m:opacity-100 transition-opacity">
+        {move.timeSpent}
+      </span>
     </div>
   );
 }
@@ -130,7 +123,6 @@ function parsePgnWithTimes(pgn: string, timeControl: string): MovePair[] {
 export function MoveList({
   pgn,
   timeControl,
-  state = "playing",
   currentMoveIndex,
   onMoveClick,
 }: MoveListProps) {
@@ -138,27 +130,41 @@ export function MoveList({
   const pairs = parsePgnWithTimes(pgn, timeControl);
 
   useEffect(() => {
-    if (state === "playing" && scrollContainerRef.current) {
+    if (!scrollContainerRef.current) return;
+
+    if (currentMoveIndex === -1) {
+      scrollContainerRef.current.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    const activeMoveElement = scrollContainerRef.current.querySelector(
+      '[data-active="true"]',
+    );
+
+    if (activeMoveElement) {
+      activeMoveElement.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    } else {
       scrollContainerRef.current.scrollTo({
         top: scrollContainerRef.current.scrollHeight,
         behavior: "smooth",
       });
     }
-  }, [pairs.length, state]);
+  }, [pairs.length, currentMoveIndex]);
 
   return (
-    <div
-      className={cn(
-        "flex flex-col overflow-hidden min-h-0 w-100",
-        state === "finished" ? "h-80" : "h-140 scroll-smooth",
-      )}
-    >
-      <p className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase px-1 pb-2 shrink-0">
+    <div className="flex flex-col overflow-hidden w-100 h-80 scroll-smooth">
+      <p className="text-zinc-800 text-[10px] font-bold tracking-widest uppercase px-1 pb-2 shrink-0">
         Move History
       </p>
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-0.5 scrollbar-thin bg-gray-700 rounded-md"
+        className="flex-1 overflow-y-auto p-3 space-y-0.5 bg-gray-700 rounded-md scrollbar-thin [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-none hover:[&::-webkit-scrollbar-thumb]:bg-gray-400"
       >
         {pairs.length === 0 ? (
           <p className="text-zinc-200 text-xs italic px-1 py-4 text-center">
@@ -168,28 +174,29 @@ export function MoveList({
           pairs.map((pair) => (
             <div
               key={pair.number}
-              className="flex items-center text-sm group py-2"
+              className="flex items-center cursor-pointer text-sm group py-0.5 gap-x-3"
             >
-              <span className="w-8 text-zinc-200 text-[10px] tabular-nums text-right pr-2">
+              <span className="w-8 text-zinc-200 text-[10px] tabular-nums text-right pr-2 cursor-default select-none">
                 {pair.number}.
               </span>
 
-              <MoveButton
-                move={pair.white}
-                isActive={currentMoveIndex === pair.white.index}
-                isWhite={true}
-                onClick={onMoveClick}
-              />
-
-              {pair.black ? (
+              <div className="flex justify-between flex-1">
                 <MoveButton
-                  move={pair.black}
-                  isActive={currentMoveIndex === pair.black.index}
+                  move={pair.white}
+                  isActive={currentMoveIndex === pair.white.index}
                   onClick={onMoveClick}
                 />
-              ) : (
-                <div className="flex-1" />
-              )}
+
+                {pair.black ? (
+                  <MoveButton
+                    move={pair.black}
+                    isActive={currentMoveIndex === pair.black.index}
+                    onClick={onMoveClick}
+                  />
+                ) : (
+                  <div className="ml-3 px-1.5 py-1 w-30 " />
+                )}
+              </div>
             </div>
           ))
         )}
