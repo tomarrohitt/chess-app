@@ -52,16 +52,6 @@ const TIME_CONTROLS = [
 export function LobbyClient({ user }: { user: User }) {
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl select-none">♟</span>
-          <span className="font-bold text-lg tracking-tight">Chess</span>
-        </div>
-        <div className="text-sm text-gray-800 font-semibold">
-          Playing as{" "}
-          <span className="text-gray-800 font-semibold">{user.username}</span>
-        </div>
-      </header>
       <ActiveGameBanner />
 
       <main className="flex-1 flex items-center justify-center p-8">

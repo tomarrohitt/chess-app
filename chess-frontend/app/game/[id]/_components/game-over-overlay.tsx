@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useGameStore } from "@/store/use-game-store";
 import { useSocket } from "@/store/socket-provider";
 import { DRAW_OFFER, GameOverState, GameStatus } from "@/types/chess";
@@ -41,6 +42,10 @@ export function GameOverOverlay({
   const { resetGame, activeGame, rematchOffer, rematchOfferSent } =
     useGameStore((s) => s);
   const { joinQueue, offerRematch } = useSocket();
+  const [isVisible, setIsVisible] = useState(true);
+
+  if (!isVisible) return null;
+
   const { color, bg, border, button } = getResult(gameOver, userId);
 
   const winnerColor = gameOver.winnerId
@@ -49,6 +54,8 @@ export function GameOverOverlay({
       : "Black"
     : null;
 
+  const isPlayer =
+    userId === activeGame?.white.id || userId === activeGame?.black.id;
   let subtitle = "Game drawn";
   if (gameOver.status === GameStatus.ABANDONED) {
     subtitle = "Game aborted";
@@ -59,8 +66,29 @@ export function GameOverOverlay({
   return (
     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center rounded-sm z-50">
       <div
-        className={`border ${border} ${bg} rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl text-center w-[90%] max-w-85 transform transition-all scale-100`}
+        className={`relative border ${border} ${bg} rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl text-center w-[90%] max-w-85 transform transition-all scale-100`}
       >
+        <button
+          onClick={() => setIsVisible(false)}
+          className="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors p-1"
+          aria-label="Close"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+
         <div className="space-y-1">
           <h2
             className={`text-4xl font-black tracking-tight uppercase ${color}`}
@@ -81,48 +109,50 @@ export function GameOverOverlay({
 
         <div className="w-full h-px bg-white/10 my-2" />
 
-        <div className="flex w-full gap-2 mt-2">
-          <button
-            onClick={() => {
-              const timeControl = activeGame?.timeControl;
-              resetGame();
-              if (timeControl) {
-                joinQueue(timeControl);
-              }
-            }}
-            className={`flex-1 py-3 font-bold rounded-xl transition-all duration-200 shadow-lg ${button}`}
-          >
-            New Game
-          </button>
-          {!rematchOffer && !rematchOfferSent && (
+        {isPlayer && (
+          <div className="flex w-full gap-2 mt-2">
             <button
               onClick={() => {
-                if (activeGame) {
-                  offerRematch(activeGame.gameId, activeGame.timeControl);
+                const timeControl = activeGame?.timeControl;
+                resetGame();
+                if (timeControl) {
+                  joinQueue(timeControl);
                 }
               }}
-              className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-all"
+              className={`flex-1 py-3 font-bold rounded-xl transition-all duration-200 shadow-lg ${button}`}
             >
-              Rematch
+              New Game
             </button>
-          )}
-          {rematchOfferSent === DRAW_OFFER.SENT && (
-            <button
-              disabled
-              className="flex-1 py-3 bg-zinc-600 text-zinc-300 font-bold rounded-xl shadow-lg cursor-not-allowed"
-            >
-              Sent...
-            </button>
-          )}
-          {rematchOfferSent === DRAW_OFFER.DECLINE && (
-            <button
-              disabled
-              className="flex-1 py-3 bg-rose-950 text-rose-400 font-bold rounded-xl shadow-lg cursor-not-allowed"
-            >
-              Declined
-            </button>
-          )}
-        </div>
+            {!rematchOffer && !rematchOfferSent && (
+              <button
+                onClick={() => {
+                  if (activeGame) {
+                    offerRematch(activeGame.gameId, activeGame.timeControl);
+                  }
+                }}
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-all"
+              >
+                Rematch
+              </button>
+            )}
+            {rematchOfferSent === DRAW_OFFER.SENT && (
+              <button
+                disabled
+                className="flex-1 py-3 bg-zinc-600 text-zinc-300 font-bold rounded-xl shadow-lg cursor-not-allowed"
+              >
+                Sent...
+              </button>
+            )}
+            {rematchOfferSent === DRAW_OFFER.DECLINE && (
+              <button
+                disabled
+                className="flex-1 py-3 bg-rose-950 text-rose-400 font-bold rounded-xl shadow-lg cursor-not-allowed"
+              >
+                Declined
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

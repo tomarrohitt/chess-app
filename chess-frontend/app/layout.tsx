@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { SocketProvider } from "@/store/socket-provider";
 import { ConnectionStatus } from "./game/[id]/_components/connection-status";
 import { SearchingModal } from "@/components/game/searching-modal";
+import Navbar from "@/components/navbar/navbar";
 
 const raleway = Raleway({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -30,6 +31,7 @@ export default async function RootLayout({
           <SocketProvider user={user}>
             <ConnectionStatus />
             <SearchingModal />
+            <Navbar />
             {children}
           </SocketProvider>
         ) : (
