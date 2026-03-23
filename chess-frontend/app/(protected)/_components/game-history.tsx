@@ -67,7 +67,7 @@ export function GameHistory({
     <div className="flex flex-col w-full">
       <div className="flex items-center justify-between mb-5 px-1">
         <div>
-          <p className="font-mono text-[10px] text-amber-600/70 tracking-[0.18em] uppercase mb-1">
+          <p className="font-mono text-xs font-semibold text-amber-600/70 tracking-[0.18em] uppercase mb-1">
             Game history
           </p>
           <h2 className="font-serif text-xl font-light text-zinc-100 tracking-tight leading-none">
@@ -78,7 +78,7 @@ export function GameHistory({
           <span className="font-mono text-lg font-medium text-zinc-200 leading-none">
             {games.length}
           </span>
-          <span className="font-mono text-[9px] text-zinc-700 tracking-[0.14em] uppercase">
+          <span className="font-mono text-[10px] text-zinc-700 tracking-[0.14em] uppercase font-semibold">
             played
           </span>
         </div>
@@ -103,11 +103,11 @@ export function GameHistory({
           const opponent = isWhite ? game.black : game.white;
           const player = isWhite ? game.white : game.black;
 
-          let pillClass = "bg-zinc-900 text-zinc-600 border-zinc-800";
+          let pillClass = "bg-zinc-900 text-white border-zinc-800";
           let pillLabel = "—";
 
           if (abandoned) {
-            pillClass = "bg-zinc-900/60 text-zinc-700 border-zinc-800/40";
+            pillClass = "bg-zinc-900/60 text-white border-zinc-800/40";
             pillLabel = "—";
           } else if (won) {
             pillClass =
@@ -117,7 +117,7 @@ export function GameHistory({
             pillClass = "bg-rose-950/60 text-rose-400 border-rose-900/60";
             pillLabel = "L";
           } else if (draw) {
-            pillClass = "bg-zinc-900 text-zinc-500 border-zinc-700/50";
+            pillClass = "bg-zinc-900 text-white border-zinc-700/50";
             pillLabel = "D";
           }
 

@@ -194,7 +194,7 @@ export async function GameBoardWithHistory({ games }: { games: GameRecord[] }) {
   const draws = games.filter(
     (g) => g.result === "d" && g.status !== GameStatus.ABANDONED,
   ).length;
-  const total = wins + losses + draws || 1; // avoid divide-by-zero
+  const total = wins + losses + draws || 1;
 
   const player =
     games[0]?.white.id === currentUserId ? games[0].white : games[0]?.black;
@@ -204,7 +204,6 @@ export async function GameBoardWithHistory({ games }: { games: GameRecord[] }) {
       g.white.id === currentUserId ? g.white.matchRating : g.black.matchRating,
     ),
   );
-  const timeControl = games[0]?.timeControl;
   return (
     <div className="flex flex-col w-full">
       <div className="px-4 py-2 space-y-2">
@@ -214,11 +213,11 @@ export async function GameBoardWithHistory({ games }: { games: GameRecord[] }) {
               Your record
             </p>
             <h2 className="font-serif text-2xl font-light text-zinc-100 tracking-tight leading-none">
-              Recent games
+              {total} games
             </h2>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mt-4">
             <div className="flex flex-col items-center gap-0.5">
               <span className="font-mono text-xl font-medium leading-none text-emerald-400">
                 {wins}
