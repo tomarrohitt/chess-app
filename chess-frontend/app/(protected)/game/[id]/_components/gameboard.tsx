@@ -105,7 +105,7 @@ export function Gameboard({ gameId, user }: GameboardProps) {
 
   if (!activeGame || activeGame.gameId !== gameId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-zinc-950 text-white">
         <div className="flex flex-col items-center gap-4 animate-pulse">
           <span className="text-6xl drop-shadow-lg select-none">♟</span>
           <p className="text-zinc-400 font-mono text-sm font-semibold tracking-widest uppercase">
@@ -155,7 +155,7 @@ export function Gameboard({ gameId, user }: GameboardProps) {
   const isBottomActive = bottomColor === currentTurnStr;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-[calc(100vh-80px)] mt-2 flex items-center justify-center">
       <div className="flex gap-4 items-start w-full max-w-5xl">
         <div className="flex flex-col gap-2 min-w-0 flex-1 max-w-140">
           <PlayerArea

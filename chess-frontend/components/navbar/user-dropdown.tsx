@@ -51,13 +51,13 @@ export function UserDropdown({ user, onSignOut }: UserDropdownProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="group flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 transition-all duration-150 hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40 data-[state=open]:bg-zinc-800/70">
-          <Avatar className="h-8 w-8 rounded-lg ring-1 ring-zinc-700/60 transition-all group-hover:ring-amber-500/40">
+          <Avatar className="h-8 w-8 rounded-full ring-1 ring-zinc-700/60 transition-all group-hover:ring-amber-500/40">
             <AvatarImage
               src={user.avatar}
               alt={user.username}
               className="object-cover"
             />
-            <AvatarFallback className="rounded-lg bg-zinc-800 text-[11px] font-bold text-zinc-400">
+            <AvatarFallback className="rounded-full bg-zinc-800 text-[11px] font-bold text-zinc-400">
               {user.name
                 ?.split(" ")
                 .map((n) => n[0])
@@ -100,13 +100,13 @@ export function UserDropdown({ user, onSignOut }: UserDropdownProps) {
         className="w-64 rounded-xl border border-zinc-800 bg-zinc-900 p-0 shadow-2xl shadow-black/60 animate-in fade-in-0 zoom-in-95"
       >
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-800">
-          <Avatar className="h-11 w-11 rounded-xl ring-1 ring-zinc-700/60">
+          <Avatar className="h-11 w-11 rounded-full ring-1 ring-zinc-700/60">
             <AvatarImage
               src={user.avatar}
               alt={user.username}
               className="object-cover"
             />
-            <AvatarFallback className="rounded-xl bg-zinc-800 text-sm font-bold text-zinc-400">
+            <AvatarFallback className="rounded-full bg-zinc-800 text-sm font-bold text-zinc-400">
               {user.name
                 ?.split(" ")
                 .map((n) => n[0])
@@ -154,7 +154,6 @@ export function UserDropdown({ user, onSignOut }: UserDropdownProps) {
           </div>
         )}
 
-        {/* Menu items */}
         <div className="p-1.5">
           <DropdownMenuItem asChild>
             <Link
@@ -180,7 +179,7 @@ export function UserDropdown({ user, onSignOut }: UserDropdownProps) {
 
           <DropdownMenuItem
             onClick={onSignOut}
-            className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-rose-400 transition-colors hover:bg-rose-500/10 hover:text-rose-300 focus:bg-rose-500/10 focus:text-rose-300 focus:outline-none"
+            className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-rose-400 transition-colors hover:text-rose-300 focus:bg-rose-500/10 focus:text-rose-300 focus:outline-none"
           >
             <LogOut className="h-4 w-4" strokeWidth={2} />
             Sign Out

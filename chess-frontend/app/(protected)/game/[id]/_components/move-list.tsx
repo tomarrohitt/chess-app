@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Chess } from "chess.js";
-import { cn } from "@/lib/utils";
+import { cn, scrollClass } from "@/lib/utils";
 
 interface MoveListProps {
   pgn: string;
@@ -158,13 +158,15 @@ export function MoveList({
   }, [pairs.length, currentMoveIndex]);
 
   return (
-    <div className="flex flex-col overflow-hidden w-100 h-80 scroll-smooth">
-      <p className="text-zinc-800 text-[10px] font-bold tracking-widest uppercase px-1 pb-2 shrink-0">
+    <div className="flex flex-col overflow-hidden w-100 h-60 scroll-smooth">
+      <p className="text-zinc-300 text-[10px] font-bold tracking-widest uppercase px-1 pb-2 shrink-0 text-center">
         Move History
       </p>
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-3 space-y-0.5 bg-gray-700 rounded-md scrollbar-thin [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-none hover:[&::-webkit-scrollbar-thumb]:bg-gray-400"
+        className={cn(
+          "flex-1 overflow-y-auto p-2.5 space-y-0.5 bg-black-700 rounded-xs no-scrollbar",
+        )}
       >
         {pairs.length === 0 ? (
           <p className="text-zinc-200 text-xs italic px-1 py-4 text-center">

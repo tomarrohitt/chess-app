@@ -14,7 +14,7 @@ export function getTimesAtMove(
   timeControl: string,
   currentMoveIndex: number,
 ) {
-  let initialMs = 300000; // 5 minutes fallback
+  let initialMs = 300000;
   if (timeControl) {
     const [mins] = timeControl.split("+").map(Number);
     if (!isNaN(mins)) initialMs = mins * 60 * 1000;

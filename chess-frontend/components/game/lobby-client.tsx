@@ -1,94 +1,103 @@
-import { User } from "@/types/auth";
 import { Zap, Flame, Clock, Timer } from "lucide-react";
 import JoinButton from "./join-button";
-import { ActiveGameBanner } from "./active-game-banner";
 
 const TIME_CONTROLS = [
   {
     category: "Bullet",
     icon: Zap,
-    color: "text-yellow-400",
-    border: "border-yellow-900/50",
+    accentClass: "text-amber-400",
+    dotClass: "bg-amber-400/20 text-amber-400",
     options: [
-      { label: "1+0", value: "1+0" },
-      { label: "2+1", value: "2+1" },
-      { label: "3+0", value: "3+0" },
+      { label: "1 + 0", value: "1+0" },
+      { label: "2 + 1", value: "2+1" },
+      { label: "3 + 0", value: "3+0" },
     ],
   },
   {
     category: "Blitz",
     icon: Flame,
-    color: "text-orange-400",
-    border: "border-orange-900/50",
+    accentClass: "text-orange-400",
+    dotClass: "bg-orange-400/20 text-orange-400",
     options: [
-      { label: "3+2", value: "3+2" },
-      { label: "5+0", value: "5+0" },
-      { label: "5+3", value: "5+3" },
+      { label: "3 + 2", value: "3+2" },
+      { label: "5 + 0", value: "5+0" },
+      { label: "5 + 3", value: "5+3" },
     ],
   },
   {
     category: "Rapid",
     icon: Clock,
-    color: "text-green-400",
-    border: "border-green-900/50",
+    accentClass: "text-emerald-400",
+    dotClass: "bg-emerald-400/20 text-emerald-400",
     options: [
-      { label: "10+0", value: "10+0" },
-      { label: "10+5", value: "10+5" },
-      { label: "15+10", value: "15+10" },
+      { label: "10 + 0", value: "10+0" },
+      { label: "10 + 5", value: "10+5" },
+      { label: "15 + 10", value: "15+10" },
     ],
   },
   {
     category: "Classical",
     icon: Timer,
-    color: "text-blue-400",
-    border: "border-blue-900/50",
+    accentClass: "text-sky-400",
+    dotClass: "bg-sky-400/20 text-sky-400",
     options: [
-      { label: "30+0", value: "30+0" },
-      { label: "30+20", value: "30+20" },
+      { label: "30 + 0", value: "30+0" },
+      { label: "30 + 20", value: "30+20" },
     ],
   },
 ];
 
-export function LobbyClient({ user }: { user: User }) {
+export function LobbyClient() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <ActiveGameBanner />
-
-      <main className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-3xl">
-          <h1 className="text-3xl font-bold text-center mb-1">Play Chess</h1>
-          <p className="text-zinc-500 text-center text-sm mb-10">
-            Choose a time control to find a match
+    <div className="flex flex-col items-center justify-center w-full">
+      <div className="w-full max-w-2xl">
+        {/* Header */}
+        <div className="mb-10">
+          <p className="font-mono text-xs tracking-[0.18em] text-amber-500/80 uppercase mb-2">
+            Find a game
           </p>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {TIME_CONTROLS.map(
-              ({ category, icon: Icon, color, border, options }) => (
-                <div
-                  key={category}
-                  className={`bg-zinc-900 border ${border} rounded-xl p-4`}
-                >
-                  <div className={`flex items-center gap-1.5 mb-3 ${color}`}>
-                    <Icon className="w-3.5 h-3.5" />
-                    <span className="text-xs font-bold uppercase tracking-widest">
-                      {category}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    {options.map((opt) => (
-                      <JoinButton
-                        label={opt.label}
-                        value={opt.value}
-                        key={opt.label}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ),
-            )}
-          </div>
+          <h1 className="font-serif text-5xl font-light text-zinc-100 tracking-tight mb-2">
+            Play Chess
+          </h1>
+          <p className="font-mono text-sm text-zinc-600 tracking-wide">
+            Choose your time control
+          </p>
         </div>
-      </main>
+
+        <div className="grid grid-cols-2 gap-5">
+          {TIME_CONTROLS.map(
+            ({ category, icon: Icon, accentClass, dotClass, options }) => (
+              <div
+                key={category}
+                className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl p-5 hover:border-zinc-700/60 transition-colors duration-150"
+              >
+                <div
+                  className={`flex items-center gap-2.5 mb-4 ${accentClass}`}
+                >
+                  <div
+                    className={`w-7 h-7 rounded-md flex items-center justify-center ${dotClass}`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <span className="font-mono text-xs font-semibold tracking-[0.14em] uppercase">
+                    {category}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {options.map((opt) => (
+                    <JoinButton
+                      key={opt.value}
+                      label={opt.label}
+                      value={opt.value}
+                    />
+                  ))}
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+      </div>
     </div>
   );
 }

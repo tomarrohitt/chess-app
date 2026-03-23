@@ -19,7 +19,6 @@ export function RematchToast({ rematchOffer }: RematchToastProps) {
   const { offeredBy, timeControl, gameId } = rematchOffer;
 
   useEffect(() => {
-    console.log({ rematchOffer });
     if (rematchOffer && gameId && timeControl) {
       toast(
         `${rematchOffer.offeredBy.username} wants a rematch!

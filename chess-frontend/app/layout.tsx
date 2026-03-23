@@ -1,14 +1,9 @@
 import type { Metadata } from "next";
 import { Raleway } from "next/font/google";
 
-import { cn } from "@/lib/utils";
+import { cn, scrollClass } from "@/lib/utils";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { getUserFromSession } from "@/actions/session";
-import { redirect } from "next/navigation";
-import { SocketProvider } from "@/store/socket-provider";
-import { ConnectionStatus } from "./game/[id]/_components/connection-status";
-import { SearchingModal } from "@/components/game/searching-modal";
 import Navbar from "@/components/navbar/navbar";
 
 const raleway = Raleway({ subsets: ["latin"], variable: "--font-sans" });
@@ -23,20 +18,17 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getUserFromSession();
   return (
     <html lang="en" className={raleway.variable}>
-      <body className={cn("min-h-screen flex flex-col", raleway.className)}>
-        {user ? (
-          <SocketProvider user={user}>
-            <ConnectionStatus />
-            <SearchingModal />
-            <Navbar />
-            {children}
-          </SocketProvider>
-        ) : (
-          children
+      <body
+        className={cn(
+          "min-h-screen flex flex-col bg-black",
+          raleway.className,
+          scrollClass,
         )}
+      >
+        <Navbar />
+        {children}
         <Toaster position="bottom-right" duration={30} />
       </body>
     </html>

@@ -60,9 +60,8 @@ export function ActiveBoard({
   };
 
   return (
-    <div className="relative">
+    <div style={{ width: 500, height: 500 }}>
       <Chessboard options={boardOptions} />
-
       {promotionMove && (
         <>
           <div
