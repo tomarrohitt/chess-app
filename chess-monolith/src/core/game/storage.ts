@@ -14,6 +14,15 @@ export async function flushGameToDatabase(
   winnerId?: string,
 ): Promise<void> {
   const gameKey = Keys.game(gameId);
+
+  const isFirstFlush = await redis.hsetnx(gameKey, "isFlushed", "true");
+  if (isFirstFlush === 0) {
+    console.warn(
+      `[Storage] Game ${gameId} is already being flushed. Ignoring duplicate call.`,
+    );
+    return;
+  }
+
   const gameState = await redis.hgetall(gameKey);
 
   if (!gameState.whiteUser || !gameState.blackUser || !gameState.fen) {

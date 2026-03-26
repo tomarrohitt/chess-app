@@ -29,6 +29,13 @@ export const JoinQueueSchema = z.object({
 
 export const WsMessageSchema = z.discriminatedUnion("type", [
   z.object({
+    type: z.literal(WsMessageType.SEND_CHAT_MESSAGE),
+    payload: z.object({
+      receiverId: z.string(),
+      content: z.string().min(1),
+    }),
+  }),
+  z.object({
     type: z.literal(WsMessageType.JOIN_QUEUE),
     payload: JoinQueueSchema,
   }),

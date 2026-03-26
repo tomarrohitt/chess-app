@@ -16,6 +16,7 @@ import {
   handleLeaveQueue,
 } from "../../core/matchmaking/queue";
 import { WsMessageSchema } from "../../types/events";
+import { v7 as uuidv7 } from "uuid";
 
 import type { AuthenticatedWebSocket } from "./web-socket-server";
 import {
@@ -26,6 +27,7 @@ import {
 } from "./session-manager";
 import { DomainError } from "../../lib/errors";
 import { WsMessageType } from "../../types/types";
+import { queueChatMessage } from "../../api/repository/chat-worker";
 
 function sendWs(
   ws: AuthenticatedWebSocket,
@@ -33,7 +35,6 @@ function sendWs(
   payload: unknown,
 ) {
   if (ws.readyState === 1) {
-    // WebSocket.OPEN
     ws.send(JSON.stringify({ type, payload }));
   }
 }
@@ -198,6 +199,30 @@ export async function routeMessage(
 
       case WsMessageType.LEAVE_SPECTATOR: {
         leaveSpectatorRoom(envelope.payload.gameId, ws);
+        break;
+      }
+
+      case WsMessageType.SEND_CHAT_MESSAGE: {
+        const { receiverId, content } = envelope.payload;
+
+        const msg = {
+          id: uuidv7(),
+          senderId: ws.userId,
+          receiverId,
+          content,
+          createdAt: new Date(),
+          read: false,
+        };
+
+        await queueChatMessage(msg);
+
+        await sendToUser(receiverId, {
+          type: WsMessageType.RECEIVE_CHAT_MESSAGE,
+          payload: msg,
+        });
+
+        sendWs(ws, WsMessageType.CHAT_MESSAGE_ACK, msg);
+        console.log(`[Chat] Message queued from ${ws.userId} to ${receiverId}`);
         break;
       }
 

@@ -7,7 +7,6 @@ import { NewGame } from "./new-game";
 import { IncomingDrawOffer } from "./incoming-draw-offer";
 import { ActiveGameControls } from "./active-game-controls";
 import { RematchControls } from "./rematch-controls";
-import Image from "next/image";
 import { FlipButton } from "./flip-button";
 
 interface GameSidebarProps {
@@ -41,6 +40,7 @@ export function GameSidebar({
           timeControl={activeGame.timeControl}
           currentMoveIndex={currentMoveIndex}
           onMoveClick={onMoveClick}
+          live={true}
         />
       </div>
 

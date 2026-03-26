@@ -60,7 +60,7 @@ export async function startPlayerTimer(
     { gameId, loserId: playerId, winnerId: opponentId },
     {
       jobId: Keys.timerJob(gameId),
-      delay: timeLeftMs,
+      delay: Math.max(0, timeLeftMs),
       removeOnComplete: true,
       removeOnFail: true,
     },
@@ -156,10 +156,9 @@ export async function handlePlayerAbandonment(
   if (!gameState || Object.keys(gameState).length === 0) return;
   if (gameState.status !== GameStatus.IN_PROGRESS) return;
 
-  const pgn = gameState.pgn || "";
-  const moveCount = pgn.trim().length;
+  const moveTimes = JSON.parse(gameState.moveTimes || "[]");
 
-  if (moveCount <= 2) {
+  if (moveTimes.length <= 2) {
     await flushGameToDatabase(gameId, GameStatus.ABANDONED);
   } else {
     const whiteUser = GameUserSchema.parse(JSON.parse(gameState.whiteUser));

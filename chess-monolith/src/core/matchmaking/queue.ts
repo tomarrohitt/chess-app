@@ -15,14 +15,14 @@ import { user } from "../../infrastructure/db/schema";
 import { eq } from "drizzle-orm";
 
 const MATCHMAKING_QUEUE_KEY = "matchmaking:queue";
+const MATCHMAKING_INFO_KEY = "matchmaking:info";
 
 const CLAIM_OPPONENT_LUA = `
-local candidates = redis.call('ZRANGEBYSCORE', KEYS[1], ARGV[1], ARGV[2], 'LIMIT', 0, 1)
-if #candidates > 0 then
-  local opponentId = candidates[1]
-  if opponentId ~= ARGV[3] then
-    redis.call('ZREM', KEYS[1], opponentId)
-    return opponentId
+local candidates = redis.call('ZRANGEBYSCORE', KEYS[1], ARGV[1], ARGV[2], 'LIMIT', 0, 2)
+for i=1, #candidates do
+  if candidates[i] ~= ARGV[3] then
+    redis.call('ZREM', KEYS[1], candidates[i])
+    return candidates[i]
   end
 end
 return nil
@@ -40,7 +40,8 @@ export async function handleJoinQueue(
   timeControl: string,
 ): Promise<void> {
   const LOCK_KEY = `lock:matchmaking:${userId}`;
-  const isSearching = await redis.set(LOCK_KEY, "locked", "EX", 45, "NX");
+
+  const isSearching = await redis.set(LOCK_KEY, "locked", "EX", 60, "NX");
 
   if (!isSearching) {
     console.warn(
@@ -58,6 +59,14 @@ export async function handleJoinQueue(
 
     const rating = userData.rating;
 
+    const playerInfo = {
+      id: userId,
+      username: userData.username,
+      rating: userData.rating,
+      image: userData.image,
+    };
+
+    await redis.hset(MATCHMAKING_INFO_KEY, userId, JSON.stringify(playerInfo));
     await redis.zadd(MATCHMAKING_QUEUE_KEY, rating, userId);
 
     const searchTiers = [100, 300, 500, 1000, 1500];
@@ -84,32 +93,22 @@ export async function handleJoinQueue(
       if (opponentId) {
         await redis.zrem(MATCHMAKING_QUEUE_KEY, userId);
 
-        const opponentData = await db.query.user.findFirst({
-          where: eq(user.id, opponentId),
-        });
-
-        await createNewMatch(
-          {
-            id: userId,
-            username: userData.username,
-            rating: userData.rating,
-            image: userData.image,
-          },
-          opponentData
-            ? {
-                id: opponentData.id,
-                username: opponentData.username,
-                rating: opponentData.rating,
-                image: opponentData.image,
-              }
-            : {
-                id: opponentId,
-                username: "Unknown",
-                rating: 1200,
-                image: null,
-              },
-          timeControl,
+        const opponentDataStr = await redis.hget(
+          MATCHMAKING_INFO_KEY,
+          opponentId,
         );
+        const opponentInfo = opponentDataStr
+          ? JSON.parse(opponentDataStr)
+          : {
+              id: opponentId,
+              username: "Unknown",
+              rating: 1200,
+              image: null,
+            };
+
+        await redis.hdel(MATCHMAKING_INFO_KEY, userId, opponentId);
+
+        await createNewMatch(playerInfo, opponentInfo, timeControl);
         return;
       }
 
@@ -118,6 +117,7 @@ export async function handleJoinQueue(
 
     const finalCheck = await redis.zrem(MATCHMAKING_QUEUE_KEY, userId);
     if (finalCheck) {
+      await redis.hdel(MATCHMAKING_INFO_KEY, userId);
       await sendToUser(userId, {
         type: WsMessageType.MATCHMAKING_TIMEOUT,
         payload: { message: "No suitable opponent found. Try again?" },
@@ -130,6 +130,7 @@ export async function handleJoinQueue(
 
 export async function handleLeaveQueue(userId: string): Promise<void> {
   await redis.zrem(MATCHMAKING_QUEUE_KEY, userId);
+  await redis.hdel(MATCHMAKING_INFO_KEY, userId);
 }
 
 export async function createNewMatch(

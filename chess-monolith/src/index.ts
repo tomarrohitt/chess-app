@@ -7,6 +7,8 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth";
 import { initializeWebSocketServer } from "./infrastructure/ws/web-socket-server";
 import gameRouter from "./api/routes/game-router";
+import friendRouter from "./api/routes/friend-router";
+import chatRouter from "./api/routes/chat-router";
 
 const app = express();
 
@@ -21,6 +23,8 @@ app.use(express.json());
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 
 app.use("/api/games", gameRouter);
+app.use("/api/friends", friendRouter);
+app.use("/api/chat", chatRouter);
 
 app.get("/health", (_, res) => {
   res.json({ status: "Chess engine is breathing" });

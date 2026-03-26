@@ -223,7 +223,10 @@ export async function handleRematchAccept(
       payload: "You cannot accept your own offer.",
     });
 
-  await redis.del(rematchKey);
+  const deletedCount = await redis.del(rematchKey);
+
+  if (deletedCount === 0) return;
+
   const [player1, player2] = await Promise.all([
     db.query.user.findFirst({ where: eq(user.id, userId) }),
     db.query.user.findFirst({ where: eq(user.id, game.opponentId) }),

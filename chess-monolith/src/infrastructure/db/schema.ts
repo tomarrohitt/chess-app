@@ -12,7 +12,6 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { GameResult } from "../../types/types";
 
 export const gameStatusEnum = pgEnum("status", [
   "IN_PROGRESS",
@@ -28,7 +27,7 @@ export const gameStatusEnum = pgEnum("status", [
   "ABANDONED",
 ]);
 
-export const resultEnum = pgEnum("result", GameResult);
+export const resultEnum = pgEnum("result", ["d", "w", "b"]);
 
 export const friendStatusEnum = pgEnum("friend_status", [
   "PENDING",
@@ -146,7 +145,7 @@ export const games = pgTable(
     winnerId: text("winner_id").references(() => user.id),
 
     status: gameStatusEnum("status").notNull(),
-    result: resultEnum("result").notNull().default(GameResult.d),
+    result: resultEnum("result").notNull().default("d"),
 
     timeControl: varchar("time_control", { length: 20 }).notNull(),
     pgn: text("pgn").notNull(),
@@ -195,4 +194,25 @@ export const friends = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.friendId] })],
+);
+
+export const messages = pgTable(
+  "messages",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    senderId: text("sender_id")
+      .references(() => user.id)
+      .notNull(),
+    receiverId: text("receiver_id")
+      .references(() => user.id)
+      .notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    read: boolean("read").default(false).notNull(),
+  },
+  (table) => [
+    index("messages_sender_id_idx").on(table.senderId),
+    index("messages_receiver_id_idx").on(table.receiverId),
+    index("messages_created_at_idx").on(table.createdAt),
+  ],
 );

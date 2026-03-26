@@ -23,7 +23,7 @@ export function ActiveGameControls({
       {!drawOfferSent && (
         <button
           onClick={() => offerDraw(gameId)}
-          className="cursor-pointer flex-1 py-2 font-mono text-[11px] text-zinc-300 bg-zinc-900/40 border border-zinc-800/30 rounded-lg hover:bg-zinc-800/40 hover:text-zinc-200 transition-all"
+          className="cursor-pointer flex-1 py-2 font-mono text-[11px] text-zinc-300 bg-zinc-700/40 border border-zinc-800/30 rounded-lg hover:bg-zinc-500/40   hover:text-zinc-200 transition-all font-semibold"
         >
           ½ Offer draw
         </button>

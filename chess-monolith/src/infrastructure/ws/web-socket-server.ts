@@ -97,7 +97,9 @@ export function initializeWebSocketServer(server: Server): void {
     }
 
     ws.on("message", (message: Buffer) => {
-      routeMessage(ws, message.toString());
+      routeMessage(ws, message.toString()).catch((err) => {
+        console.error("[Fatal Router Error]", err);
+      });
     });
 
     ws.on("pong", () => {
