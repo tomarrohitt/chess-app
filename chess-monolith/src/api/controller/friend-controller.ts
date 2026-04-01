@@ -10,6 +10,7 @@ import {
   getFriends,
   getFriendRequests,
   getFriendship,
+  searchGlobalUsers,
 } from "../repository/friend-repository";
 import { TargetUserIdSchema } from "./validation/friends-schema";
 
@@ -247,4 +248,19 @@ export async function listRequests(req: Request, res: Response) {
 
   const requests = await getFriendRequests(session.user.id);
   return res.json({ success: true, data: requests });
+}
+
+export async function searchUsers(req: Request, res: Response) {
+  const session = await auth.api.getSession({
+    headers: toFetchHeaders(req.headers),
+  });
+  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
+
+  const result = await searchGlobalUsers(
+    req.query.q as string,
+    session.user.id,
+  );
+
+  console.log({ query: req.query.q, result });
+  return res.json({ success: true, data: result });
 }

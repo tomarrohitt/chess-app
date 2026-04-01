@@ -5,7 +5,10 @@ import { routeMessage } from "./message-router";
 import {
   registerSession,
   unregisterSession,
-  leaveSpectatorRoom,
+  subscribeToGameUpdates,
+  unsubscribeFromGameUpdates,
+  leaveGameChatRoom,
+  getActiveSessions,
 } from "./session-manager";
 import {
   startReconnectTimer,
@@ -16,16 +19,22 @@ import { Keys } from "../../lib/keys";
 import { AuthError } from "../../lib/errors";
 import { auth } from "../../lib/auth";
 import { getSyncState } from "../../core/game/engine";
-import { WsMessageType } from "../../types/types";
+import { PlayerInfo, WsMessageType } from "../../types/types";
 import { handleLeaveQueue } from "../../core/matchmaking/queue";
+import { db } from "../db/db";
+import { user as userSchema } from "../db/schema";
+import { eq, InferSelectModel } from "drizzle-orm";
+
+type User = InferSelectModel<typeof userSchema>;
 
 export interface AuthenticatedWebSocket extends WebSocket {
-  userId: string;
+  user: PlayerInfo;
   isAlive: boolean;
   spectatingRooms?: Set<string>;
+  chatRooms?: Set<string>;
 }
 
-async function extractUserId(req: IncomingMessage): Promise<string> {
+async function extractUser(req: IncomingMessage): Promise<User> {
   try {
     const session = await auth.api.getSession({
       headers: req.headers as Record<string, string>,
@@ -34,7 +43,16 @@ async function extractUserId(req: IncomingMessage): Promise<string> {
     if (!session || !session.user) {
       throw new AuthError("Invalid or expired session");
     }
-    return session.user.id;
+
+    const user = await db.query.user.findFirst({
+      where: eq(userSchema.id, session.user.id),
+    });
+
+    if (!user) {
+      throw new AuthError("User not found");
+    }
+
+    return user;
   } catch (err) {
     if (err instanceof AuthError) throw err;
     console.error("[WS Auth Error]", err);
@@ -62,10 +80,11 @@ export function initializeWebSocketServer(server: Server): void {
   wss.on("connection", async (ws: AuthenticatedWebSocket, req) => {
     ws.isAlive = true;
     ws.spectatingRooms = new Set<string>();
-    let userId: string;
+    ws.chatRooms = new Set<string>();
+    let user: User;
 
     try {
-      userId = await extractUserId(req);
+      user = await extractUser(req);
     } catch (err: unknown) {
       const msg = err instanceof AuthError ? err.userMessage : err;
       ws.send(JSON.stringify({ type: "ERROR", payload: msg }));
@@ -73,18 +92,24 @@ export function initializeWebSocketServer(server: Server): void {
       return;
     }
 
-    ws.userId = userId;
+    ws.user = {
+      id: user.id,
+      username: user.username,
+      image: user.image,
+      rating: user.rating,
+    };
 
-    await registerSession(userId, ws);
+    await registerSession(user.id, ws);
 
-    const activeGameId = await redis.get(Keys.userActiveGame(userId));
+    const activeGameId = await redis.get(Keys.userActiveGame(user.id));
     if (activeGameId) {
-      await cancelReconnectTimer(activeGameId, userId);
+      await cancelReconnectTimer(activeGameId, user.id);
     }
 
     try {
-      const initialState = await getSyncState(userId);
+      const initialState = await getSyncState(user.id);
       if (initialState) {
+        subscribeToGameUpdates(initialState.gameId, ws);
         ws.send(
           JSON.stringify({
             type: WsMessageType.GAME_STATE,
@@ -93,7 +118,7 @@ export function initializeWebSocketServer(server: Server): void {
         );
       }
     } catch (err) {
-      console.error(`[Sync Error] Failed to fetch state for ${userId}:`, err);
+      console.error(`[Sync Error] Failed to fetch state for ${user.id}:`, err);
     }
 
     ws.on("message", (message: Buffer) => {
@@ -107,24 +132,32 @@ export function initializeWebSocketServer(server: Server): void {
     });
 
     ws.on("close", async () => {
-      await unregisterSession(userId);
+      await unregisterSession(user.id, ws);
 
       if (ws.spectatingRooms) {
         for (const gameId of ws.spectatingRooms) {
-          leaveSpectatorRoom(gameId, ws);
+          unsubscribeFromGameUpdates(gameId, ws);
         }
       }
 
-      await handleLeaveQueue(userId).catch(console.error);
+      if (ws.chatRooms) {
+        for (const gameId of ws.chatRooms) {
+          leaveGameChatRoom(gameId, ws);
+        }
+      }
 
-      const gameId = await redis.get(Keys.userActiveGame(userId));
-      if (gameId) {
-        await startReconnectTimer(gameId, userId);
+      const otherSessions = await getActiveSessions(user.id);
+      if (otherSessions.length === 0) {
+        await handleLeaveQueue(user.id).catch(console.error);
+        const gameId = await redis.get(Keys.userActiveGame(user.id));
+        if (gameId) {
+          await startReconnectTimer(gameId, user.id);
+        }
       }
     });
 
     ws.on("error", (err) => {
-      console.error(`[WS Error] User ${userId}:`, err);
+      console.error(`[WS Error] User ${user.id}:`, err);
     });
   });
 }

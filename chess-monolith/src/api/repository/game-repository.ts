@@ -58,6 +58,7 @@ export async function getGameDetails(gameId: string) {
       pgn: games.pgn,
       finalFen: games.finalFen,
       moveTimes: games.moveTimes,
+      chatLogs: games.chatLogs,
 
       white: {
         id: games.whiteId,

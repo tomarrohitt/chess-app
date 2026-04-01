@@ -1,9 +1,27 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, desc, eq, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { friends, user } from "../../infrastructure/db/schema";
 import { db } from "../../infrastructure/db/db";
 
 export async function sendFriendRequest(userId: string, friendId: string) {
+  const existingReverse = await db.query.friends.findFirst({
+    where: and(eq(friends.userId, friendId), eq(friends.friendId, userId)),
+  });
+
+  if (existingReverse) {
+    if (existingReverse.status === "PENDING") {
+      await acceptFriendRequest(userId, friendId);
+      return;
+    }
+
+    if (
+      existingReverse.status === "ACCEPTED" ||
+      existingReverse.status === "BLOCKED"
+    ) {
+      return;
+    }
+  }
+
   await db
     .insert(friends)
     .values({
@@ -122,4 +140,42 @@ export async function getFriendRequests(userId: string) {
     .from(f)
     .innerJoin(u, eq(f.userId, u.id))
     .where(and(eq(f.friendId, userId), eq(f.status, "PENDING")));
+}
+export async function searchGlobalUsers(
+  searchTerm: string,
+  currentUserId: string,
+) {
+  const query = sql.param(searchTerm);
+
+  const similarityScore = sql<number>`word_similarity(${query}, (${user.username} || ' ' || ${user.name}))`;
+
+  return await db
+    .select({
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      image: user.image,
+      rating: user.rating,
+      friendStatus: friends.status,
+    })
+    .from(user)
+    .leftJoin(
+      friends,
+      or(
+        and(eq(friends.userId, currentUserId), eq(friends.friendId, user.id)),
+        and(eq(friends.friendId, currentUserId), eq(friends.userId, user.id)),
+      ),
+    )
+    .where(
+      and(
+        sql`(
+          (${user.username} || ' ' || ${user.name}) ILIKE '%' || ${query} || '%' 
+          OR 
+          word_similarity(${query}, (${user.username} || ' ' || ${user.name})) >= 0.5
+        )`,
+        sql`${user.id} != ${currentUserId}`,
+      ),
+    )
+    .orderBy(desc(similarityScore))
+    .limit(10);
 }

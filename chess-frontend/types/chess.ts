@@ -25,7 +25,18 @@ export enum WsMessageType {
   GAME_STATE = "GAME_STATE",
   SPECTATE_GAME = "SPECTATE_GAME",
   LEAVE_SPECTATOR = "LEAVE_SPECTATOR",
+
+  SEND_GAME_CHAT = "SEND_GAME_CHAT",
+  NEW_GAME_CHAT = "NEW_GAME_CHAT",
+  RECEIVE_CHAT_MESSAGE = "RECEIVE_CHAT_MESSAGE",
+  CHAT_MESSAGE_ACK = "CHAT_MESSAGE_ACK",
+
+  JOIN_GAME_CHAT = "JOIN_GAME_CHAT",
+  LEAVE_GAME_CHAT = "LEAVE_GAME_CHAT",
+
   ERROR = "ERROR",
+  PLAYER_RECONNECTED = "PLAYER_RECONNECTED",
+  PLAYER_DISCONNECTED = "PLAYER_DISCONNECTED",
 }
 
 export enum GameStatus {
@@ -111,6 +122,16 @@ export type RematchOfferState = z.infer<typeof RematchOfferStateSchema>;
 
 export type DrawOfferState = z.infer<typeof DrawOfferStateSchema>;
 
+export const ChatMessageSchema = z.object({
+  id: z.string().optional(),
+  gameId: z.string().optional(),
+  sender: PlayerInfoSchema,
+  content: z.string(),
+  createdAt: z.union([z.string(), z.number(), z.date()]).optional(),
+});
+
+export type ChatMessagePayload = z.infer<typeof ChatMessageSchema>;
+
 export const GameStateUserSchema = PlayerInfoSchema.extend({
   timeLeftMs: z.number(),
   capturedPieces: z.array(z.string()).optional().default([]),
@@ -122,6 +143,11 @@ export const MoveMadeUserSchema = z.object({
   id: z.string(),
   timeLeftMs: z.number(),
   capturedPieces: z.array(z.string()).optional().default([]),
+});
+
+export const PlayerConnectionPayloadSchema = z.object({
+  color: z.string(),
+  userId: z.string(),
 });
 
 export const GameStartedPayloadSchema = z.object({
@@ -243,6 +269,18 @@ export const ServerMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(WsMessageType.ERROR),
     payload: z.union([z.string(), z.object({ message: z.string() })]),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.NEW_GAME_CHAT),
+    payload: ChatMessageSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.PLAYER_RECONNECTED),
+    payload: PlayerConnectionPayloadSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.PLAYER_DISCONNECTED),
+    payload: PlayerConnectionPayloadSchema,
   }),
 ]);
 

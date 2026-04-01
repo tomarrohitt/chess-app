@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, User, Settings, LogOut } from "lucide-react";
+import { getInitials } from "@/lib/constants/get-initials";
 
 type UserDropdownProps = {
   user: {
@@ -58,11 +59,7 @@ export function UserDropdown({ user, onSignOut }: UserDropdownProps) {
               className="object-cover"
             />
             <AvatarFallback className="rounded-full bg-zinc-800 text-[11px] font-bold text-zinc-400">
-              {user.name
-                ?.split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase()}
+              {getInitials(user.name)}
             </AvatarFallback>
           </Avatar>
 

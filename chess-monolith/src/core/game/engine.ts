@@ -1,5 +1,6 @@
 import { parseGameState } from "../../lib/state";
 import {
+  GameChatMessage,
   GameStatus,
   GameSyncState,
   PLAYER_COLOR,
@@ -21,6 +22,9 @@ import {
   applyMove,
   resolveOutcome,
 } from "./engine-utils";
+import { db } from "../../infrastructure/db/db";
+import { games } from "../../infrastructure/db/schema";
+import { eq } from "drizzle-orm";
 
 export * from "./game-actions";
 export { getCapturedPieces } from "./engine-utils";
@@ -62,11 +66,7 @@ export async function processMove(
       type: WsMessageType.GAME_OVER,
       payload: { status, winnerId, reason: "timeout" },
     };
-    const uniqueIds = Array.from(new Set([state.white.id, state.black.id]));
-    await Promise.all([
-      ...uniqueIds.map((id) => sendToUser(id, payload)),
-      broadcastGameUpdate(gameId, payload, uniqueIds),
-    ]);
+    await broadcastGameUpdate(gameId, payload);
     return { isGameOver: true };
   }
 
@@ -84,7 +84,7 @@ export async function processMove(
 
   const { status, winnerId, isOver, reason } = resolveOutcome(chess, state);
   console.log(
-    `[Move] ${userId.slice(0, 5)}: ${san} | Clocks W: ${Math.floor(whiteTime / 1000)}s, B: ${Math.floor(blackTime / 1000)}s`,
+    `[Move] ${userId}: ${san} | Clocks W: ${Math.floor(whiteTime / 1000)}s, B: ${Math.floor(blackTime / 1000)}s`,
   );
 
   if (isOver) {
@@ -103,11 +103,7 @@ export async function processMove(
       type: WsMessageType.GAME_OVER,
       payload: { status, winnerId, reason },
     };
-    const uniqueIds = Array.from(new Set([state.white.id, state.black.id]));
-    await Promise.all([
-      ...uniqueIds.map((id) => sendToUser(id, gameOverPayload)),
-      broadcastGameUpdate(gameId, gameOverPayload, uniqueIds),
-    ]);
+    await broadcastGameUpdate(gameId, gameOverPayload);
   } else {
     await redis.hset(gameKey, {
       fen: chess.fen(),
@@ -127,7 +123,13 @@ export async function processMove(
     const nextTime =
       chess.turn() === PLAYER_COLOR.WHITE ? whiteTime : blackTime;
 
-    await startPlayerTimer(gameId, nextId, prevId, nextTime);
+    if (isNaN(nextTime)) {
+      console.error(
+        "[Timer Critical] nextTime is NaN! State:",
+        JSON.stringify(state),
+      );
+    }
+    await startPlayerTimer(gameId, prevId, nextTime);
   }
 
   const capturedPieces = getCapturedPieces(chess.fen());
@@ -157,7 +159,14 @@ export async function getSyncState(
   const gameId = await redis.get(Keys.userActiveGame(userId));
   if (!gameId) return null;
 
-  const gameState = await redis.hgetall(Keys.game(gameId));
+  const [gameState, dbGame] = await Promise.all([
+    redis.hgetall(Keys.game(gameId)),
+    db.query.games.findFirst({
+      where: eq(games.id, gameId),
+      columns: { chatLogs: true },
+    }),
+  ]);
+
   if (
     !gameState ||
     !gameState.whiteUser ||
@@ -228,61 +237,96 @@ export async function getSyncState(
       capturedPieces: capturedPieces.capturedByBlack,
     },
     timeControl: gameState.timeControl,
+    chatMessages: (dbGame?.chatLogs as GameChatMessage[]) ?? [],
   };
 }
 
 export async function getSpectatorState(
   gameId: string,
 ): Promise<GameSyncState | null> {
-  const gameState = await redis.hgetall(Keys.game(gameId));
-  if (
-    !gameState ||
-    !gameState.whiteUser ||
-    !gameState.blackUser ||
-    !gameState.fen
-  )
-    return null;
+  const [gameState, dbGame] = await Promise.all([
+    redis.hgetall(Keys.game(gameId)),
+    db.query.games.findFirst({
+      where: eq(games.id, gameId),
+      with: {
+        white: {
+          columns: { id: true, username: true, rating: true, image: true },
+        },
+        black: {
+          columns: { id: true, username: true, rating: true, image: true },
+        },
+      },
+    }),
+  ]);
 
-  const now = Date.now();
-  const lastMoveAt = parseInt(gameState.lastMoveTimestamp || "0", 10);
-  const elapsed = now - lastMoveAt;
+  // Case 1: Game is over or not in Redis. Fetch from DB.
+  if (!gameState || Object.keys(gameState).length === 0) {
+    if (!dbGame || !dbGame.white || !dbGame.black) return null;
 
-  const whiteUser = GameUserSchema.parse(JSON.parse(gameState.whiteUser));
-  const blackUser = GameUserSchema.parse(JSON.parse(gameState.blackUser));
-
-  let whiteTime = whiteUser.timeLeftMs ?? 0;
-  let blackTime = blackUser.timeLeftMs ?? 0;
-
-  if (lastMoveAt > 0 && gameState.status === GameStatus.IN_PROGRESS) {
-    if (gameState.turn === PLAYER_COLOR.WHITE) whiteTime -= elapsed;
-    else blackTime -= elapsed;
+    return {
+      gameId,
+      fen: dbGame.finalFen,
+      pgn: dbGame.pgn,
+      playerColor: PLAYER_COLOR.WHITE, // Spectator default
+      turn: dbGame.finalFen.split(" ")[1] as PLAYER_COLOR,
+      status: dbGame.status as GameStatus,
+      white: {
+        ...dbGame.white,
+        rating: dbGame.whiteRating,
+        timeLeftMs: dbGame.whiteTimeLeftMs,
+        capturedPieces: dbGame.capturedByWhite,
+      },
+      black: {
+        ...dbGame.black,
+        rating: dbGame.blackRating,
+        timeLeftMs: dbGame.blackTimeLeftMs,
+        capturedPieces: dbGame.capturedByBlack,
+      },
+      timeControl: dbGame.timeControl,
+      chatMessages: (dbGame.chatLogs as GameChatMessage[]) ?? [],
+    };
   }
 
-  const capturedPieces = getCapturedPieces(gameState.fen);
+  // Case 2: Game is live in Redis.
+  if (gameState.whiteUser && gameState.blackUser && gameState.fen) {
+    const now = Date.now();
+    const lastMoveAt = parseInt(gameState.lastMoveTimestamp || "0", 10);
+    const elapsed = now - lastMoveAt;
 
-  return {
-    gameId,
-    fen: gameState.fen,
-    pgn: gameState.pgn,
-    playerColor: PLAYER_COLOR.WHITE,
-    turn: gameState.turn as PLAYER_COLOR,
-    status: gameState.status as GameStatus,
-    white: {
-      id: whiteUser.id,
-      username: whiteUser.username,
-      rating: whiteUser.rating,
-      image: whiteUser.image,
-      timeLeftMs: Math.max(0, whiteTime),
-      capturedPieces: capturedPieces.capturedByWhite,
-    },
-    black: {
-      id: blackUser.id,
-      username: blackUser.username,
-      rating: blackUser.rating,
-      image: blackUser.image,
-      timeLeftMs: Math.max(0, blackTime),
-      capturedPieces: capturedPieces.capturedByBlack,
-    },
-    timeControl: gameState.timeControl,
-  };
+    const whiteUser = GameUserSchema.parse(JSON.parse(gameState.whiteUser));
+    const blackUser = GameUserSchema.parse(JSON.parse(gameState.blackUser));
+
+    let whiteTime = whiteUser.timeLeftMs ?? 0;
+    let blackTime = blackUser.timeLeftMs ?? 0;
+
+    if (lastMoveAt > 0 && gameState.status === GameStatus.IN_PROGRESS) {
+      if (gameState.turn === PLAYER_COLOR.WHITE) whiteTime -= elapsed;
+      else blackTime -= elapsed;
+    }
+
+    const capturedPieces = getCapturedPieces(gameState.fen);
+
+    return {
+      gameId,
+      fen: gameState.fen,
+      pgn: gameState.pgn,
+      playerColor: PLAYER_COLOR.WHITE, // Spectator default
+      turn: gameState.turn as PLAYER_COLOR,
+      status: gameState.status as GameStatus,
+      white: {
+        ...whiteUser,
+        timeLeftMs: Math.max(0, whiteTime),
+        capturedPieces: capturedPieces.capturedByWhite,
+      },
+      black: {
+        ...blackUser,
+        timeLeftMs: Math.max(0, blackTime),
+        capturedPieces: capturedPieces.capturedByBlack,
+      },
+      timeControl: gameState.timeControl,
+      chatMessages: (dbGame?.chatLogs as GameChatMessage[]) ?? [],
+    };
+  }
+
+  return null;
 }

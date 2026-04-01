@@ -1,8 +1,9 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
   integer,
+  json,
   jsonb,
   pgEnum,
   pgTable,
@@ -36,23 +37,34 @@ export const friendStatusEnum = pgEnum("friend_status", [
   "BLOCKED",
 ]);
 
-export const user = pgTable("user", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  username: varchar("username", { length: 50 }).notNull().unique(),
-  email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").default(false).notNull(),
-  rating: integer("rating").notNull().default(1000),
-  wins: integer("wins").notNull().default(0),
-  losses: integer("losses").notNull().default(0),
-  draws: integer("draws").notNull().default(0),
-  image: text("image"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-});
+export const user = pgTable(
+  "user",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    username: varchar("username", { length: 50 }).notNull().unique(),
+    email: text("email").notNull().unique(),
+    emailVerified: boolean("email_verified").default(false).notNull(),
+    rating: integer("rating").notNull().default(1000),
+    wins: integer("wins").notNull().default(0),
+    losses: integer("losses").notNull().default(0),
+    draws: integer("draws").notNull().default(0),
+    image: text("image"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => {
+    return [
+      index("users_search_trgm_idx").using(
+        "gin",
+        sql`(${table.username} || ' ' || ${table.name}) gin_trgm_ops`,
+      ),
+    ];
+  },
+);
 
 export const session = pgTable(
   "session",
@@ -168,7 +180,7 @@ export const games = pgTable(
       .$type<string[]>()
       .notNull()
       .default([]),
-
+    chatLogs: jsonb("chat_logs").$type<unknown[]>().default([]).notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -179,6 +191,21 @@ export const games = pgTable(
     index("games_winner_id_idx").on(table.winnerId),
   ],
 );
+
+export const gamesRelations = relations(games, ({ one }) => ({
+  white: one(user, {
+    fields: [games.whiteId],
+    references: [user.id],
+  }),
+  black: one(user, {
+    fields: [games.blackId],
+    references: [user.id],
+  }),
+  winner: one(user, {
+    fields: [games.winnerId],
+    references: [user.id],
+  }),
+}));
 
 export const friends = pgTable(
   "friends",

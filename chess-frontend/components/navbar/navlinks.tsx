@@ -4,7 +4,7 @@ const links = [
   { name: "Play", href: "/" },
   { name: "Leaderboard", href: "/leaderboard" },
   { name: "History", href: "/history" },
-  { name: "Friends", href: "/friends" },
+  { name: "Community", href: "/community" },
 ];
 
 export function NavLinks() {

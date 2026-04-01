@@ -67,11 +67,7 @@ export async function handleAbort(gameId: string, userId: string) {
   await flushGameToDatabase(gameId, GameStatus.ABANDONED);
 
   const payload = { type: WsMessageType.GAME_ABORTED, payload: { gameId } };
-  const uniqueIds = Array.from(new Set([game.whiteUser.id, game.blackUser.id]));
-  await Promise.all([
-    ...uniqueIds.map((id) => sendToUser(id, payload)),
-    broadcastGameUpdate(gameId, payload, uniqueIds),
-  ]);
+  await broadcastGameUpdate(gameId, payload);
 }
 
 export async function handleDrawOffer(gameId: string, userId: string) {
@@ -100,7 +96,7 @@ export async function handleDrawOffer(gameId: string, userId: string) {
   });
 
   console.log(
-    `[Game] Draw Offered | By: ${userId.slice(0, 5)}... to ${game.opponentId.slice(0, 5)}...`,
+    `[Game] Draw Offered | By: ${userId}... to ${game.opponentId.slice(0, 5)}...`,
   );
 }
 
@@ -123,14 +119,8 @@ export async function handleDrawAccept(gameId: string, userId: string) {
     payload: { status, reason: "agreement" },
   };
 
-  const uniqueIds = Array.from(new Set([game.whiteUser.id, game.blackUser.id]));
-  await Promise.all([
-    ...uniqueIds.map((id) => sendToUser(id, payload)),
-    broadcastGameUpdate(gameId, payload, uniqueIds),
-    redis.del(drawKey),
-  ]);
-
-  console.log(`[Game] Draw Accepted | Agreement by both players`);
+  await broadcastGameUpdate(gameId, payload);
+  await redis.del(drawKey);
 }
 
 export async function handleDrawDecline(gameId: string, userId: string) {
@@ -148,8 +138,6 @@ export async function handleDrawDecline(gameId: string, userId: string) {
     type: WsMessageType.DECLINE_DRAW,
     payload: { gameId, message: "Your opponent declined the draw offer." },
   });
-
-  console.log(`[Game] Draw Declined | ID: ${gameId.slice(0, 8)}`);
 }
 
 export async function handleRematchOffer(
@@ -239,7 +227,6 @@ export async function handleRematchAccept(
     });
 
   await createNewMatch(player1, player2, offerData.timeControl || timeControl);
-  console.log(`[Game] Rematch Accepted`);
 }
 
 export async function handleRematchDecline(
@@ -286,9 +273,5 @@ export async function handleResign(gameId: string, userId: string) {
     payload: { status, winnerId, reason: "resignation" },
   };
 
-  const uniqueIds = Array.from(new Set([game.whiteUser.id, game.blackUser.id]));
-  await Promise.all([
-    ...uniqueIds.map((id) => sendToUser(id, payload)),
-    broadcastGameUpdate(gameId, payload, uniqueIds),
-  ]);
+  await broadcastGameUpdate(gameId, payload);
 }

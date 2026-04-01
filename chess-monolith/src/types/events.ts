@@ -36,6 +36,13 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
     }),
   }),
   z.object({
+    type: z.literal(WsMessageType.SEND_GAME_CHAT),
+    payload: z.object({
+      gameId: z.string().uuid(),
+      content: z.string().min(1).max(500),
+    }),
+  }),
+  z.object({
     type: z.literal(WsMessageType.JOIN_QUEUE),
     payload: JoinQueueSchema,
   }),
@@ -45,6 +52,14 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal(WsMessageType.RESIGN_GAME),
+    payload: GameIdOnlySchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.JOIN_GAME_CHAT),
+    payload: GameIdOnlySchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.LEAVE_GAME_CHAT),
     payload: GameIdOnlySchema,
   }),
   z.object({

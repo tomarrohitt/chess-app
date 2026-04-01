@@ -1,7 +1,7 @@
 import { Chess } from "chess.js";
 import { GameState, getIncrementMs } from "../../lib/state";
-import { GameStatus, PLAYER_COLOR } from "../../types/types";
 import { NotYourTurnError, IllegalMoveError } from "../../lib/errors";
+import { GameStatus, PLAYER_COLOR } from "../../types/types";
 
 export function formatPgnTime(ms: number): string {
   const timeMs = Math.max(0, ms);
@@ -54,13 +54,21 @@ export function getCapturedPieces(fen: string) {
 }
 
 export function validateTurn(state: GameState, userId: string): boolean {
+  // 1. Ensure the user is actually a player in this game
   if (userId !== state.white.id && userId !== state.black.id) {
+    console.error(
+      `[Auth] User ${userId} is not a player. White: ${state.white.id}, Black: ${state.black.id}`,
+    );
     throw new Error("Spectators cannot make moves.");
   }
 
   const isWhiteTurn = state.turn === PLAYER_COLOR.WHITE;
   const expectedId = isWhiteTurn ? state.white.id : state.black.id;
-  if (userId !== expectedId) throw new NotYourTurnError();
+
+  if (userId !== expectedId) {
+    throw new NotYourTurnError();
+  }
+
   return isWhiteTurn;
 }
 

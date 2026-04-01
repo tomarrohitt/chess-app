@@ -1,13 +1,13 @@
 import {
-  getSyncState,
-  getSpectatorState,
   handleAbort,
   handleDrawAccept,
   handleDrawDecline,
   handleDrawOffer,
+  getSpectatorState,
   handleRematchAccept,
   handleRematchDecline,
   handleRematchOffer,
+  getSyncState,
   handleResign,
   processMove,
 } from "../../core/game/engine";
@@ -22,12 +22,17 @@ import type { AuthenticatedWebSocket } from "./web-socket-server";
 import {
   sendToUser,
   broadcastGameUpdate,
-  joinSpectatorRoom,
-  leaveSpectatorRoom,
+  subscribeToGameUpdates,
+  unsubscribeFromGameUpdates,
+  joinGameChatRoom,
+  leaveGameChatRoom,
+  broadcastGameChat,
 } from "./session-manager";
 import { DomainError } from "../../lib/errors";
 import { WsMessageType } from "../../types/types";
 import { queueChatMessage } from "../../api/repository/chat-worker";
+import { queueGameChatMessage } from "../../api/repository/game-chat-worker";
+import { id } from "zod/v4/locales";
 
 function sendWs(
   ws: AuthenticatedWebSocket,
@@ -56,8 +61,8 @@ export async function routeMessage(
           timeControl: payload.timeControl,
         });
 
-        handleJoinQueue(ws.userId, payload.timeControl).catch((err) => {
-          console.error(`[Queue Error] for ${ws.userId}:`, err);
+        handleJoinQueue(ws.user.id, payload.timeControl).catch((err) => {
+          console.error(`[Queue Error] for ${ws.user.id}:`, err);
         });
 
         break;
@@ -69,7 +74,7 @@ export async function routeMessage(
         try {
           const result = await processMove(
             payload.gameId,
-            ws.userId,
+            ws.user.id,
             payload.from,
             payload.to,
             payload.promotion,
@@ -97,17 +102,7 @@ export async function routeMessage(
             },
           };
 
-          const uniquePlayerIds = Array.from(
-            new Set([result.white.id, result.black.id]),
-          );
-          await Promise.all([
-            ...uniquePlayerIds.map((id) => sendToUser(id, moveMadeMessage)),
-            broadcastGameUpdate(
-              payload.gameId,
-              moveMadeMessage,
-              uniquePlayerIds,
-            ),
-          ]);
+          await broadcastGameUpdate(payload.gameId, moveMadeMessage);
         } catch (err: unknown) {
           const isKnownError = err instanceof DomainError;
 
@@ -115,7 +110,7 @@ export async function routeMessage(
             ? err.userMessage
             : "Action rejected.";
 
-          await sendToUser(ws.userId, {
+          await sendToUser(ws.user.id, {
             type: WsMessageType.MOVE_REJECTED,
             payload: { reason: userMessage },
           });
@@ -124,57 +119,58 @@ export async function routeMessage(
       }
 
       case WsMessageType.LEAVE_QUEUE:
-        await handleLeaveQueue(ws.userId);
+        await handleLeaveQueue(ws.user.id);
         break;
 
       case WsMessageType.SYNC_GAME: {
-        const state = await getSyncState(ws.userId);
+        const state = await getSyncState(ws.user.id);
 
         if (!state) {
           return;
         }
 
+        subscribeToGameUpdates(state.gameId, ws);
         sendWs(ws, WsMessageType.GAME_STATE, state);
         break;
       }
 
       case WsMessageType.OFFER_DRAW: {
-        await handleDrawOffer(envelope.payload.gameId, ws.userId);
+        await handleDrawOffer(envelope.payload.gameId, ws.user.id);
         break;
       }
 
       case WsMessageType.ACCEPT_DRAW: {
-        await handleDrawAccept(envelope.payload.gameId, ws.userId);
+        await handleDrawAccept(envelope.payload.gameId, ws.user.id);
         break;
       }
 
       case WsMessageType.DECLINE_DRAW: {
-        await handleDrawDecline(envelope.payload.gameId, ws.userId);
+        await handleDrawDecline(envelope.payload.gameId, ws.user.id);
         break;
       }
 
       case WsMessageType.OFFER_REMATCH: {
-        await handleRematchOffer(envelope.payload, ws.userId);
+        await handleRematchOffer(envelope.payload, ws.user.id);
         break;
       }
 
       case WsMessageType.ACCEPT_REMATCH: {
-        await handleRematchAccept(envelope.payload, ws.userId);
+        await handleRematchAccept(envelope.payload, ws.user.id);
         break;
       }
 
       case WsMessageType.DECLINE_REMATCH: {
-        await handleRematchDecline(envelope.payload, ws.userId);
+        await handleRematchDecline(envelope.payload, ws.user.id);
         break;
       }
 
       case WsMessageType.GAME_ABORTED: {
-        await handleAbort(envelope.payload.gameId, ws.userId);
+        await handleAbort(envelope.payload.gameId, ws.user.id);
         break;
       }
 
       case WsMessageType.RESIGN_GAME: {
-        await handleResign(envelope.payload.gameId, ws.userId);
+        await handleResign(envelope.payload.gameId, ws.user.id);
         break;
       }
 
@@ -187,18 +183,33 @@ export async function routeMessage(
           return;
         }
 
-        const isPlayer =
-          state.white.id === ws.userId || state.black.id === ws.userId;
-        if (!isPlayer) {
-          joinSpectatorRoom(gameId, ws);
-        }
-
+        subscribeToGameUpdates(gameId, ws);
         sendWs(ws, WsMessageType.GAME_STATE, state);
         break;
       }
 
       case WsMessageType.LEAVE_SPECTATOR: {
-        leaveSpectatorRoom(envelope.payload.gameId, ws);
+        unsubscribeFromGameUpdates(envelope.payload.gameId, ws);
+        break;
+      }
+
+      case WsMessageType.SEND_GAME_CHAT: {
+        const { gameId, content } = envelope.payload;
+
+        const chatMessage = {
+          id: uuidv7(),
+          gameId,
+          sender: ws.user,
+          content,
+          createdAt: new Date().toISOString(),
+        };
+
+        await broadcastGameChat(gameId, {
+          type: WsMessageType.NEW_GAME_CHAT,
+          payload: chatMessage,
+        });
+
+        await queueGameChatMessage(chatMessage);
         break;
       }
 
@@ -207,7 +218,7 @@ export async function routeMessage(
 
         const msg = {
           id: uuidv7(),
-          senderId: ws.userId,
+          sender: ws.user,
           receiverId,
           content,
           createdAt: new Date(),
@@ -222,7 +233,19 @@ export async function routeMessage(
         });
 
         sendWs(ws, WsMessageType.CHAT_MESSAGE_ACK, msg);
-        console.log(`[Chat] Message queued from ${ws.userId} to ${receiverId}`);
+        console.log(
+          `[Chat] Message queued from ${ws.user.id} to ${receiverId}`,
+        );
+        break;
+      }
+
+      case WsMessageType.JOIN_GAME_CHAT: {
+        joinGameChatRoom(envelope.payload.gameId, ws);
+        break;
+      }
+
+      case WsMessageType.LEAVE_GAME_CHAT: {
+        leaveGameChatRoom(envelope.payload.gameId, ws);
         break;
       }
 

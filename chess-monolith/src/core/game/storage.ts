@@ -4,6 +4,7 @@ import { redis } from "../../infrastructure/redis/redis-client";
 import { GameResult, GameStatus, GameUserSchema } from "../../types/types";
 import { Keys } from "../../lib/keys";
 import { eq, InferInsertModel, sql } from "drizzle-orm";
+import { cancelAbandonmentJob } from "./timer";
 import { calculateNewRatings } from "../../lib/elo";
 import { Chess } from "chess.js";
 import { getCapturedPieces } from "./engine-utils";
@@ -52,21 +53,22 @@ export async function flushGameToDatabase(
   const scoreA =
     winnerId === whiteUser.id ? 1 : winnerId === blackUser.id ? 0 : 0.5;
 
-  const isAbandoned = status === GameStatus.ABANDONED;
+  const isAborted = status === GameStatus.ABANDONED && winnerId == null;
   let diffA = 0,
     diffB = 0;
   let newRatingA = whiteUser.rating,
     newRatingB = blackUser.rating;
 
-  if (!isAbandoned) {
+  if (!isAborted) {
     const elo = calculateNewRatings(whiteUser.rating, blackUser.rating, scoreA);
+
     diffA = elo.diffA;
     diffB = elo.diffB;
     newRatingA = elo.newRatingA;
     newRatingB = elo.newRatingB;
   }
 
-  const resultSymbol = isAbandoned
+  const resultSymbol = isAborted
     ? "*"
     : winnerId === whiteUser.id
       ? "1-0"
@@ -134,8 +136,7 @@ export async function flushGameToDatabase(
           wins: winnerId === whiteUser.id ? sql`${user.wins} + 1` : user.wins,
           losses:
             winnerId === blackUser.id ? sql`${user.losses} + 1` : user.losses,
-          draws:
-            !winnerId && !isAbandoned ? sql`${user.draws} + 1` : user.draws,
+          draws: !winnerId && !isAborted ? sql`${user.draws} + 1` : user.draws,
         })
         .where(eq(user.id, whiteUser.id));
 
@@ -146,8 +147,7 @@ export async function flushGameToDatabase(
           wins: winnerId === blackUser.id ? sql`${user.wins} + 1` : user.wins,
           losses:
             winnerId === whiteUser.id ? sql`${user.losses} + 1` : user.losses,
-          draws:
-            !winnerId && !isAbandoned ? sql`${user.draws} + 1` : user.draws,
+          draws: !winnerId && !isAborted ? sql`${user.draws} + 1` : user.draws,
         })
         .where(eq(user.id, blackUser.id));
     });
@@ -156,8 +156,10 @@ export async function flushGameToDatabase(
       redis.del(gameKey),
       redis.del(Keys.userActiveGame(whiteUser.id)),
       redis.del(Keys.userActiveGame(blackUser.id)),
+      cancelAbandonmentJob(gameId),
     ]);
   } catch (error) {
     console.error(`[Storage] Failed to flush game ${gameId} to DB:`, error);
+    await redis.hdel(gameKey, "isFlushed");
   }
 }

@@ -9,7 +9,8 @@
     "start": "node -r dotenv/config dist/index.js",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "seed": "tsx src/seed/seed-users.ts"
   },
   "keywords": [],
   "author": "",

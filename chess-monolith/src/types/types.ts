@@ -5,6 +5,12 @@ export enum WsMessageType {
   RECEIVE_CHAT_MESSAGE = "RECEIVE_CHAT_MESSAGE",
   CHAT_MESSAGE_ACK = "CHAT_MESSAGE_ACK",
 
+  SEND_GAME_CHAT = "SEND_GAME_CHAT",
+
+  JOIN_GAME_CHAT = "JOIN_GAME_CHAT",
+  NEW_GAME_CHAT = "NEW_GAME_CHAT",
+  LEAVE_GAME_CHAT = "LEAVE_GAME_CHAT",
+
   JOIN_QUEUE = "JOIN_QUEUE",
   LEAVE_QUEUE = "LEAVE_QUEUE",
   QUEUE_JOINED = "QUEUE_JOINED",
@@ -84,10 +90,20 @@ export const PlayerInfoSchema = z.object({
   id: z.string(),
   username: z.string(),
   rating: z.number(),
-  image: z.string().nullish(),
+  image: z.string().nullable(),
 });
 
 export type PlayerInfo = z.infer<typeof PlayerInfoSchema>;
+
+export const GameChatMessageSchema = z.object({
+  id: z.string(),
+  gameId: z.string(),
+  sender: PlayerInfoSchema,
+  content: z.string(),
+  createdAt: z.string(),
+});
+
+export type GameChatMessage = z.infer<typeof GameChatMessageSchema>;
 
 export const RematchRequestSchema = z.object({
   gameId: z.string(),
@@ -121,5 +137,6 @@ export const GameSyncStateSchema = z.object({
   white: GameUserSchema,
   black: GameUserSchema,
   timeControl: z.string(),
+  chatMessages: z.array(GameChatMessageSchema),
 });
 export type GameSyncState = z.infer<typeof GameSyncStateSchema>;

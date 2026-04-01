@@ -15,6 +15,7 @@ import {
   DRAW_OFFER,
   WS_CONNECTION_STATUS,
   RematchOfferState,
+  ChatMessagePayload,
 } from "@/types/chess";
 import { User } from "@/types/auth";
 
@@ -32,6 +33,7 @@ interface GameStore {
   rematchOfferSent: DRAW_OFFER.SENT | DRAW_OFFER.DECLINE | null;
   lastMoveRejectedReason: string | null;
   showAnimations: boolean;
+  chatMessages: ChatMessagePayload[];
 
   setConnection: (status: WsConnectionStatus) => void;
   setUser: (user: User | null) => void;
@@ -51,6 +53,7 @@ interface GameStore {
   handleMoveMade: (p: MoveMadePayload) => void;
   handleMoveRejected: (reason: string) => void;
   handleGameOver: (p: GameOverState) => void;
+  addChatMessage: (msg: ChatMessagePayload) => void;
   resetGame: () => void;
 }
 
@@ -68,6 +71,7 @@ export const useGameStore = create<GameStore>((set) => ({
   rematchOfferSent: null,
   lastMoveRejectedReason: null,
   showAnimations: true,
+  chatMessages: [],
 
   setConnection: (connectionStatus) => set({ connectionStatus }),
   setUser: (user) => set({ user }),
@@ -90,6 +94,7 @@ export const useGameStore = create<GameStore>((set) => ({
         gameOver: null,
         rematchOffer: null,
         rematchOfferSent: null,
+        chatMessages: [], // Clear chat when a new game starts
         activeGame: {
           gameId: p.gameId,
           fen: p.fen,
@@ -179,6 +184,15 @@ export const useGameStore = create<GameStore>((set) => ({
       rematchOfferSent: null,
     })),
 
+  addChatMessage: (msg: ChatMessagePayload) =>
+    set((state) => {
+      if (state.activeGame?.gameId !== msg.gameId) {
+        return state;
+      }
+      const { gameId, ...rest } = msg;
+      return { chatMessages: [...state.chatMessages, rest] };
+    }),
+
   resetGame: () =>
     set({
       activeGame: null,
@@ -190,5 +204,6 @@ export const useGameStore = create<GameStore>((set) => ({
       drawOfferSent: null,
       rematchOffer: null,
       rematchOfferSent: null,
+      chatMessages: [],
     }),
 }));

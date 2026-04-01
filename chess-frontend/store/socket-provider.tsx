@@ -31,6 +31,10 @@ type SocketContextType = {
   acceptRematch: (gameId: string, timeControl: string) => void;
   spectateGame: (gameId: string) => void;
   leaveSpectator: (gameId: string) => void;
+
+  joinGameChat: (gameId: string) => void;
+  sendChatMessage: (gameId: string, content: string) => void;
+  leaveGameChat: (gameId: string) => void;
 };
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -113,14 +117,19 @@ export function SocketProvider({
       acceptRematch: wsApi.acceptRematch,
       spectateGame: wsApi.spectateGame,
       leaveSpectator: wsApi.leaveSpectator,
+      joinGameChat: wsApi.joinGameChat,
+      sendChatMessage: wsApi.sendChatMessage,
+      leaveGameChat: wsApi.leaveGameChat,
     }),
     [wsApi],
   );
 
   return (
     <SocketContext.Provider value={contextValue}>
-      {isTransitioning ? (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">
+      <div className={isTransitioning ? "hidden" : "contents"}>{children}</div>
+
+      {isTransitioning && (
+        <div className="fixed inset-0 z-50 min-h-screen flex items-center justify-center bg-zinc-950 text-white">
           <div className="flex flex-col items-center gap-4 animate-pulse">
             <span className="text-6xl drop-shadow-lg select-none">♟</span>
             <p className="text-zinc-400 font-mono text-sm font-semibold tracking-widest uppercase">
@@ -128,8 +137,6 @@ export function SocketProvider({
             </p>
           </div>
         </div>
-      ) : (
-        children
       )}
     </SocketContext.Provider>
   );

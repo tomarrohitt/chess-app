@@ -65,16 +65,18 @@ export function ActiveBoard({
       {promotionMove && (
         <>
           <div
-            className="absolute inset-0 z-40 bg-black/20"
+            className="absolute inset-0 z-40"
             onClick={() => setPromotionMove(null)}
             onContextMenu={(e) => {
               e.preventDefault();
               setPromotionMove(null);
             }}
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.2)" }}
           />
           <div
-            className="absolute z-50 flex flex-col bg-zinc-100 shadow-2xl rounded overflow-hidden"
+            className="absolute z-50 flex flex-col shadow-2xl rounded overflow-hidden"
             style={{
+              backgroundColor: "#f4f4f5", // zinc-100
               top: 0,
               left: `${
                 isWhite
@@ -103,7 +105,10 @@ export function ActiveBoard({
       )}
 
       {lastMoveRejectedReason && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600/90 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap">
+        <div
+          className="absolute top-2 left-1/2 -translate-x-1/2 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap"
+          style={{ backgroundColor: "rgba(220, 38, 38, 0.9)" }}
+        >
           {lastMoveRejectedReason}
         </div>
       )}

@@ -31,8 +31,8 @@ interface MoveButtonProps {
 
 function SanText({ san, color }: { san: string; color: "w" | "b" }) {
   const pieceIcons = {
-    w: { K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘" },
-    b: { K: "♚", Q: "♛", R: "♜", B: "♝", N: "♞" },
+    w: { K: "♚", Q: "♛", R: "♜", B: "♝", N: "♞" },
+    b: { K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘" },
   };
 
   const pieceMatch = san.match(/^([KQRBN])(.*)$/);
@@ -168,7 +168,6 @@ export function MoveList({
 }: MoveListProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const pairs = parsePgnWithTimes(pgn, timeControl);
-  console.log({ pairs });
 
   useEffect(() => {
     if (!scrollContainerRef.current) return;

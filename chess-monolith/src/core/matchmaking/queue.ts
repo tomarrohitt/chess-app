@@ -188,5 +188,5 @@ export async function createNewMatch(
     }),
   ]);
 
-  await startPlayerTimer(gameId, whiteUser.id, blackUser.id, baseMs);
+  await startPlayerTimer(gameId, whiteUser.id, baseMs);
 }

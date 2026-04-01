@@ -85,6 +85,12 @@ export function useWebSocket(user: User) {
           store.setRematchOfferSent(DRAW_OFFER.DECLINE);
           setTimeout(() => store.setRematchOfferSent(null), 5000);
           break;
+        case WsMessageType.NEW_GAME_CHAT:
+          store.addChatMessage(msg.payload);
+          break;
+        case WsMessageType.PLAYER_RECONNECTED:
+        case WsMessageType.PLAYER_DISCONNECTED:
+          break;
       }
     } catch (err) {
       console.error("[WS] Failed to parse message:", err);
@@ -110,7 +116,6 @@ export function useWebSocket(user: User) {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log("[WS] Connected, requesting sync...");
       store.setConnection(WS_CONNECTION_STATUS.CONNECTED);
 
       ws.send(JSON.stringify({ type: WsMessageType.SYNC_GAME }));
@@ -236,6 +241,15 @@ export function useWebSocket(user: User) {
         }
 
         send(WsMessageType.LEAVE_SPECTATOR, { gameId });
+      },
+      sendChatMessage: (gameId: string, content: string) => {
+        send(WsMessageType.SEND_GAME_CHAT, { gameId, content });
+      },
+      joinGameChat: (gameId: string) => {
+        send(WsMessageType.JOIN_GAME_CHAT, { gameId });
+      },
+      leaveGameChat: (gameId: string) => {
+        send(WsMessageType.LEAVE_GAME_CHAT, { gameId });
       },
     }),
     [connect, send],

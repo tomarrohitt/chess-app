@@ -4,28 +4,7 @@ import { GameboardSnapshot } from "./gameboard-snapshot";
 import { redirect } from "next/dist/client/components/navigation";
 import { getUserFromSession } from "@/actions/session";
 import { cn, scrollClass } from "@/lib/utils";
-
-export type Player = {
-  id: string;
-  username: string;
-  currentRating: number;
-  matchRating: number;
-  diff: number;
-};
-
-export type GameRecord = {
-  id: string;
-  status: GameStatus;
-  timeControl: string;
-  createdAt: string;
-  winnerId: string | null;
-  result: string;
-  finalFen: string;
-  pgn: string;
-  moveTimes: number[];
-  white: Player;
-  black: Player;
-};
+import { GameRecord } from "@/types/history";
 
 const PIECE_VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
 const PIECE_GLYPHS: Record<string, string> = {

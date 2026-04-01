@@ -8,6 +8,7 @@ import { IncomingDrawOffer } from "./incoming-draw-offer";
 import { ActiveGameControls } from "./active-game-controls";
 import { RematchControls } from "./rematch-controls";
 import { FlipButton } from "./flip-button";
+import { GameChat } from "./game-chat";
 
 interface GameSidebarProps {
   activeGame: ActiveGame;
@@ -61,6 +62,8 @@ export function GameSidebar({
           </div>
         )}
       </div>
+
+      <GameChat gameId={activeGame.gameId} isPlayer={isPlayer} />
     </div>
   );
 }

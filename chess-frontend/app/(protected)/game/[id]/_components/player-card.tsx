@@ -4,6 +4,7 @@ import { GameStateUser, PLAYER_COLOR } from "@/types/chess";
 import { Clock } from "./clock";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { getInitials } from "@/lib/constants/get-initials";
 
 interface PlayerCardProps {
   player: GameStateUser;
@@ -44,7 +45,7 @@ export function PlayerCard({
             isWhite ? "bg-zinc-800 text-zinc-400" : "bg-zinc-800 text-zinc-400",
           )}
         >
-          {player.username.charAt(0).toUpperCase()}
+          {getInitials(player.username)}
         </div>
       )}
 

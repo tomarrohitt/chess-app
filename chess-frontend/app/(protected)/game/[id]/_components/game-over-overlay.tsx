@@ -35,7 +35,7 @@ export function GameOverOverlay({
 
   let headline = "Draw";
   let headlineColor = "text-zinc-400";
-  if (isAbandoned) {
+  if (isAbandoned && !gameOver.winnerId) {
     headline = "Aborted";
     headlineColor = "text-zinc-500";
   } else if (winnerColor) {
@@ -48,8 +48,12 @@ export function GameOverOverlay({
     : isDraw
       ? "Game drawn"
       : `${winnerColor} won`;
-  if (gameOver.reason && !isAbandoned)
+
+  if (gameOver.reason && !isAbandoned) {
     subtitle += ` by ${gameOver.reason.toLowerCase()}`;
+  } else if (isAbandoned && winnerColor) {
+    subtitle = `${winnerColor} won (abandoned)`;
+  }
 
   return (
     <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-sm z-50">
