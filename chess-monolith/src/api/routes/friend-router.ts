@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   requestFriend,
   acceptRequest,
-  rejectRequest,
+  declineRequest,
   remove,
   block,
   listFriends,
@@ -17,8 +17,8 @@ friendRouter.get("/requests", listRequests);
 friendRouter.get("/search", searchUsers);
 friendRouter.post("/request", requestFriend);
 friendRouter.post("/accept", acceptRequest);
-friendRouter.post("/reject", rejectRequest);
-friendRouter.post("/remove", remove);
+friendRouter.delete("/decline", declineRequest);
+friendRouter.delete("/remove", remove);
 friendRouter.post("/block", block);
 
 export default friendRouter;

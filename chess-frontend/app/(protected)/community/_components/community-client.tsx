@@ -50,6 +50,7 @@ export function CommunityNav({ active }: { active: string }) {
   const handleTabChange = (id: string) => {
     const params = new URLSearchParams(searchParams);
     params.set("tab", id);
+    params.delete("q");
     router.replace(`${pathname}?${params.toString()}`);
   };
   return (

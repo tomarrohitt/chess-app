@@ -1,12 +1,8 @@
 import { Swords, MessageSquare, UserMinus, Users } from "lucide-react";
-import {
-  PlayerCard,
-  IconBtn,
-  EmptyState,
-  FriendCard,
-} from "./community-shared";
-import { getFriends } from "@/actions/friend";
+import { EmptyState, FriendCard } from "./community-shared";
+import { getFriends, removeFriend } from "@/actions/friend";
 import { SearchUsersForm } from "./search-users-form";
+import { IconBtn } from "./icon-btn";
 
 export async function FriendsTab({ query }: { query: string }) {
   const friends = await getFriends();
@@ -28,13 +24,17 @@ export async function FriendsTab({ query }: { query: string }) {
               player={f}
               actions={
                 <>
-                  <IconBtn icon={Swords} label="Challenge" variant="amber" />
-                  <IconBtn icon={MessageSquare} label="Message" />
                   <IconBtn
-                    icon={UserMinus}
+                    icon={<Swords size="14" />}
+                    label="Challenge"
+                    variant="amber"
+                  />
+                  <IconBtn icon={<MessageSquare size="14" />} label="Message" />
+                  <IconBtn
+                    icon={<UserMinus size="14" />}
                     label="Remove friend"
                     variant="red"
-                    // onClick={() => removeFriend(f.id)}
+                    onClick={removeFriend.bind(null, f.id)}
                   />
                 </>
               }

@@ -42,10 +42,9 @@ export async function acceptFriendRequest(userId: string, friendId: string) {
     .where(and(eq(friends.userId, friendId), eq(friends.friendId, userId)));
 }
 
-export async function rejectFriendRequest(userId: string, friendId: string) {
+export async function declineFriendRequest(userId: string, friendId: string) {
   await db
-    .update(friends)
-    .set({ status: "REJECTED" })
+    .delete(friends)
     .where(and(eq(friends.userId, friendId), eq(friends.friendId, userId)));
 }
 
@@ -141,6 +140,7 @@ export async function getFriendRequests(userId: string) {
     .innerJoin(u, eq(f.userId, u.id))
     .where(and(eq(f.friendId, userId), eq(f.status, "PENDING")));
 }
+
 export async function searchGlobalUsers(
   searchTerm: string,
   currentUserId: string,

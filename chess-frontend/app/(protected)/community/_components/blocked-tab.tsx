@@ -21,7 +21,7 @@ export function BlockedTab() {
             {STUB_BLOCKED.length} block
           </p>
           <div className="flex flex-col gap-2">
-            {STUB_BLOCKED.map((b) => (
+            {/* {STUB_BLOCKED.map((b) => (
               <PlayerCard
                 key={b.id}
                 player={b}
@@ -39,7 +39,7 @@ export function BlockedTab() {
                   </button>
                 }
               />
-            ))}
+            ))} */}
           </div>
         </>
       )}

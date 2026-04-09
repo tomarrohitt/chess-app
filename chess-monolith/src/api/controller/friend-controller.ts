@@ -4,7 +4,7 @@ import { toFetchHeaders } from "../../lib/utils/to-fetch-headers";
 import {
   sendFriendRequest,
   acceptFriendRequest,
-  rejectFriendRequest,
+  declineFriendRequest,
   removeFriend,
   blockUser,
   getFriends,
@@ -110,7 +110,7 @@ export async function acceptRequest(req: Request, res: Response) {
   return res.json({ success: true });
 }
 
-export async function rejectRequest(req: Request, res: Response) {
+export async function declineRequest(req: Request, res: Response) {
   const session = await auth.api.getSession({
     headers: toFetchHeaders(req.headers),
   });
@@ -155,7 +155,7 @@ export async function rejectRequest(req: Request, res: Response) {
       .json({ error: "No pending friend request from this user" });
   }
 
-  await rejectFriendRequest(session.user.id, targetUserId);
+  await declineFriendRequest(session.user.id, targetUserId);
   return res.json({ success: true });
 }
 
@@ -261,6 +261,5 @@ export async function searchUsers(req: Request, res: Response) {
     session.user.id,
   );
 
-  console.log({ query: req.query.q, result });
   return res.json({ success: true, data: result });
 }

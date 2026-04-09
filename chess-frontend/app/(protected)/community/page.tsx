@@ -1,4 +1,3 @@
-import { getFriends } from "@/actions/friend";
 import { BlockedTab } from "./_components/blocked-tab";
 import { CommunityNav } from "./_components/community-client";
 import { FindPlayersTab } from "./_components/find-players-tab";

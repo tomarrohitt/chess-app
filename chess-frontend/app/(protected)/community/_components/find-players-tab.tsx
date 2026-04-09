@@ -1,7 +1,9 @@
-import { EmptyState, PlayerCard } from "./community-shared";
-import { searchUsers } from "@/actions/friend";
+import { EmptyState } from "./community-shared";
+import { addFriend, searchUsers } from "@/actions/friend";
 import { SearchUsersForm } from "./search-users-form";
-import { Search } from "lucide-react";
+import { Search, Swords, UserPlus, UserX } from "lucide-react";
+import { IconBtn } from "./icon-btn";
+import { PlayerCard } from "./player-card";
 
 export async function FindPlayersTab({ query }: { query: string }) {
   const results = query ? await searchUsers(query) : null;
@@ -22,7 +24,30 @@ export async function FindPlayersTab({ query }: { query: string }) {
       ) : (
         <div className="flex flex-col gap-2">
           {results.map((p) => (
-            <PlayerCard key={p.id} player={p} />
+            <PlayerCard
+              key={p.id}
+              player={p}
+              actions={
+                <>
+                  <IconBtn
+                    icon={<Swords size="14" />}
+                    label="Challenge to game"
+                    variant="amber"
+                  />
+                  <IconBtn
+                    onClick={addFriend.bind(null, p.id)}
+                    icon={<UserPlus size="14" />}
+                    label="Send friend request"
+                    variant="green"
+                  />
+                  <IconBtn
+                    icon={<UserX size="14" />}
+                    label="Block user"
+                    variant="red"
+                  />
+                </>
+              }
+            />
           ))}
         </div>
       )}

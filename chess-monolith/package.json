@@ -8,7 +8,7 @@
     "build": "npx tsc --build --force",
     "start": "node -r dotenv/config dist/index.js",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push",
+    "db:push": "tsx seed/setup-db.ts",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx src/seed/seed-users.ts"
   },
@@ -42,5 +42,8 @@
     "nodemon": "^3.1.14",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
+  },
+"overrides": {
+    "esbuild": "^0.25.0"
   }
 }

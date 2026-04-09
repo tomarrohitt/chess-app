@@ -1,6 +1,8 @@
 import { Check, Search, Swords, Trophy, UserPlus, UserX } from "lucide-react";
 import { getInitials } from "@/lib/constants/get-initials";
 import { GetFriend, SearchFriend } from "@/types/friends";
+import { IconBtn } from "./icon-btn";
+import { addFriend } from "@/actions/friend";
 
 export function getAvatarHue(name: string) {
   return [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
@@ -144,107 +146,6 @@ export function FriendCard({
 
       <div className="flex items-center gap-1.5 shrink-0">{actions}</div>
     </div>
-  );
-}
-export function PlayerCard({ player }: { player: SearchFriend }) {
-  return (
-    <div
-      className="flex items-center gap-3 px-4 py-3 rounded-2xl group transition-all duration-150"
-      style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
-      <Avatar
-        player={{
-          name: player.name,
-          image: player.image,
-        }}
-        size={44}
-      />
-
-      <div className="flex-1 min-w-0 flex flex-col gap-1">
-        <div className="flex items-baseline gap-2">
-          <span
-            className="text-sm font-semibold text-white truncate"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            {player.name}
-          </span>
-          <span
-            className="text-[11px] text-zinc-500 truncate"
-            style={{ fontFamily: "'Fira Code', monospace" }}
-          >
-            @{player.username}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <Trophy size={10} className="text-amber-400" />
-            <span
-              className="text-xs font-bold text-amber-400"
-              style={{ fontFamily: "'Fira Code', monospace" }}
-            >
-              {player.rating}
-            </span>
-          </div>
-          <span className="text-zinc-700 text-xs">·</span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-1.5 shrink-0">
-        <IconBtn icon={Swords} label="Challenge to game" variant="amber" />
-        <IconBtn icon={UserPlus} label="Send friend request" variant="green" />
-        <IconBtn icon={UserX} label="Block user" variant="red" />
-      </div>
-    </div>
-  );
-}
-
-export function IconBtn({
-  icon: Icon,
-  label,
-  variant = "default",
-}: {
-  icon: React.ElementType;
-  label: string;
-  onClick?: () => void;
-  variant?: "default" | "green" | "red" | "amber";
-}) {
-  const colors = {
-    default: {
-      bg: "rgba(255,255,255,0.07)",
-      hover: "rgba(255,255,255,0.13)",
-      color: "#a1a1aa",
-    },
-    green: {
-      bg: "rgba(34,197,94,0.12)",
-      hover: "rgba(34,197,94,0.22)",
-      color: "#4ade80",
-    },
-    red: {
-      bg: "rgba(239,68,68,0.1)",
-      hover: "rgba(239,68,68,0.2)",
-      color: "#f87171",
-    },
-    amber: {
-      bg: "rgba(234,179,8,0.1)",
-      hover: "rgba(234,179,8,0.2)",
-      color: "#fbbf24",
-    },
-  }[variant];
-
-  return (
-    <button
-      title={label}
-      className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150"
-      style={{
-        background: false ? colors.hover : colors.bg,
-        color: colors.color,
-      }}
-    >
-      <Icon size={14} />
-    </button>
   );
 }
 

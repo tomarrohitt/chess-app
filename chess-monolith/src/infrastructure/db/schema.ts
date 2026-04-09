@@ -3,7 +3,6 @@ import {
   boolean,
   index,
   integer,
-  json,
   jsonb,
   pgEnum,
   pgTable,
@@ -33,7 +32,6 @@ export const resultEnum = pgEnum("result", ["d", "w", "b"]);
 export const friendStatusEnum = pgEnum("friend_status", [
   "PENDING",
   "ACCEPTED",
-  "REJECTED",
   "BLOCKED",
 ]);
 
