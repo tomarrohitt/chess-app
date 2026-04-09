@@ -4,10 +4,6 @@ import { Users, Search, Bell, UserX } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { STUB_FRIENDS, STUB_REQUESTS, STUB_BLOCKED } from "./community-types";
-import { FriendsTab } from "./friends-tab";
-import { FindPlayersTab } from "./find-players-tab";
-import { RequestsTab } from "./requests-tab";
-import { BlockedTab } from "./blocked-tab";
 import { cn } from "@/lib/utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -17,28 +13,24 @@ const TABS = [
     label: "Friends",
     icon: Users,
     badge: STUB_FRIENDS.length,
-    content: FriendsTab,
   },
   {
     id: "find",
     label: "Find Players",
     icon: Search,
     badge: null,
-    content: FindPlayersTab,
   },
   {
     id: "requests",
     label: "Requests",
     icon: Bell,
     badge: STUB_REQUESTS.length,
-    content: RequestsTab,
   },
   {
     id: "blocked",
     label: "Blocked",
     icon: UserX,
     badge: STUB_BLOCKED.length > 0 ? STUB_BLOCKED.length : null,
-    content: BlockedTab,
   },
 ] as const;
 
@@ -51,7 +43,7 @@ export function CommunityNav({ active }: { active: string }) {
     const params = new URLSearchParams(searchParams);
     params.set("tab", id);
     params.delete("q");
-    router.replace(`${pathname}?${params.toString()}`);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
   return (
     <>
@@ -74,6 +66,7 @@ export function CommunityNav({ active }: { active: string }) {
         style={{
           background: "rgba(255,255,255,0.04)",
           border: "1px solid rgba(255,255,255,0.07)",
+          isolation: "isolate",
         }}
       >
         {TABS.map(({ id, label, icon: Icon, badge }) => {

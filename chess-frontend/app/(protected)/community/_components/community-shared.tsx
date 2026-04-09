@@ -1,8 +1,6 @@
-import { Check, Search, Swords, Trophy, UserPlus, UserX } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { getInitials } from "@/lib/constants/get-initials";
-import { GetFriend, SearchFriend } from "@/types/friends";
-import { IconBtn } from "./icon-btn";
-import { addFriend } from "@/actions/friend";
+import { GetFriend } from "@/types/friends";
 
 export function getAvatarHue(name: string) {
   return [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
@@ -173,6 +171,35 @@ export function EmptyState({
         {title}
       </p>
       <p className="text-xs text-zinc-600 text-center max-w-55">{sub}</p>
+    </div>
+  );
+}
+
+export function PlayerListSkeleton() {
+  return (
+    <div className="flex flex-col gap-2">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-3 px-4 py-3 rounded-2xl animate-pulse"
+          style={{
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            opacity: 1 - 0.19 * i,
+          }}
+        >
+          <div className="w-11 h-11 rounded-full bg-zinc-800/60 shrink-0" />
+          <div className="flex-1 min-w-0 flex flex-col gap-2.5">
+            <div className="h-3.5 bg-zinc-800/80 rounded w-24" />
+            <div className="h-2.5 bg-zinc-800/50 rounded w-16" />
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-zinc-800/60" />
+            <div className="w-8 h-8 rounded-xl bg-zinc-800/60" />
+            <div className="w-8 h-8 rounded-xl bg-zinc-800/60" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

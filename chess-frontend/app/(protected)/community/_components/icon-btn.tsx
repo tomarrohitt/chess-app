@@ -1,5 +1,6 @@
 "use client";
 
+import { LoaderCircle } from "lucide-react";
 import { useTransition } from "react";
 
 export function IconBtn({
@@ -8,7 +9,6 @@ export function IconBtn({
   onClick,
   variant = "default",
   className = "",
-  ...props
 }: {
   icon: React.ReactNode;
   label: string;
@@ -16,7 +16,7 @@ export function IconBtn({
   variant?: "default" | "green" | "red" | "amber";
   className?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const [isPending, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
   const colors = {
     default: {
       bg: "rgba(255,255,255,0.07)",
@@ -43,7 +43,7 @@ export function IconBtn({
   return (
     <button
       title={label}
-      className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 hover:brightness-125 disabled:opacity-50 disabled:pointer-events-none ${className}`}
+      className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 hover:brightness-125 disabled:opacity-50 disabled:pointer-events-none cursor-pointer ${className}`}
       style={{
         background: colors.bg,
         color: colors.color,
@@ -57,10 +57,9 @@ export function IconBtn({
           });
         }
       }}
-      disabled={isPending || props.disabled}
-      {...props}
+      disabled={pending}
     >
-      {icon}
+      {pending ? <LoaderCircle className="animate-spin" size={14} /> : icon}
     </button>
   );
 }

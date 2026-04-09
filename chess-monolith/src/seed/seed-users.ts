@@ -1,6 +1,6 @@
 import { db } from "../infrastructure/db/db";
 import { user } from "../infrastructure/db/schema";
-import crypto from "crypto"; // 👈 Added native Node.js crypto for generating UUIDs
+import crypto from "crypto";
 
 const firstNames = [
   "Aarav",
@@ -23,6 +23,87 @@ const firstNames = [
   "Kabir",
   "Ravi",
   "Akash",
+  "Aryan",
+  "Dev",
+  "Krishna",
+  "Manav",
+  "Harsh",
+  "Varun",
+  "Nikhil",
+  "Shivam",
+  "Aniket",
+  "Omkar",
+  "Tejas",
+  "Uday",
+  "Vivek",
+  "Sameer",
+  "Raj",
+  "Deepak",
+  "Sanjay",
+  "Gaurav",
+  "Abhishek",
+  "Pankaj",
+  "Naveen",
+  "Tarun",
+  "Hemant",
+  "Lokesh",
+  "Mohan",
+  "Rakesh",
+  "Dinesh",
+  "Ashwin",
+  "Chirag",
+  "Darshan",
+  "Eshan",
+  "Faizan",
+  "Himanshu",
+  "Jatin",
+  "Kunal",
+  "Laksh",
+  "Madhav",
+  "Naman",
+  "Parth",
+  "Qasim",
+  "Ritvik",
+  "Saurabh",
+  "Tanish",
+  "Utkarsh",
+  "Ved",
+  "Wasim",
+  "Yuvraj",
+  "Zaid",
+  "Ayaan",
+  "Bilal",
+  "Chetan",
+  "Dheeraj",
+  "Eklavya",
+  "Farhan",
+  "Gautam",
+  "Harshit",
+  "Inder",
+  "Jai",
+  "Kartik",
+  "Lalit",
+  "Mayank",
+  "Nitin",
+  "Ojas",
+  "Prateek",
+  "Raghav",
+  "Sachin",
+  "Tanmay",
+  "Umesh",
+  "Vasu",
+  "Yatin",
+  "Zubin",
+  "Advaith",
+  "Bhavesh",
+  "Chandan",
+  "Devesh",
+  "Girish",
+  "Hitesh",
+  "Jagdeep",
+  "Keshav",
+  "Mahesh",
+
   "Neha",
   "Priya",
   "Pooja",
@@ -43,6 +124,76 @@ const firstNames = [
   "Diya",
   "Ananya",
   "Myra",
+  "Aishwarya",
+  "Bhavna",
+  "Chhavi",
+  "Divya",
+  "Ekta",
+  "Falguni",
+  "Gauri",
+  "Hema",
+  "Ira",
+  "Jaya",
+  "Kritika",
+  "Lata",
+  "Madhuri",
+  "Namrata",
+  "Oviya",
+  "Pallavi",
+  "Rashmi",
+  "Sakshi",
+  "Tanvi",
+  "Urmi",
+  "Vaishnavi",
+  "Yamini",
+  "Zara",
+  "Alia",
+  "Bhumika",
+  "Charu",
+  "Deepika",
+  "Esha",
+  "Farah",
+  "Garima",
+  "Himani",
+  "Indira",
+  "Juhi",
+  "Komal",
+  "Lavanya",
+  "Mansi",
+  "Nikita",
+  "Ojasvi",
+  "Prerna",
+  "Ritika",
+  "Sonal",
+  "Trisha",
+  "Urvashi",
+  "Vidya",
+  "Yashika",
+  "Zeenat",
+  "Anvi",
+  "Bhavika",
+  "Chitra",
+  "Devika",
+  "Eshita",
+  "Fiza",
+  "Gitanjali",
+  "Hiral",
+  "Ipsita",
+  "Janvi",
+  "Kashish",
+  "Lisha",
+  "Mahika",
+  "Navya",
+  "Oorja",
+  "Pari",
+  "Riddhi",
+  "Suhani",
+  "Tanishka",
+  "Upasana",
+  "Vanya",
+  "Wamika",
+  "Yuvika",
+  "Zoya",
 ];
 
 const lastNames = [
@@ -76,45 +227,193 @@ const lastNames = [
   "Pandey",
   "Tiwari",
   "Kaur",
+  "Malhotra",
+  "Kapoor",
+  "Khanna",
+  "Arora",
+  "Saxena",
+  "Bajaj",
+  "Sethi",
+  "Grover",
+  "Talwar",
+  "Gill",
+  "Sandhu",
+  "Sidhu",
+  "Dhillon",
+  "Brar",
+  "Randhawa",
+  "Chopra",
+  "Anand",
+  "Suri",
+  "Puri",
+  "Bhalla",
+  "Aggarwal",
+  "Jain",
+  "Bansal",
+  "Mittal",
+  "Goel",
+  "Singhal",
+  "Mahajan",
+  "Goyal",
+  "Modi",
+  "Soni",
+  "Khatri",
+  "Chaudhary",
+  "Solanki",
+  "Chauhan",
+  "Tomar",
+  "Shekhawat",
+  "Bhati",
+  "Sisodia",
+  "Rathore",
+  "Panwar",
+  "Kulkarni",
+  "Deshpande",
+  "Joshi",
+  "Apte",
+  "Phadke",
+  "Gokhale",
+  "Sathe",
+  "Pawar",
+  "Shinde",
+  "Jadhav",
+  "Gaikwad",
+  "More",
+  "Kamble",
+  "Sawant",
+  "Naik",
+  "Salvi",
+  "Kadam",
+  "Chavan",
+  "Bhonsle",
+  "Wagh",
+  "Subramanian",
+  "Krishnan",
+  "Raman",
+  "Swaminathan",
+  "Srinivasan",
+  "Venkatesan",
+  "Narayanan",
+  "Iyer",
+  "Iyengar",
+  "Pillai",
+  "Nair",
+  "Menon",
+  "Kurup",
+  "Warrier",
+  "Panicker",
+  "Nambiar",
+  "Shetty",
+  "Hegde",
+  "Acharya",
+  "Bhat",
+  "Reddy",
+  "Naidu",
+  "Goud",
+  "Yadav",
+  "Rao",
+  "Chowdhury",
+  "Patnaik",
+  "Mahapatra",
+  "Behera",
+  "Sahu",
+  "Banerjee",
+  "Mukherjee",
+  "Chakraborty",
+  "Ganguly",
+  "Bhattacharya",
+  "Ghosh",
+  "Dutta",
+  "Roy",
+  "Pal",
+  "Sarkar",
+  "Dasgupta",
+  "Basak",
+  "Bera",
+  "Mondal",
+  "Koley",
+  "Halder",
+  "Biswas",
+  "Kar",
+  "Mandal",
+  "Seal",
+  "Ali",
+  "Khan",
+  "Ansari",
+  "Qureshi",
+  "Shaikh",
+  "Pathan",
+  "Mirza",
+  "Baig",
+  "Syed",
+  "Hussain",
+  "Farooqui",
+  "Usmani",
+  "Rizvi",
+  "Naqvi",
+  "Abbasi",
+  "Hashmi",
+  "Kazmi",
+  "Chishti",
+  "Siddiqui",
+  "Salmani",
 ];
 
-// Helper to get a random item from an array
-const getRandom = (arr: string[]) =>
+const getRandom = <T>(arr: T[]): T =>
   arr[Math.floor(Math.random() * arr.length)];
 
-async function seedIndianUsers(count: number = 200) {
-  console.log(`Generating ${count} mock users...`);
+const generateUsername = (first: string, last: string) => {
+  const uid = crypto.randomUUID().slice(0, 8);
+  return `${first.toLowerCase()}_${last.toLowerCase()}_${uid}`;
+};
+
+async function seedIndianUsers(count: number) {
+  console.log(`🚀 Generating ${count} mock users...`);
 
   const mockUsers = [];
 
   for (let i = 0; i < count; i++) {
     const firstName = getRandom(firstNames);
     const lastName = getRandom(lastNames);
-    const fullName = `${firstName} ${lastName}`;
-
-    // Generate a unique username: e.g., "aarav_sharma_8432"
-    const randomSuffix = Math.floor(Math.random() * 10000);
-    const username = `${firstName.toLowerCase()}_${lastName.toLowerCase()}_${randomSuffix}`;
+    const username = generateUsername(firstName, lastName);
 
     mockUsers.push({
-      id: crypto.randomUUID(), // 👈 Added unique ID
-      email: `${username}@example.com`, // 👈 Added unique email
-      name: fullName,
-      username: username,
+      id: crypto.randomUUID(),
+      email: `${username}@example.com`,
+      name: `${firstName} ${lastName}`,
+      username,
       image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
       rating: Math.floor(Math.random() * 1000) + 500,
     });
   }
 
-  try {
-    console.log("Inserting into database...");
-    // Drizzle handles bulk inserts natively when you pass an array
-    await db.insert(user).values(mockUsers);
-    console.log(`✅ Successfully added ${count} users!`);
-  } catch (error) {
-    console.error("❌ Error inserting users:", error);
+  console.log("📦 Inserting into database in chunks...");
+
+  const chunkSize = 500;
+  let inserted = 0;
+
+  for (let i = 0; i < mockUsers.length; i += chunkSize) {
+    const chunk = mockUsers.slice(i, i + chunkSize);
+
+    try {
+      await db.insert(user).values(chunk);
+      inserted += chunk.length;
+      console.log(`✅ Inserted ${inserted}/${count}`);
+    } catch (err) {
+      console.error("❌ Chunk insert failed:");
+      console.error(JSON.stringify(err, null, 2));
+    }
   }
+
+  console.log(`🎉 Done. Total inserted: ${inserted}/${count}`);
 }
 
-// Run the function
-seedIndianUsers(300);
+seedIndianUsers(30000)
+  .then(() => {
+    console.log("🏁 Seeding completed");
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error("💥 Fatal error:", err);
+    process.exit(1);
+  });

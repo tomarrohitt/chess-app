@@ -7,8 +7,10 @@ import {
   declineFriendRequest,
   removeFriend,
   blockUser,
+  unblockUser,
   getFriends,
   getFriendRequests,
+  getBlockedUsers,
   getFriendship,
   searchGlobalUsers,
 } from "../repository/friend-repository";
@@ -107,6 +109,46 @@ export async function acceptRequest(req: Request, res: Response) {
   }
 
   await acceptFriendRequest(session.user.id, targetUserId);
+  return res.json({ success: true });
+}
+
+export async function cancelRequest(req: Request, res: Response) {
+  const session = await auth.api.getSession({
+    headers: toFetchHeaders(req.headers),
+  });
+  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
+
+  const result = TargetUserIdSchema.safeParse(req.body);
+  if (!result.success) {
+    return res
+      .status(400)
+      .json({ error: "userId is required and must be a string" });
+  }
+
+  const targetUserId = result.data.userId;
+
+  if (session.user.id === targetUserId) {
+    return res
+      .status(400)
+      .json({ error: "Cannot cancel a request to yourself" });
+  }
+
+  const existingFriendships = await getFriendship(
+    session.user.id,
+    targetUserId,
+  );
+
+  const outgoingRequest = existingFriendships.find(
+    (f) => f.userId === session.user.id && f.status === "PENDING",
+  );
+
+  if (!outgoingRequest) {
+    return res
+      .status(400)
+      .json({ error: "No pending friend request to cancel" });
+  }
+
+  await removeFriend(session.user.id, targetUserId);
   return res.json({ success: true });
 }
 
@@ -230,6 +272,40 @@ export async function block(req: Request, res: Response) {
   return res.json({ success: true });
 }
 
+export async function unblock(req: Request, res: Response) {
+  const session = await auth.api.getSession({
+    headers: toFetchHeaders(req.headers),
+  });
+  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
+
+  const result = TargetUserIdSchema.safeParse(req.body);
+  if (!result.success) {
+    return res
+      .status(400)
+      .json({ error: "userId is required and must be a string" });
+  }
+
+  const targetUserId = result.data.userId;
+  if (session.user.id === targetUserId) {
+    return res.status(400).json({ error: "Cannot unblock yourself" });
+  }
+
+  const existingFriendships = await getFriendship(
+    session.user.id,
+    targetUserId,
+  );
+  const currentlyBlocked = existingFriendships.some(
+    (f) => f.userId === session.user.id && f.status === "BLOCKED",
+  );
+
+  if (!currentlyBlocked) {
+    return res.status(400).json({ error: "User is not blocked" });
+  }
+
+  await unblockUser(session.user.id, targetUserId);
+  return res.json({ success: true });
+}
+
 export async function listFriends(req: Request, res: Response) {
   const session = await auth.api.getSession({
     headers: toFetchHeaders(req.headers),
@@ -248,6 +324,16 @@ export async function listRequests(req: Request, res: Response) {
 
   const requests = await getFriendRequests(session.user.id);
   return res.json({ success: true, data: requests });
+}
+
+export async function listBlocked(req: Request, res: Response) {
+  const session = await auth.api.getSession({
+    headers: toFetchHeaders(req.headers),
+  });
+  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
+
+  const blockedUsers = await getBlockedUsers(session.user.id);
+  return res.json({ success: true, data: blockedUsers });
 }
 
 export async function searchUsers(req: Request, res: Response) {

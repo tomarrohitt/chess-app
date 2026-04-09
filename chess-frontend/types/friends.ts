@@ -16,7 +16,7 @@ export type SearchFriend = Omit<
   friendStatus:
     | FriendStatus.PENDING
     | FriendStatus.ACCEPTED
-    | FriendStatus.REJECTED
     | FriendStatus.BLOCKED
     | null;
+  friendSenderId: string;
 };

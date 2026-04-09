@@ -29,7 +29,6 @@ export function SearchUsersForm({
     } else {
       params.delete("q");
     }
-
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 

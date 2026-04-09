@@ -25,10 +25,12 @@ export default async function CommunityPage({
       <div className="relative max-w-2xl mx-auto px-4 py-10">
         <CommunityNav active={active} />
 
-        {active === "friends" && <FriendsTab query={query} />}
-        {active === "find" && <FindPlayersTab query={query} />}
-        {active === "requests" && <RequestsTab />}
-        {active === "blocked" && <BlockedTab />}
+        <div key={active}>
+          {active === "friends" && <FriendsTab query={query} />}
+          {active === "find" && <FindPlayersTab query={query} />}
+          {active === "requests" && <RequestsTab />}
+          {active === "blocked" && <BlockedTab />}
+        </div>
       </div>
     </div>
   );
