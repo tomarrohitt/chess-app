@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import { auth } from "../../lib/auth";
 import { toFetchHeaders } from "../../lib/utils/to-fetch-headers";
-import { getChatHistory } from "../repository/chat-repository";
+import {
+  getChatHistory,
+  getRecentConversations,
+} from "../repository/chat-repository";
 import { z } from "zod";
 
 const GetHistoryParamsSchema = z.object({
@@ -34,4 +37,19 @@ export async function getHistory(req: Request, res: Response) {
     queryResult.data.limit,
   );
   return res.json({ success: true, data: history.reverse() });
+}
+
+export async function getRecentConversationsHandler(
+  req: Request,
+  res: Response,
+) {
+  const session = await auth.api.getSession({
+    headers: toFetchHeaders(req.headers),
+  });
+
+  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
+
+  const conversations = await getRecentConversations(session.user.id);
+
+  return res.json({ success: true, data: conversations });
 }

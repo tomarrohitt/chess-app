@@ -25,11 +25,19 @@ export enum WsMessageType {
   GAME_STATE = "GAME_STATE",
   SPECTATE_GAME = "SPECTATE_GAME",
   LEAVE_SPECTATOR = "LEAVE_SPECTATOR",
+  OFFER_CHALLENGE = "OFFER_CHALLENGE",
+  ACCEPT_CHALLENGE = "ACCEPT_CHALLENGE",
+  DECLINE_CHALLENGE = "DECLINE_CHALLENGE",
+  CHALLENGE_RECEIVED = "CHALLENGE_RECEIVED",
+  CHALLENGE_DECLINED = "CHALLENGE_DECLINED",
 
   SEND_GAME_CHAT = "SEND_GAME_CHAT",
   NEW_GAME_CHAT = "NEW_GAME_CHAT",
   RECEIVE_CHAT_MESSAGE = "RECEIVE_CHAT_MESSAGE",
   CHAT_MESSAGE_ACK = "CHAT_MESSAGE_ACK",
+  CHAT_TYPING = "CHAT_TYPING",
+
+  SEND_CHAT_MESSAGE = "SEND_CHAT_MESSAGE",
 
   JOIN_GAME_CHAT = "JOIN_GAME_CHAT",
   LEAVE_GAME_CHAT = "LEAVE_GAME_CHAT",
@@ -118,6 +126,11 @@ export const RematchOfferStateSchema = z.object({
   timeControl: z.string(),
 });
 
+export const ChallengeOfferStateSchema = RematchOfferStateSchema.omit({
+  gameId: true,
+});
+
+export type ChallengeOfferState = z.infer<typeof ChallengeOfferStateSchema>;
 export type RematchOfferState = z.infer<typeof RematchOfferStateSchema>;
 
 export type DrawOfferState = z.infer<typeof DrawOfferStateSchema>;
@@ -131,6 +144,15 @@ export const ChatMessageSchema = z.object({
 });
 
 export type ChatMessagePayload = z.infer<typeof ChatMessageSchema>;
+
+export const DirectMessageSchema = z.object({
+  id: z.string(),
+  sender: PlayerInfoSchema,
+  receiverId: z.string(),
+  content: z.string(),
+  createdAt: z.union([z.string(), z.number(), z.date()]),
+  read: z.boolean().optional(),
+});
 
 export const GameStateUserSchema = PlayerInfoSchema.extend({
   timeLeftMs: z.number(),
@@ -252,6 +274,14 @@ export const ServerMessageSchema = z.discriminatedUnion("type", [
     payload: z.object({ gameId: z.string() }),
   }),
   z.object({
+    type: z.literal(WsMessageType.CHALLENGE_RECEIVED),
+    payload: ChallengeOfferStateSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.CHALLENGE_DECLINED),
+    payload: ChallengeOfferStateSchema.optional(),
+  }),
+  z.object({
     type: z.literal(WsMessageType.QUEUE_JOINED),
     payload: z.object({
       status: z.enum(["waiting", "idle"]),
@@ -273,6 +303,21 @@ export const ServerMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(WsMessageType.NEW_GAME_CHAT),
     payload: ChatMessageSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.RECEIVE_CHAT_MESSAGE),
+    payload: DirectMessageSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.CHAT_MESSAGE_ACK),
+    payload: DirectMessageSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.CHAT_TYPING),
+    payload: z.object({
+      senderId: z.string(),
+      isTyping: z.boolean(),
+    }),
   }),
   z.object({
     type: z.literal(WsMessageType.PLAYER_RECONNECTED),

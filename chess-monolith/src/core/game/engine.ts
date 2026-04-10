@@ -23,8 +23,9 @@ import {
   resolveOutcome,
 } from "./engine-utils";
 import { db } from "../../infrastructure/db/db";
-import { games } from "../../infrastructure/db/schema";
+import { games, user } from "../../infrastructure/db/schema";
 import { eq } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
 
 export * from "./game-actions";
 export { getCapturedPieces } from "./engine-utils";
@@ -259,7 +260,6 @@ export async function getSpectatorState(
     }),
   ]);
 
-  // Case 1: Game is over or not in Redis. Fetch from DB.
   if (!gameState || Object.keys(gameState).length === 0) {
     if (!dbGame || !dbGame.white || !dbGame.black) return null;
 
@@ -267,7 +267,7 @@ export async function getSpectatorState(
       gameId,
       fen: dbGame.finalFen,
       pgn: dbGame.pgn,
-      playerColor: PLAYER_COLOR.WHITE, // Spectator default
+      playerColor: PLAYER_COLOR.WHITE,
       turn: dbGame.finalFen.split(" ")[1] as PLAYER_COLOR,
       status: dbGame.status as GameStatus,
       white: {
@@ -287,7 +287,6 @@ export async function getSpectatorState(
     };
   }
 
-  // Case 2: Game is live in Redis.
   if (gameState.whiteUser && gameState.blackUser && gameState.fen) {
     const now = Date.now();
     const lastMoveAt = parseInt(gameState.lastMoveTimestamp || "0", 10);
@@ -310,7 +309,7 @@ export async function getSpectatorState(
       gameId,
       fen: gameState.fen,
       pgn: gameState.pgn,
-      playerColor: PLAYER_COLOR.WHITE, // Spectator default
+      playerColor: PLAYER_COLOR.WHITE,
       turn: gameState.turn as PLAYER_COLOR,
       status: gameState.status as GameStatus,
       white: {
@@ -329,4 +328,79 @@ export async function getSpectatorState(
   }
 
   return null;
+}
+
+export async function createDirectGame(
+  player1Id: string,
+  player2Id: string,
+  timeControl: string,
+) {
+  const isPlayer1White = Math.random() > 0.5;
+  const whiteId = isPlayer1White ? player1Id : player2Id;
+  const blackId = isPlayer1White ? player2Id : player1Id;
+
+  const [whiteDbUser, blackDbUser] = await Promise.all([
+    db.query.user.findFirst({ where: eq(user.id, whiteId) }),
+    db.query.user.findFirst({ where: eq(user.id, blackId) }),
+  ]);
+
+  if (!whiteDbUser || !blackDbUser) {
+    throw new Error("One or both users not found");
+  }
+
+  const [mins] = timeControl.split("+").map(Number);
+  const baseMs = mins * 60 * 1000;
+
+  const gameId = uuidv7();
+  const fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+  const whitePlayerData = {
+    id: whiteDbUser.id,
+    username: whiteDbUser.username,
+    rating: whiteDbUser.rating,
+    image: whiteDbUser.image,
+    timeLeftMs: baseMs,
+  };
+
+  const blackPlayerData = {
+    id: blackDbUser.id,
+    username: blackDbUser.username,
+    rating: blackDbUser.rating,
+    image: blackDbUser.image,
+    timeLeftMs: baseMs,
+  };
+
+  const gameKey = Keys.game(gameId);
+  await redis.hset(gameKey, {
+    fen,
+    pgn: "",
+    turn: PLAYER_COLOR.WHITE,
+    status: GameStatus.IN_PROGRESS,
+    whiteUser: JSON.stringify(whitePlayerData),
+    blackUser: JSON.stringify(blackPlayerData),
+    timeControl,
+    lastMoveTimestamp: Date.now(),
+    moveTimes: "[]",
+  });
+
+  await redis.set(Keys.userActiveGame(whiteDbUser.id), gameId);
+  await redis.set(Keys.userActiveGame(blackDbUser.id), gameId);
+
+  const payload = {
+    gameId,
+    fen,
+    timeControl,
+    white: whitePlayerData,
+    black: blackPlayerData,
+  };
+
+  await sendToUser(whiteDbUser.id, {
+    type: WsMessageType.GAME_STARTED,
+    payload: { ...payload, color: "white" },
+  });
+
+  await sendToUser(blackDbUser.id, {
+    type: WsMessageType.GAME_STARTED,
+    payload: { ...payload, color: "black" },
+  });
 }

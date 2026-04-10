@@ -2,10 +2,13 @@
 
 import { Users, Search, Bell, UserX } from "lucide-react";
 import { motion } from "framer-motion";
+import { useOptimistic, useTransition } from "react";
+import { useSpinDelay } from "spin-delay";
 
 import { STUB_FRIENDS, STUB_REQUESTS, STUB_BLOCKED } from "./community-types";
 import { cn } from "@/lib/utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { PlayerListSkeleton } from "./community-shared";
 
 const TABS = [
   {
@@ -34,16 +37,33 @@ const TABS = [
   },
 ] as const;
 
-export function CommunityNav({ active }: { active: string }) {
+export function CommunityNav({
+  active,
+  children,
+}: {
+  active: string;
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [_pending, startTransition] = useTransition();
+  const [optimisticActive, setOptimisticActive] = useOptimistic(active);
+
+  const isPendingNav = optimisticActive !== active;
+  const showSkeleton = useSpinDelay(isPendingNav, {
+    delay: 250,
+    minDuration: 300,
+  });
 
   const handleTabChange = (id: string) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("tab", id);
-    params.delete("q");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    startTransition(() => {
+      setOptimisticActive(id);
+      const params = new URLSearchParams(searchParams);
+      params.set("tab", id);
+      params.delete("q");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    });
   };
   return (
     <>
@@ -70,20 +90,20 @@ export function CommunityNav({ active }: { active: string }) {
         }}
       >
         {TABS.map(({ id, label, icon: Icon, badge }) => {
-          const isActive = active === id;
+          const isActive = optimisticActive === id;
           return (
             <button
               key={id}
               onClick={() => handleTabChange(id)}
               className={cn(
                 "relative rounded-full px-3 py-1.5 text-sm font-semibold text-white outline-sky-400 transition focus-visible:outline-2 flex-1 flex items-center justify-center gap-1.5 h-9 cursor-pointer",
-                active === id ? "" : "hover:text-white/60",
+                isActive ? "" : "hover:text-white/60",
               )}
               style={{
                 WebkitTapHighlightColor: "transparent",
               }}
             >
-              {active === id && (
+              {isActive && (
                 <motion.span
                   layoutId="bubble"
                   className="absolute inset-0 z-10 bg-white mix-blend-difference"
@@ -118,6 +138,22 @@ export function CommunityNav({ active }: { active: string }) {
           );
         })}
       </div>
+      {showSkeleton ? (
+        <div className="flex flex-col gap-4">
+          {["friends", "find"].includes(optimisticActive) && (
+            <div
+              className="w-full h-10 rounded-xl animate-pulse"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.08)",
+              }}
+            />
+          )}
+          <PlayerListSkeleton />
+        </div>
+      ) : (
+        children
+      )}
     </>
   );
 }

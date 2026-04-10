@@ -16,6 +16,7 @@ import {
   WS_CONNECTION_STATUS,
   RematchOfferState,
   ChatMessagePayload,
+  ChallengeOfferState,
 } from "@/types/chess";
 import { User } from "@/types/auth";
 
@@ -34,6 +35,7 @@ interface GameStore {
   lastMoveRejectedReason: string | null;
   showAnimations: boolean;
   chatMessages: ChatMessagePayload[];
+  incomingChallenge: ChallengeOfferState | null;
 
   setConnection: (status: WsConnectionStatus) => void;
   setUser: (user: User | null) => void;
@@ -48,6 +50,7 @@ interface GameStore {
     status: DRAW_OFFER.SENT | DRAW_OFFER.DECLINE | null,
   ) => void;
   setAnimations: (enabled: boolean) => void;
+  setIncomingChallenge: (challenge: ChallengeOfferState | null) => void;
   handleGameStarted: (p: GameStartedPayload) => void;
   handleGameState: (p: GameStatePayload) => void;
   handleMoveMade: (p: MoveMadePayload) => void;
@@ -72,6 +75,7 @@ export const useGameStore = create<GameStore>((set) => ({
   lastMoveRejectedReason: null,
   showAnimations: true,
   chatMessages: [],
+  incomingChallenge: null,
 
   setConnection: (connectionStatus) => set({ connectionStatus }),
   setUser: (user) => set({ user }),
@@ -83,6 +87,7 @@ export const useGameStore = create<GameStore>((set) => ({
   setRematchOffer: (rematchOffer) => set({ rematchOffer }),
   setRematchOfferSent: (rematchOfferSent) => set({ rematchOfferSent }),
   setAnimations: (showAnimations) => set({ showAnimations }),
+  setIncomingChallenge: (incomingChallenge) => set({ incomingChallenge }),
 
   handleGameStarted: (p) =>
     set(() => {
@@ -95,6 +100,7 @@ export const useGameStore = create<GameStore>((set) => ({
         rematchOffer: null,
         rematchOfferSent: null,
         chatMessages: [], // Clear chat when a new game starts
+        incomingChallenge: null,
         activeGame: {
           gameId: p.gameId,
           fen: p.fen,

@@ -27,6 +27,13 @@ export const JoinQueueSchema = z.object({
   ]),
 });
 
+export const ChallengeOfferStateSchema = z.object({
+  targetId: z.string(),
+  timeControl: z.string(),
+});
+
+export type ChallengeOfferState = z.infer<typeof ChallengeOfferStateSchema>;
+
 export const WsMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(WsMessageType.SEND_CHAT_MESSAGE),
@@ -40,6 +47,13 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
     payload: z.object({
       gameId: z.string().uuid(),
       content: z.string().min(1).max(500),
+    }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.CHAT_TYPING),
+    payload: z.object({
+      receiverId: z.string(),
+      isTyping: z.boolean(),
     }),
   }),
   z.object({
@@ -89,6 +103,18 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(WsMessageType.DECLINE_REMATCH),
     payload: RematchRequestSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.OFFER_CHALLENGE),
+    payload: ChallengeOfferStateSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.ACCEPT_CHALLENGE),
+    payload: ChallengeOfferStateSchema,
+  }),
+  z.object({
+    type: z.literal(WsMessageType.DECLINE_CHALLENGE),
+    payload: ChallengeOfferStateSchema,
   }),
   z.object({
     type: z.literal(WsMessageType.LEAVE_QUEUE),

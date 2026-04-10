@@ -10,6 +10,7 @@ import {
   getSyncState,
   handleResign,
   processMove,
+  createDirectGame,
 } from "../../core/game/engine";
 import {
   handleJoinQueue,
@@ -32,7 +33,6 @@ import { DomainError } from "../../lib/errors";
 import { WsMessageType } from "../../types/types";
 import { queueChatMessage } from "../../api/repository/chat-worker";
 import { queueGameChatMessage } from "../../api/repository/game-chat-worker";
-import { id } from "zod/v4/locales";
 
 function sendWs(
   ws: AuthenticatedWebSocket,
@@ -164,6 +164,33 @@ export async function routeMessage(
         break;
       }
 
+      case WsMessageType.OFFER_CHALLENGE: {
+        const { targetId, timeControl } = envelope.payload;
+        await sendToUser(targetId, {
+          type: WsMessageType.CHALLENGE_RECEIVED,
+          payload: { offeredBy: ws.user, timeControl },
+        });
+        break;
+      }
+
+      case WsMessageType.DECLINE_CHALLENGE: {
+        const { targetId } = envelope.payload;
+        await sendToUser(targetId, {
+          type: WsMessageType.CHALLENGE_DECLINED,
+          payload: { offeredBy: ws.user },
+        });
+        break;
+      }
+
+      case WsMessageType.ACCEPT_CHALLENGE: {
+        const { targetId, timeControl } = envelope.payload;
+        await createDirectGame(targetId, ws.user.id, timeControl);
+        console.log(
+          `[Challenge] ${ws.user.id} accepted challenge from ${targetId} for ${timeControl}`,
+        );
+        break;
+      }
+
       case WsMessageType.GAME_ABORTED: {
         await handleAbort(envelope.payload.gameId, ws.user.id);
         break;
@@ -236,6 +263,15 @@ export async function routeMessage(
         console.log(
           `[Chat] Message queued from ${ws.user.id} to ${receiverId}`,
         );
+        break;
+      }
+
+      case WsMessageType.CHAT_TYPING: {
+        const { receiverId, isTyping } = envelope.payload;
+        await sendToUser(receiverId, {
+          type: WsMessageType.CHAT_TYPING,
+          payload: { senderId: ws.user.id, isTyping },
+        });
         break;
       }
 

@@ -46,6 +46,20 @@ export function ActiveBoard({
     isViewingHistory,
   });
 
+  const sanitizedSquareStyles = combinedOptionSquares
+    ? (Object.fromEntries(
+        Object.entries(combinedOptionSquares).map(([square, style]) => {
+          const { background, ...rest } = style as React.CSSProperties;
+          return [
+            square,
+            background
+              ? { ...rest, backgroundColor: background as string }
+              : style,
+          ];
+        }),
+      ) as Record<string, React.CSSProperties>)
+    : combinedOptionSquares;
+
   const boardOptions = {
     id: "active-board",
     position,
@@ -55,7 +69,7 @@ export function ActiveBoard({
     onSquareRightClick,
     allowDragging: isPlayer && !isViewingHistory,
     allowDragOffBoard: false,
-    squareStyles: combinedOptionSquares,
+    squareStyles: sanitizedSquareStyles,
     ...sharedBoardOptions,
   };
 

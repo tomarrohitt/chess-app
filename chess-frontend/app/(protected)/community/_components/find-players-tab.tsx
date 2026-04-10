@@ -22,6 +22,7 @@ import { IconBtn } from "./icon-btn";
 import { PlayerCard } from "./player-card";
 import { InfiniteScrollList } from "./infinite-scroll-list";
 import { getUserFromSession } from "@/actions/session";
+import { ChallengeButton } from "./challenge-btn";
 
 export function FindPlayersTab({ query }: { query: string }) {
   return (
@@ -68,11 +69,7 @@ async function FindPlayersResults({ query }: { query: string }) {
               player={p}
               actions={
                 <>
-                  <IconBtn
-                    icon={<Swords size="14" />}
-                    label="Challenge"
-                    variant="amber"
-                  />
+                  <ChallengeButton targetId={p.id} />
                   {!isFriend && !isPending && (
                     <IconBtn
                       onClick={addFriend.bind(null, p.id)}

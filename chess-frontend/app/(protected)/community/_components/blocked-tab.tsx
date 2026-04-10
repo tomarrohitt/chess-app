@@ -1,13 +1,24 @@
+import { Suspense } from "react";
 import { ShieldOff, Slash } from "lucide-react";
-import { EmptyState } from "./community-shared";
+import { EmptyState, PlayerListSkeleton } from "./community-shared";
 import { PlayerCard } from "./player-card";
 import { getBlocked, unblockUser } from "@/actions/friend";
 import { IconBtn } from "./icon-btn";
 
-export async function BlockedTab() {
-  const blockUsers = await getBlocked();
+export function BlockedTab() {
   return (
     <div className="flex flex-col gap-4">
+      <Suspense fallback={<PlayerListSkeleton />}>
+        <BlockedResults />
+      </Suspense>
+    </div>
+  );
+}
+
+async function BlockedResults() {
+  const blockUsers = await getBlocked();
+  return (
+    <>
       {!blockUsers ? (
         <EmptyState
           icon={ShieldOff}
@@ -40,6 +51,6 @@ export async function BlockedTab() {
           </div>
         </>
       )}
-    </div>
+    </>
   );
 }

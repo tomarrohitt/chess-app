@@ -13,7 +13,7 @@ export function IconBtn({
   icon: React.ReactNode;
   label: string;
   onClick?: () => Promise<boolean>;
-  variant?: "default" | "green" | "red" | "amber";
+  variant?: "default" | "green" | "red" | "amber" | "rose" | "blue";
   className?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const [pending, startTransition] = useTransition();
@@ -31,12 +31,22 @@ export function IconBtn({
     red: {
       bg: "rgba(239,68,68,0.1)",
       hover: "rgba(239,68,68,0.2)",
-      color: "#f87171",
+      color: "#f5cecb",
     },
     amber: {
       bg: "rgba(234,179,8,0.1)",
       hover: "rgba(234,179,8,0.2)",
       color: "#fbbf24",
+    },
+    rose: {
+      bg: "rgba(244,63,94,0.2)",
+      hover: "rgba(244,63,94,0.16)",
+      color: "#f5dac9",
+    },
+    blue: {
+      bg: "rgba(59,130,246,0.10)",
+      hover: "rgba(59,130,246,0.18)",
+      color: "#60a5fa",
     },
   }[variant];
 

@@ -91,6 +91,22 @@ export function useWebSocket(user: User) {
         case WsMessageType.PLAYER_RECONNECTED:
         case WsMessageType.PLAYER_DISCONNECTED:
           break;
+        case WsMessageType.CHALLENGE_RECEIVED:
+          store.setIncomingChallenge(msg.payload);
+          break;
+        case WsMessageType.CHALLENGE_DECLINED:
+          break;
+        case WsMessageType.RECEIVE_CHAT_MESSAGE:
+        case WsMessageType.CHAT_MESSAGE_ACK:
+          window.dispatchEvent(
+            new CustomEvent("chat_message", { detail: msg.payload }),
+          );
+          break;
+        case WsMessageType.CHAT_TYPING:
+          window.dispatchEvent(
+            new CustomEvent("chat_typing", { detail: msg.payload }),
+          );
+          break;
       }
     } catch (err) {
       console.error("[WS] Failed to parse message:", err);
@@ -250,6 +266,24 @@ export function useWebSocket(user: User) {
       },
       leaveGameChat: (gameId: string) => {
         send(WsMessageType.LEAVE_GAME_CHAT, { gameId });
+      },
+      sendDirectMessage: (receiverId: string, content: string) => {
+        send(WsMessageType.SEND_CHAT_MESSAGE, { receiverId, content });
+      },
+      sendTyping: (receiverId: string, isTyping: boolean) => {
+        send(WsMessageType.CHAT_TYPING, { receiverId, isTyping });
+      },
+      offerChallenge: (targetId: string, timeControl: string) => {
+        send(WsMessageType.OFFER_CHALLENGE, { targetId, timeControl });
+      },
+      acceptChallenge: (targetId: string, timeControl: string) => {
+        send(WsMessageType.ACCEPT_CHALLENGE, {
+          targetId,
+          timeControl,
+        });
+      },
+      declineChallenge: (targetId: string) => {
+        send(WsMessageType.DECLINE_CHALLENGE, { targetId });
       },
     }),
     [connect, send],

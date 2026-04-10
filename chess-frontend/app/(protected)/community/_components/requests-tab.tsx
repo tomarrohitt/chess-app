@@ -1,14 +1,25 @@
+import { Suspense } from "react";
 import { acceptRequest, declineRequest, getRequests } from "@/actions/friend";
-import { EmptyState } from "./community-shared";
+import { EmptyState, PlayerListSkeleton } from "./community-shared";
 import { Bell, Check, X } from "lucide-react";
 import { IconBtn } from "./icon-btn";
 import { PlayerCard } from "./player-card";
 
-export async function RequestsTab() {
+export function RequestsTab() {
+  return (
+    <div className="flex flex-col gap-4">
+      <Suspense fallback={<PlayerListSkeleton />}>
+        <RequestsResults />
+      </Suspense>
+    </div>
+  );
+}
+
+async function RequestsResults() {
   const friends = await getRequests();
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
       {!friends ? (
         <EmptyState
           icon={Bell}
@@ -49,6 +60,6 @@ export async function RequestsTab() {
           </div>
         </>
       )}
-    </div>
+    </>
   );
 }

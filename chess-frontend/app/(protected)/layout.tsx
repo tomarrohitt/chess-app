@@ -5,6 +5,8 @@ import { ConnectionStatus } from "./game/[id]/_components/connection-status";
 import { SearchingModal } from "@/components/game/searching-modal";
 import { GlobalRematchToast } from "./game/[id]/_components/global-rematch-toast";
 import { ActiveGameBanner } from "@/components/game/active-game-banner";
+import { GlobalChallengeToast } from "@/components/global-challenge-toast";
+import { Toaster } from "sonner";
 
 const ProtectedLayout = async ({ children }: { children: React.ReactNode }) => {
   const user = await getUserFromSession();
@@ -17,7 +19,9 @@ const ProtectedLayout = async ({ children }: { children: React.ReactNode }) => {
       {/* <ConnectionStatus /> */}
       <SearchingModal />
       <GlobalRematchToast />
+      <GlobalChallengeToast />
       <ActiveGameBanner />
+      <Toaster theme="dark" position="bottom-right" />
 
       {children}
     </SocketProvider>

@@ -1,10 +1,12 @@
 import { Suspense } from "react";
-import { Swords, MessageSquare, UserMinus, Users } from "lucide-react";
+import { Swords, MessageSquare, UserMinus, Users, UserX } from "lucide-react";
 import { EmptyState, FriendCard, PlayerListSkeleton } from "./community-shared";
-import { getFriends, removeFriend } from "@/actions/friend";
+import { blockUser, getFriends, removeFriend } from "@/actions/friend";
 import { SearchUsersForm } from "./search-users-form";
 import { IconBtn } from "./icon-btn";
 import { InfiniteScrollList } from "./infinite-scroll-list";
+import { ChallengeButton } from "./challenge-btn";
+import { MessageButton } from "./message-btn";
 
 export function FriendsTab({ query }: { query: string }) {
   return (
@@ -52,17 +54,19 @@ async function FriendsResults({ query }: { query: string }) {
             player={f}
             actions={
               <>
-                <IconBtn
-                  icon={<Swords size="14" />}
-                  label="Challenge"
-                  variant="amber"
-                />
-                <IconBtn icon={<MessageSquare size="14" />} label="Message" />
+                <ChallengeButton targetId={f.id} />
+                <MessageButton targetId={f.id} />
                 <IconBtn
                   icon={<UserMinus size="14" />}
                   label="Remove friend"
-                  variant="red"
+                  variant="rose"
                   onClick={removeFriend.bind(null, f.id)}
+                />
+                <IconBtn
+                  icon={<UserX size="14" />}
+                  label="Block"
+                  variant="red"
+                  onClick={blockUser.bind(null, f.id)}
                 />
               </>
             }

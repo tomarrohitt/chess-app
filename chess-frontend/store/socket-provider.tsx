@@ -35,6 +35,13 @@ type SocketContextType = {
   joinGameChat: (gameId: string) => void;
   sendChatMessage: (gameId: string, content: string) => void;
   leaveGameChat: (gameId: string) => void;
+
+  sendDirectMessage: (receiverId: string, content: string) => void;
+  sendTyping: (receiverId: string, isTyping: boolean) => void;
+
+  offerChallenge: (targetId: string, timeControl: string) => void;
+  acceptChallenge: (targetId: string, timeControl: string) => void;
+  declineChallenge: (targetId: string) => void;
 };
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -53,6 +60,7 @@ export function SocketProvider({
   const queueStatus = useGameStore((s) => s.queueStatus);
   const redirectedRef = useRef<string | null>(null);
   const wasInQueue = useRef(false);
+  const wasChallenging = useRef(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
@@ -95,8 +103,13 @@ export function SocketProvider({
     if (isPlayer) {
       redirectedRef.current = activeGameId;
 
-      if (wasInQueue.current || pathname.startsWith("/game/")) {
+      if (
+        wasInQueue.current ||
+        wasChallenging.current ||
+        pathname.startsWith("/game/")
+      ) {
         wasInQueue.current = false;
+        wasChallenging.current = false;
         setIsTransitioning(true);
         router.push(`/game/${activeGameId}`);
       }
@@ -120,6 +133,20 @@ export function SocketProvider({
       joinGameChat: wsApi.joinGameChat,
       sendChatMessage: wsApi.sendChatMessage,
       leaveGameChat: wsApi.leaveGameChat,
+      sendDirectMessage: wsApi.sendDirectMessage,
+      sendTyping: wsApi.sendTyping,
+      offerChallenge: (targetId: string, tc: string) => {
+        wasChallenging.current = true;
+        wsApi.offerChallenge(targetId, tc);
+      },
+      acceptChallenge: (targetId: string, tc: string) => {
+        wasChallenging.current = true;
+        wsApi.acceptChallenge(targetId, tc);
+      },
+      declineChallenge: (targetId: string) => {
+        wasChallenging.current = false;
+        wsApi.declineChallenge(targetId);
+      },
     }),
     [wsApi],
   );

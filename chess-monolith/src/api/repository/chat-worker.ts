@@ -58,7 +58,14 @@ async function flushChatBuffer() {
       rawMsgsForDLQ.push(raw);
 
       const parsed = JSON.parse(raw);
-      msgsToInsert.push({ ...parsed, createdAt: new Date(parsed.createdAt) });
+      msgsToInsert.push({
+        id: parsed.id,
+        senderId: parsed.sender?.id || parsed.senderId,
+        receiverId: parsed.receiverId,
+        content: parsed.content,
+        createdAt: new Date(parsed.createdAt),
+        read: parsed.read || false,
+      });
     }
 
     try {
@@ -85,3 +92,37 @@ async function flushChatBuffer() {
 }
 
 setInterval(flushChatBuffer, FLUSH_INTERVAL_MS);
+
+const DLQ_FLUSH_INTERVAL_MS = 60000;
+
+async function recoverDeadLetters() {
+  try {
+    const batchSize = 100;
+    const rawMsgs = await redis.lrange("chat:dead_letters", 0, batchSize - 1);
+
+    if (!rawMsgs || rawMsgs.length === 0) return;
+
+    const msgsToInsert = rawMsgs.map((raw) => {
+      const parsed = JSON.parse(raw);
+      return {
+        id: parsed.id,
+        senderId: parsed.sender?.id || parsed.senderId,
+        receiverId: parsed.receiverId,
+        content: parsed.content,
+        createdAt: new Date(parsed.createdAt),
+        read: parsed.read || false,
+      };
+    });
+
+    await saveMessagesBatch(msgsToInsert);
+
+    await redis.ltrim("chat:dead_letters", rawMsgs.length, -1);
+    console.log(
+      `[Chat Worker] Successfully recovered ${rawMsgs.length} messages from DLQ.`,
+    );
+  } catch (err) {
+    console.error(`[Chat Worker] Failed to recover messages from DLQ:`, err);
+  }
+}
+
+setInterval(recoverDeadLetters, DLQ_FLUSH_INTERVAL_MS);
