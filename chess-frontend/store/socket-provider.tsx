@@ -1,5 +1,4 @@
 "use client";
-
 import {
   createContext,
   useContext,
@@ -37,7 +36,6 @@ type SocketContextType = {
   leaveGameChat: (gameId: string) => void;
 
   sendDirectMessage: (receiverId: string, content: string) => void;
-  sendTyping: (receiverId: string, isTyping: boolean) => void;
 
   offerChallenge: (targetId: string, timeControl: string) => void;
   acceptChallenge: (targetId: string, timeControl: string) => void;
@@ -134,7 +132,6 @@ export function SocketProvider({
       sendChatMessage: wsApi.sendChatMessage,
       leaveGameChat: wsApi.leaveGameChat,
       sendDirectMessage: wsApi.sendDirectMessage,
-      sendTyping: wsApi.sendTyping,
       offerChallenge: (targetId: string, tc: string) => {
         wasChallenging.current = true;
         wsApi.offerChallenge(targetId, tc);

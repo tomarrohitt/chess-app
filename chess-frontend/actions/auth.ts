@@ -1,81 +1,85 @@
 "use server";
 
 import { api } from "@/lib/clients/server";
-import {
-    signIn,
-} from "@/lib/service/auth";
+import { signIn } from "@/lib/service/auth";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import z from "zod";
 import { LoginInput, loginSchema } from "@/types/auth";
 import { simplifyZodErrors } from "@/lib/constants/error-simplifier";
+import { ChatUserInfo } from "@/types/chat";
+import { safeFetch } from "@/lib/constants/safe-fetch";
 
 export async function login(redirectTo: string, _: any, formData: FormData) {
-    const data = Object.fromEntries(formData) as LoginInput;
-    const result = loginSchema.safeParse(data);
+  const data = Object.fromEntries(formData) as LoginInput;
+  const result = loginSchema.safeParse(data);
 
-    if (!result.success) {
-        const formattedErrors = z.treeifyError(result.error);
+  if (!result.success) {
+    const formattedErrors = z.treeifyError(result.error);
 
-        return {
-            success: false,
-            message: "Validation failed",
-            errors: simplifyZodErrors(formattedErrors),
-            inputs: {
-                email: data.email,
-                password: "",
-            },
-        };
+    return {
+      success: false,
+      message: "Validation failed",
+      errors: simplifyZodErrors(formattedErrors),
+      inputs: {
+        email: data.email,
+        password: "",
+      },
+    };
+  }
+
+  try {
+    await signIn(result.data);
+  } catch (error: any) {
+    if (error instanceof Error) {
+      return {
+        success: false,
+        message: error.message,
+        errors: {
+          email: "",
+          password: "",
+        },
+        inputs: {
+          email: data.email,
+          password: "",
+        },
+      };
     }
-
-    try {
-        await signIn(result.data);
-    } catch (error: any) {
-        if (error instanceof Error) {
-            return {
-                success: false,
-                message: error.message,
-                errors: {
-                    email: "",
-                    password: "",
-                },
-                inputs: {
-                    email: data.email,
-                    password: "",
-                },
-            };
-        }
-        return {
-            success: false,
-            message: error.errors[0].message as string,
-            errors: {
-                email: "",
-                password: "",
-            },
-            inputs: {
-                email: data.email,
-                password: "",
-            },
-        };
-    }
-    redirect(redirectTo);
+    return {
+      success: false,
+      message: error.errors[0].message as string,
+      errors: {
+        email: "",
+        password: "",
+      },
+      inputs: {
+        email: data.email,
+        password: "",
+      },
+    };
+  }
+  redirect(redirectTo);
 }
 
-
 export async function logout() {
-    try {
-        await api("/auth/sign-out", {
-            method: "POST",
-            body: {},
-            headers: {
-                Origin: process.env.NEXT_PUBLIC_ORIGIN_URL || "http://localhost:3000",
-            },
-        });
-    } catch (error) { }
-    const cookieStore = await cookies();
-    cookieStore.getAll().forEach((cookie) => {
-        cookieStore.delete(cookie.name);
+  try {
+    await api("/auth/sign-out", {
+      method: "POST",
+      body: {},
+      headers: {
+        Origin: process.env.NEXT_PUBLIC_ORIGIN_URL || "http://localhost:3000",
+      },
     });
-    redirect("/login");
+  } catch (error) {}
+  const cookieStore = await cookies();
+  cookieStore.getAll().forEach((cookie) => {
+    cookieStore.delete(cookie.name);
+  });
+  redirect("/login");
+}
+
+export async function fetchUserById(userId: string) {
+  const user = await safeFetch<ChatUserInfo>(`/user/${userId}`);
+  return user;
 }

@@ -2,7 +2,7 @@
 
 import { useGameStore } from "@/store/use-game-store";
 import { useSocket } from "@/store/socket-provider";
-import { DRAW_OFFER } from "@/types/chess";
+import { DrawOffer } from "@/types/chess";
 
 interface ActiveGameControlsProps {
   gameId: string;
@@ -28,12 +28,12 @@ export function ActiveGameControls({
           ½ Offer draw
         </button>
       )}
-      {drawOfferSent === DRAW_OFFER.SENT && (
+      {drawOfferSent === DrawOffer.SENT && (
         <div className="flex-1 py-2 font-mono text-[11px] text-zinc-600 bg-zinc-900/40 border border-zinc-800/30 rounded-lg text-center">
           Draw offered...
         </div>
       )}
-      {drawOfferSent === DRAW_OFFER.DECLINE && (
+      {drawOfferSent === DrawOffer.DECLINE && (
         <div className="flex-1 py-2 font-mono text-[11px] text-rose-500/70 bg-rose-950/20 border border-rose-900/30 rounded-lg text-center">
           Draw declined
         </div>

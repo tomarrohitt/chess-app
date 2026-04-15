@@ -1,6 +1,7 @@
 import { redis } from "../../infrastructure/redis/redis-client";
 import { saveMessagesBatch } from "../../api/repository/chat-repository";
 import { v7 as uuidv7 } from "uuid";
+import { ChatMessage } from "../../types/types";
 
 const STREAM_KEY = "chat:stream";
 const GROUP_NAME = "chat_workers";
@@ -48,7 +49,7 @@ async function flushChatBuffer() {
     const streamMessages = result[0][1];
     if (!streamMessages || streamMessages.length === 0) return;
 
-    const msgsToInsert = [];
+    const msgsToInsert: ChatMessage[] = [];
     const msgIds = [];
     const rawMsgsForDLQ: string[] = [];
 

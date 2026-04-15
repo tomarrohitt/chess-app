@@ -4,21 +4,19 @@ import {
   GameOverState,
   DrawOfferState,
   QueueStatus,
-  WsConnectionStatus,
   GameStatus,
   GameStartedPayload,
   GameStatePayload,
   MoveMadePayload,
-  PLAYER_COLOR,
-  COLOR,
-  QUEUE_STATUS,
-  DRAW_OFFER,
-  WS_CONNECTION_STATUS,
+  PlayerColor,
   RematchOfferState,
-  ChatMessagePayload,
   ChallengeOfferState,
+  DrawOffer,
+  FullColor,
 } from "@/types/chess";
 import { User } from "@/types/auth";
+import { WsConnectionStatus } from "@/types/ws";
+import { GameChatMessage, BaseMessage } from "@/types/chat";
 
 interface GameStore {
   connectionStatus: WsConnectionStatus;
@@ -29,12 +27,12 @@ interface GameStore {
   expectedGameId: string | null;
   gameOver: GameOverState | null;
   drawOffer: DrawOfferState | null;
-  drawOfferSent: DRAW_OFFER.SENT | DRAW_OFFER.DECLINE | null;
+  drawOfferSent: DrawOffer.SENT | DrawOffer.DECLINE | null;
   rematchOffer: RematchOfferState | null;
-  rematchOfferSent: DRAW_OFFER.SENT | DRAW_OFFER.DECLINE | null;
+  rematchOfferSent: DrawOffer.SENT | DrawOffer.DECLINE | null;
   lastMoveRejectedReason: string | null;
   showAnimations: boolean;
-  chatMessages: ChatMessagePayload[];
+  chatMessages: GameChatMessage[];
   incomingChallenge: ChallengeOfferState | null;
 
   setConnection: (status: WsConnectionStatus) => void;
@@ -42,12 +40,10 @@ interface GameStore {
   setQueue: (status: QueueStatus, timeControl?: string | null) => void;
   setExpectedGameId: (gameId: string | null) => void;
   setDrawOffer: (offer: DrawOfferState | null) => void;
-  setDrawOfferSent: (
-    status: DRAW_OFFER.SENT | DRAW_OFFER.DECLINE | null,
-  ) => void;
+  setDrawOfferSent: (status: DrawOffer.SENT | DrawOffer.DECLINE | null) => void;
   setRematchOffer: (offer: RematchOfferState | null) => void;
   setRematchOfferSent: (
-    status: DRAW_OFFER.SENT | DRAW_OFFER.DECLINE | null,
+    status: DrawOffer.SENT | DrawOffer.DECLINE | null,
   ) => void;
   setAnimations: (enabled: boolean) => void;
   setIncomingChallenge: (challenge: ChallengeOfferState | null) => void;
@@ -56,14 +52,14 @@ interface GameStore {
   handleMoveMade: (p: MoveMadePayload) => void;
   handleMoveRejected: (reason: string) => void;
   handleGameOver: (p: GameOverState) => void;
-  addChatMessage: (msg: ChatMessagePayload) => void;
+  addChatMessage: (msg: GameChatMessage) => void;
   resetGame: () => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
-  connectionStatus: WS_CONNECTION_STATUS.IDLE,
+  connectionStatus: WsConnectionStatus.IDLE,
   user: null,
-  queueStatus: QUEUE_STATUS.IDLE,
+  queueStatus: QueueStatus.IDLE,
   queueTimeControl: null,
   activeGame: null,
   expectedGameId: null,
@@ -94,20 +90,20 @@ export const useGameStore = create<GameStore>((set) => ({
       const [mins] = p.timeControl.split("+").map(Number);
       const baseMs = mins * 60 * 1000;
       return {
-        queueStatus: QUEUE_STATUS.IDLE,
+        queueStatus: QueueStatus.IDLE,
         queueTimeControl: null,
         gameOver: null,
         rematchOffer: null,
         rematchOfferSent: null,
-        chatMessages: [], // Clear chat when a new game starts
+        chatMessages: [],
         incomingChallenge: null,
         activeGame: {
           gameId: p.gameId,
           fen: p.fen,
           pgn: "",
-          turn: PLAYER_COLOR.WHITE,
+          turn: PlayerColor.WHITE,
           playerColor:
-            p.color === COLOR.WHITE ? PLAYER_COLOR.WHITE : PLAYER_COLOR.BLACK,
+            p.color === FullColor.WHITE ? PlayerColor.WHITE : PlayerColor.BLACK,
           white: { ...p.white, timeLeftMs: baseMs, capturedPieces: [] },
           black: { ...p.black, timeLeftMs: baseMs, capturedPieces: [] },
 
@@ -155,9 +151,9 @@ export const useGameStore = create<GameStore>((set) => ({
           fen: p.fen,
           pgn: p.pgn,
           turn:
-            state.activeGame.turn === PLAYER_COLOR.WHITE
-              ? PLAYER_COLOR.BLACK
-              : PLAYER_COLOR.WHITE,
+            state.activeGame.turn === PlayerColor.WHITE
+              ? PlayerColor.BLACK
+              : PlayerColor.WHITE,
           white: {
             ...state.activeGame.white,
             timeLeftMs: p.white.timeLeftMs,
@@ -190,13 +186,12 @@ export const useGameStore = create<GameStore>((set) => ({
       rematchOfferSent: null,
     })),
 
-  addChatMessage: (msg: ChatMessagePayload) =>
+  addChatMessage: (msg: GameChatMessage) =>
     set((state) => {
       if (state.activeGame?.gameId !== msg.gameId) {
         return state;
       }
-      const { gameId, ...rest } = msg;
-      return { chatMessages: [...state.chatMessages, rest] };
+      return { chatMessages: [...state.chatMessages, msg] };
     }),
 
   resetGame: () =>
@@ -204,7 +199,7 @@ export const useGameStore = create<GameStore>((set) => ({
       activeGame: null,
       expectedGameId: null,
       gameOver: null,
-      queueStatus: QUEUE_STATUS.IDLE,
+      queueStatus: QueueStatus.IDLE,
       queueTimeControl: null,
       drawOffer: null,
       drawOfferSent: null,

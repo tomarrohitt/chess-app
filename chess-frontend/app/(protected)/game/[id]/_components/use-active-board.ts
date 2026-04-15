@@ -6,7 +6,7 @@ import {
 } from "react-chessboard";
 import { Chess, Square } from "chess.js";
 import { useSocket } from "@/store/socket-provider";
-import { COLOR, ActiveGame, GameOverState } from "@/types/chess";
+import { FullColor, ActiveGame, GameOverState } from "@/types/chess";
 import { playAudio } from "@/lib/audio";
 
 export interface UseActiveBoardProps {
@@ -141,8 +141,8 @@ export function useActiveBoard({
 
   const playIllegalMoveSound = (forcePlay = false) => {
     const isMyTurn =
-      (game.turn() === "w" ? COLOR.WHITE : COLOR.BLACK) ===
-      (isWhite ? COLOR.WHITE : COLOR.BLACK);
+      (game.turn() === "w" ? FullColor.WHITE : FullColor.BLACK) ===
+      (isWhite ? FullColor.WHITE : FullColor.BLACK);
 
     if (forcePlay || (isMyTurn && game.inCheck())) {
       playAudio("/incorrect.mp3");
@@ -179,8 +179,8 @@ export function useActiveBoard({
     if (!isPlayer || isViewingHistory || gameOver) return;
     if (displayedFen === lastProcessedFen.current) return;
 
-    const turnColor = game.turn() === "w" ? COLOR.WHITE : COLOR.BLACK;
-    const playerColor = isWhite ? COLOR.WHITE : COLOR.BLACK;
+    const turnColor = game.turn() === "w" ? FullColor.WHITE : FullColor.BLACK;
+    const playerColor = isWhite ? FullColor.WHITE : FullColor.BLACK;
 
     if (turnColor === playerColor && premovesRef.current.length > 0) {
       lastProcessedFen.current = displayedFen;
@@ -223,8 +223,8 @@ export function useActiveBoard({
   function onSquareClick({ square, piece }: SquareHandlerArgs) {
     if (!isPlayer || isViewingHistory) return;
 
-    const turnColor = game.turn() === "w" ? COLOR.WHITE : COLOR.BLACK;
-    const playerColor = isWhite ? COLOR.WHITE : COLOR.BLACK;
+    const turnColor = game.turn() === "w" ? FullColor.WHITE : FullColor.BLACK;
+    const playerColor = isWhite ? FullColor.WHITE : FullColor.BLACK;
 
     if (turnColor !== playerColor) {
       if (!moveFrom) {
@@ -317,8 +317,8 @@ export function useActiveBoard({
     )
       return false;
 
-    const turnColor = game.turn() === "w" ? COLOR.WHITE : COLOR.BLACK;
-    const playerColor = isWhite ? COLOR.WHITE : COLOR.BLACK;
+    const turnColor = game.turn() === "w" ? FullColor.WHITE : FullColor.BLACK;
+    const playerColor = isWhite ? FullColor.WHITE : FullColor.BLACK;
 
     const pieceStr =
       typeof piece === "string"
@@ -326,8 +326,8 @@ export function useActiveBoard({
         : (piece as { pieceType?: string })?.pieceType;
     const pieceColor = pieceStr
       ? pieceStr[0] === "w"
-        ? COLOR.WHITE
-        : COLOR.BLACK
+        ? FullColor.WHITE
+        : FullColor.BLACK
       : playerColor;
 
     if (pieceColor !== playerColor) return false;

@@ -45,15 +45,8 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(WsMessageType.SEND_GAME_CHAT),
     payload: z.object({
-      gameId: z.string().uuid(),
+      gameId: z.uuid(),
       content: z.string().min(1).max(500),
-    }),
-  }),
-  z.object({
-    type: z.literal(WsMessageType.CHAT_TYPING),
-    payload: z.object({
-      receiverId: z.string(),
-      isTyping: z.boolean(),
     }),
   }),
   z.object({

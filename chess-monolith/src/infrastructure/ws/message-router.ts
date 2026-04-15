@@ -245,7 +245,7 @@ export async function routeMessage(
 
         const msg = {
           id: uuidv7(),
-          sender: ws.user,
+          senderId: ws.user.id,
           receiverId,
           content,
           createdAt: new Date(),
@@ -263,15 +263,6 @@ export async function routeMessage(
         console.log(
           `[Chat] Message queued from ${ws.user.id} to ${receiverId}`,
         );
-        break;
-      }
-
-      case WsMessageType.CHAT_TYPING: {
-        const { receiverId, isTyping } = envelope.payload;
-        await sendToUser(receiverId, {
-          type: WsMessageType.CHAT_TYPING,
-          payload: { senderId: ws.user.id, isTyping },
-        });
         break;
       }
 

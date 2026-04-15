@@ -1,4 +1,4 @@
-import { WsMessageType } from "@/types/chess";
+import { WsMessageType } from "@/types/ws";
 import * as z from "zod";
 
 const EmptyPayload = z.undefined();

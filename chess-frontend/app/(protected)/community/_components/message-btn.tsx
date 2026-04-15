@@ -13,7 +13,7 @@ export function MessageButton({ targetId }: { targetId: string }) {
       label="Message"
       variant="blue"
       onClick={async () => {
-        router.push(`/inbox?userId=${targetId}`);
+        router.push(`/inbox/${targetId}`);
         return true;
       }}
     />

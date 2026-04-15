@@ -1,11 +1,11 @@
 "use client";
 import { cn } from "@/lib/utils";
-import { PLAYER_COLOR } from "@/types/chess";
+import { PlayerColor } from "@/types/chess";
 import { defaultPieces } from "react-chessboard";
 
 interface CapturedPiecesProps {
   capturedPieces: string[] | undefined;
-  color: PLAYER_COLOR;
+  color: PlayerColor;
   materialAdvantage?: number;
   position: "top" | "bottom";
 }
@@ -49,7 +49,7 @@ export function CapturedPieces({
       >
         {sorted.map((piece, i) => {
           const key = (
-            color === PLAYER_COLOR.WHITE
+            color === PlayerColor.WHITE
               ? `b${piece.toUpperCase()}`
               : `w${piece.toUpperCase()}`
           ) as keyof typeof defaultPieces;

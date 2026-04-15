@@ -1,4 +1,4 @@
-import { PLAYER_COLOR } from "@/types/chess";
+import { PlayerColor } from "@/types/chess";
 import { getMaterialScore } from "@/lib/chess-utils";
 
 export function getCapturedPieces(fen: string) {
@@ -63,13 +63,13 @@ export function getCapturedPieces(fen: string) {
 export function getPlayerAdvantages(
   whiteCaptured: string[] | undefined,
   blackCaptured: string[] | undefined,
-  topColor: PLAYER_COLOR,
+  topColor: PlayerColor,
 ) {
   const whiteMaterialScore = getMaterialScore(whiteCaptured || []);
   const blackMaterialScore = getMaterialScore(blackCaptured || []);
 
   const topAdvantage =
-    topColor === PLAYER_COLOR.WHITE
+    topColor === PlayerColor.WHITE
       ? whiteMaterialScore - blackMaterialScore
       : blackMaterialScore - whiteMaterialScore;
 

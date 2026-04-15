@@ -9,6 +9,7 @@ import { initializeWebSocketServer } from "./infrastructure/ws/web-socket-server
 import gameRouter from "./api/routes/game-router";
 import friendRouter from "./api/routes/friend-router";
 import chatRouter from "./api/routes/chat-router";
+import userRouter from "./api/routes/user-router";
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use("/api/games", gameRouter);
 app.use("/api/friends", friendRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/user", userRouter);
 
 app.get("/health", (_, res) => {
   res.json({ status: "Chess engine is breathing" });

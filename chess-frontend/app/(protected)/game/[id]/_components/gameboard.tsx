@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useGameStore } from "@/store/use-game-store";
 import { User } from "@/types/auth";
 
-import { GameStatus, PLAYER_COLOR } from "@/types/chess";
+import { GameStatus, PlayerColor } from "@/types/chess";
 import { useSocket } from "@/store/socket-provider";
 import { GameSidebar } from "./game-sidebar";
 import { ActiveBoard } from "./active-board";
@@ -52,8 +52,8 @@ export function Gameboard({ gameId, user }: GameboardProps) {
     ? user.id === activeGame?.white.id
     : !spectatorFlipped;
 
-  const topColor = isWhite ? PLAYER_COLOR.BLACK : PLAYER_COLOR.WHITE;
-  const bottomColor = isWhite ? PLAYER_COLOR.WHITE : PLAYER_COLOR.BLACK;
+  const topColor = isWhite ? PlayerColor.BLACK : PlayerColor.WHITE;
+  const bottomColor = isWhite ? PlayerColor.WHITE : PlayerColor.BLACK;
 
   const timeline = useTimeline(activeGame?.pgn);
 
@@ -140,9 +140,9 @@ export function Gameboard({ gameId, user }: GameboardProps) {
   };
 
   const topPlayer =
-    topColor === PLAYER_COLOR.WHITE ? dynamicWhite : dynamicBlack;
+    topColor === PlayerColor.WHITE ? dynamicWhite : dynamicBlack;
   const bottomPlayer =
-    bottomColor === PLAYER_COLOR.WHITE ? dynamicWhite : dynamicBlack;
+    bottomColor === PlayerColor.WHITE ? dynamicWhite : dynamicBlack;
 
   const { topAdvantage, bottomAdvantage } = getPlayerAdvantages(
     dynamicWhite.capturedPieces,

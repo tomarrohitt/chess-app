@@ -2,7 +2,7 @@
 
 import { Chessboard, defaultPieces } from "react-chessboard";
 import { GameOverOverlay } from "./game-over-overlay";
-import { COLOR, ActiveGame, GameOverState } from "@/types/chess";
+import { FullColor, ActiveGame, GameOverState } from "@/types/chess";
 import { sharedBoardOptions } from "./board-theme";
 import { useActiveBoard } from "./use-active-board";
 
@@ -63,7 +63,7 @@ export function ActiveBoard({
   const boardOptions = {
     id: "active-board",
     position,
-    boardOrientation: isWhite ? COLOR.WHITE : COLOR.BLACK,
+    boardOrientation: isWhite ? FullColor.WHITE : FullColor.BLACK,
     onPieceDrop,
     onSquareClick,
     onSquareRightClick,

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useGameStore } from "@/store/use-game-store";
 import { useSocket } from "@/store/socket-provider";
-import { DRAW_OFFER, GameOverState, GameStatus } from "@/types/chess";
+import { DrawOffer, GameOverState, GameStatus } from "@/types/chess";
 
 export function GameOverOverlay({
   gameOver,
@@ -114,12 +114,12 @@ export function GameOverOverlay({
                 Rematch
               </button>
             )}
-            {rematchOfferSent === DRAW_OFFER.SENT && (
+            {rematchOfferSent === DrawOffer.SENT && (
               <div className="flex-1 py-2.5 font-mono text-[11px] text-zinc-600 bg-zinc-900/40 border border-zinc-800/30 rounded-lg text-center">
                 Sent...
               </div>
             )}
-            {rematchOfferSent === DRAW_OFFER.DECLINE && (
+            {rematchOfferSent === DrawOffer.DECLINE && (
               <div className="flex-1 py-2.5 font-mono text-[11px] text-rose-500/60 bg-rose-950/20 border border-rose-900/30 rounded-lg text-center">
                 Declined
               </div>

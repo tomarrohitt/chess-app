@@ -1,14 +1,15 @@
 "use client";
 
-import { GameStateUser, PLAYER_COLOR } from "@/types/chess";
+import { PlayerColor } from "@/types/chess";
 import { Clock } from "./clock";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { getInitials } from "@/lib/constants/get-initials";
+import { GameStateUser } from "@/types/player";
 
 interface PlayerCardProps {
   player: GameStateUser;
-  color: PLAYER_COLOR.WHITE | PLAYER_COLOR.BLACK;
+  color: PlayerColor.WHITE | PlayerColor.BLACK;
   isActive: boolean;
   pieces: React.ReactNode;
   position?: "top" | "bottom";
@@ -21,7 +22,7 @@ export function PlayerCard({
   pieces,
   position = "top",
 }: PlayerCardProps) {
-  const isWhite = color === PLAYER_COLOR.WHITE;
+  const isWhite = color === PlayerColor.WHITE;
 
   return (
     <div

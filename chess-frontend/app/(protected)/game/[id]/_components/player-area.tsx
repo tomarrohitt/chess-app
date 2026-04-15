@@ -2,11 +2,12 @@
 
 import { PlayerCard } from "./player-card";
 import { CapturedPieces } from "./captured-pieces";
-import { GameStateUser, PLAYER_COLOR } from "@/types/chess";
+import { PlayerColor } from "@/types/chess";
+import { GameStateUser } from "@/types/player";
 
 interface PlayerAreaProps {
   player: GameStateUser;
-  color: PLAYER_COLOR;
+  color: PlayerColor;
   isActive: boolean;
   materialAdvantage: number;
   position: "top" | "bottom";

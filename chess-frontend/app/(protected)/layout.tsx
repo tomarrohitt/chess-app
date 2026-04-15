@@ -16,13 +16,12 @@ const ProtectedLayout = async ({ children }: { children: React.ReactNode }) => {
 
   return (
     <SocketProvider user={user}>
-      {/* <ConnectionStatus /> */}
+      <ConnectionStatus />
       <SearchingModal />
       <GlobalRematchToast />
       <GlobalChallengeToast />
       <ActiveGameBanner />
       <Toaster theme="dark" position="bottom-right" />
-
       {children}
     </SocketProvider>
   );

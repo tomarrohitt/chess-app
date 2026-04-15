@@ -43,6 +43,13 @@
       "when": 1775570955536,
       "tag": "0005_create_pg_trgm_extension",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776069284767,
+      "tag": "0006_rich_kronos",
+      "breakpoints": true
     }
   ]
 }

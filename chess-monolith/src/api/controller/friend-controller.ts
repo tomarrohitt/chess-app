@@ -14,7 +14,7 @@ import {
   getFriendship,
   searchGlobalUsers,
 } from "../repository/friend-repository";
-import { TargetUserIdSchema } from "./validation/friends-schema";
+import { TargetUserIdSchema } from "../validation/friends-schema";
 
 export async function requestFriend(req: Request, res: Response) {
   const session = await auth.api.getSession({

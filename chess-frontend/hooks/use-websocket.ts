@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useRef, useMemo } from "react";
-import {
-  WsMessageType,
-  GameStatus,
-  WS_CONNECTION_STATUS,
-  ServerMessageSchema,
-  DRAW_OFFER,
-  QUEUE_STATUS,
-} from "../types/chess";
+import { DrawOffer, GameStatus, QueueStatus } from "../types/chess";
 import { useGameStore } from "@/store/use-game-store";
 import { User } from "@/types/auth";
+import {
+  ServerMessageSchema,
+  WsConnectionStatus,
+  WsMessageType,
+} from "@/types/ws";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080";
 
@@ -63,13 +61,13 @@ export function useWebSocket(user: User) {
           break;
         case WsMessageType.QUEUE_LEFT:
         case WsMessageType.MATCHMAKING_TIMEOUT:
-          store.setQueue(QUEUE_STATUS.IDLE);
+          store.setQueue(QueueStatus.IDLE);
           break;
         case WsMessageType.OFFER_DRAW:
           store.setDrawOffer(msg.payload);
           break;
         case WsMessageType.DECLINE_DRAW:
-          store.setDrawOfferSent(DRAW_OFFER.DECLINE);
+          store.setDrawOfferSent(DrawOffer.DECLINE);
           setTimeout(() => store.setDrawOfferSent(null), 5000);
           break;
         case WsMessageType.GAME_ABORTED:
@@ -82,7 +80,7 @@ export function useWebSocket(user: User) {
           store.setRematchOffer(msg.payload);
           break;
         case WsMessageType.DECLINE_REMATCH:
-          store.setRematchOfferSent(DRAW_OFFER.DECLINE);
+          store.setRematchOfferSent(DrawOffer.DECLINE);
           setTimeout(() => store.setRematchOfferSent(null), 5000);
           break;
         case WsMessageType.NEW_GAME_CHAT:
@@ -100,11 +98,6 @@ export function useWebSocket(user: User) {
         case WsMessageType.CHAT_MESSAGE_ACK:
           window.dispatchEvent(
             new CustomEvent("chat_message", { detail: msg.payload }),
-          );
-          break;
-        case WsMessageType.CHAT_TYPING:
-          window.dispatchEvent(
-            new CustomEvent("chat_typing", { detail: msg.payload }),
           );
           break;
       }
@@ -125,14 +118,14 @@ export function useWebSocket(user: User) {
     }
 
     console.log("[WS] Attempting to connect to:", WS_URL);
-    store.setConnection(WS_CONNECTION_STATUS.CONNECTING);
+    store.setConnection(WsConnectionStatus.CONNECTING);
     store.setUser(userRef.current);
 
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      store.setConnection(WS_CONNECTION_STATUS.CONNECTED);
+      store.setConnection(WsConnectionStatus.CONNECTED);
 
       ws.send(JSON.stringify({ type: WsMessageType.SYNC_GAME }));
 
@@ -146,14 +139,14 @@ export function useWebSocket(user: User) {
 
     ws.onerror = (error) => {
       console.error("[WS] Connection Error:", error);
-      store.setConnection(WS_CONNECTION_STATUS.DISCONNECTED);
+      store.setConnection(WsConnectionStatus.DISCONNECTED);
     };
 
     ws.onclose = (event) => {
       console.warn(
         `[WS] Closed. Code: ${event.code}, Reason: ${event.reason || "No reason given"}`,
       );
-      store.setConnection(WS_CONNECTION_STATUS.DISCONNECTED);
+      store.setConnection(WsConnectionStatus.DISCONNECTED);
       wsRef.current = null;
     };
   }, [handleMessage]);
@@ -168,9 +161,7 @@ export function useWebSocket(user: User) {
         wsRef.current.onmessage = null;
         wsRef.current.close(1000, "Component unmounted");
         wsRef.current = null;
-        useGameStore
-          .getState()
-          .setConnection(WS_CONNECTION_STATUS.DISCONNECTED);
+        useGameStore.getState().setConnection(WsConnectionStatus.DISCONNECTED);
       }
     };
   }, []);
@@ -182,7 +173,7 @@ export function useWebSocket(user: User) {
         send(WsMessageType.JOIN_QUEUE, { timeControl }),
       leaveQueue: () => {
         send(WsMessageType.LEAVE_QUEUE);
-        useGameStore.getState().setQueue(QUEUE_STATUS.IDLE);
+        useGameStore.getState().setQueue(QueueStatus.IDLE);
       },
       makeMove: (
         gameId: string,
@@ -194,7 +185,7 @@ export function useWebSocket(user: User) {
       offerDraw: (gameId: string) => {
         const store = useGameStore.getState();
         send(WsMessageType.OFFER_DRAW, { gameId });
-        store.setDrawOfferSent(DRAW_OFFER.SENT);
+        store.setDrawOfferSent(DrawOffer.SENT);
       },
       acceptDraw: (gameId: string) => {
         send(WsMessageType.ACCEPT_DRAW, { gameId });
@@ -207,9 +198,9 @@ export function useWebSocket(user: User) {
       offerRematch: (gameId: string, timeControl: string) => {
         const store = useGameStore.getState();
         send(WsMessageType.OFFER_REMATCH, { gameId, timeControl });
-        store.setRematchOfferSent(DRAW_OFFER.SENT);
+        store.setRematchOfferSent(DrawOffer.SENT);
         setTimeout(() => {
-          if (useGameStore.getState().rematchOfferSent === DRAW_OFFER.SENT) {
+          if (useGameStore.getState().rematchOfferSent === DrawOffer.SENT) {
             store.setRematchOfferSent(null);
           }
         }, 15000);
@@ -269,9 +260,6 @@ export function useWebSocket(user: User) {
       },
       sendDirectMessage: (receiverId: string, content: string) => {
         send(WsMessageType.SEND_CHAT_MESSAGE, { receiverId, content });
-      },
-      sendTyping: (receiverId: string, isTyping: boolean) => {
-        send(WsMessageType.CHAT_TYPING, { receiverId, isTyping });
       },
       offerChallenge: (targetId: string, timeControl: string) => {
         send(WsMessageType.OFFER_CHALLENGE, { targetId, timeControl });

@@ -100,6 +100,15 @@ export const PlayerInfoSchema = z.object({
   image: z.string().nullable(),
 });
 
+export type ChatMessage = {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  createdAt: Date;
+  read: boolean;
+};
+
 export type PlayerInfo = z.infer<typeof PlayerInfoSchema>;
 
 export const GameChatMessageSchema = z.object({
@@ -109,6 +118,11 @@ export const GameChatMessageSchema = z.object({
   content: z.string(),
   createdAt: z.string(),
 });
+
+export type InboxChatMessage = {
+  user: PlayerInfo;
+  lastMessage: ChatMessage;
+};
 
 export type GameChatMessage = z.infer<typeof GameChatMessageSchema>;
 

@@ -241,3 +241,17 @@ export const messages = pgTable(
     index("messages_created_at_idx").on(table.createdAt),
   ],
 );
+
+export const clearedChats = pgTable(
+  "cleared_chats",
+  {
+    userId: text("user_id")
+      .references(() => user.id, { onDelete: "cascade" })
+      .notNull(),
+    otherUserId: text("other_user_id")
+      .references(() => user.id, { onDelete: "cascade" })
+      .notNull(),
+    clearedAt: timestamp("cleared_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.otherUserId] })],
+);

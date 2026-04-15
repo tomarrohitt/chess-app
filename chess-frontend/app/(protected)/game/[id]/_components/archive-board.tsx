@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Chessboard } from "react-chessboard";
 import { User } from "@/types/auth";
-import { COLOR, GameStatus, PLAYER_COLOR } from "@/types/chess";
+import { FullColor, GameStatus, PlayerColor } from "@/types/chess";
 import { PlayerArea } from "./player-area";
 import { MoveList } from "./move-list";
 import { getPlayerAdvantages, getCapturedPieces } from "./advantage";
@@ -15,7 +15,6 @@ import { useGameStore } from "@/store/use-game-store";
 import { useGameAudio } from "@/hooks/use-game-audio";
 import { getTimesAtMove } from "./time-utils";
 import { RematchControls } from "./rematch-controls";
-import Image from "next/image";
 import { FlipButton } from "./flip-button";
 
 export interface GamePlayer {
@@ -58,8 +57,8 @@ export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
   const playerIsWhite = user.id === gameData.white.id;
   const isViewingWhite = isFlipped ? !playerIsWhite : playerIsWhite;
 
-  const topColor = isViewingWhite ? PLAYER_COLOR.BLACK : PLAYER_COLOR.WHITE;
-  const bottomColor = isViewingWhite ? PLAYER_COLOR.WHITE : PLAYER_COLOR.BLACK;
+  const topColor = isViewingWhite ? PlayerColor.BLACK : PlayerColor.WHITE;
+  const bottomColor = isViewingWhite ? PlayerColor.WHITE : PlayerColor.BLACK;
 
   const { rematchOffer } = useGameStore();
 
@@ -92,7 +91,7 @@ export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
   const currentFen = timeline.fens[currentMoveIndex + 1];
   const boardOptions = {
     position: currentFen,
-    boardOrientation: isViewingWhite ? COLOR.WHITE : COLOR.BLACK,
+    boardOrientation: isViewingWhite ? FullColor.WHITE : FullColor.BLACK,
     allowDragging: false,
     allowDrawingArrows: true,
     clearArrowsOnPositionChange: true,
@@ -122,9 +121,9 @@ export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
   };
 
   const topPlayer =
-    topColor === PLAYER_COLOR.WHITE ? dynamicWhite : dynamicBlack;
+    topColor === PlayerColor.WHITE ? dynamicWhite : dynamicBlack;
   const bottomPlayer =
-    bottomColor === PLAYER_COLOR.WHITE ? dynamicWhite : dynamicBlack;
+    bottomColor === PlayerColor.WHITE ? dynamicWhite : dynamicBlack;
 
   const { topAdvantage, bottomAdvantage } = getPlayerAdvantages(
     dynamicWhite.capturedPieces,

@@ -4,6 +4,7 @@ import { toFetchHeaders } from "../../lib/utils/to-fetch-headers";
 import {
   getChatHistory,
   getRecentConversations,
+  clearChat,
 } from "../repository/chat-repository";
 import { z } from "zod";
 
@@ -31,12 +32,15 @@ export async function getHistory(req: Request, res: Response) {
     return res.status(400).json({ error: "Invalid query parameters" });
   }
 
-  const history = await getChatHistory(
+  const { messages, user } = await getChatHistory(
     session.user.id,
     paramsResult.data.userId,
     queryResult.data.limit,
   );
-  return res.json({ success: true, data: history.reverse() });
+  return res.json({
+    success: true,
+    data: { user, messages: messages.reverse() },
+  });
 }
 
 export async function getRecentConversationsHandler(
@@ -52,4 +56,23 @@ export async function getRecentConversationsHandler(
   const conversations = await getRecentConversations(session.user.id);
 
   return res.json({ success: true, data: conversations });
+}
+
+const ClearChatParamsSchema = z.object({
+  userId: z.string(),
+});
+
+export async function clearChatHandler(req: Request, res: Response) {
+  const session = await auth.api.getSession({
+    headers: toFetchHeaders(req.headers),
+  });
+  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
+
+  const paramsResult = ClearChatParamsSchema.safeParse(req.params);
+  if (!paramsResult.success) {
+    return res.status(400).json({ error: "Invalid parameters" });
+  }
+
+  await clearChat(session.user.id, paramsResult.data.userId);
+  return res.json({ success: true });
 }

@@ -13,6 +13,22 @@ export default async function CommunityPage({
   const active = tab || "friends";
   const query = q || "";
 
+  let tabContent = null;
+  switch (active) {
+    case "friends":
+      tabContent = <FriendsTab query={query} />;
+      break;
+    case "find":
+      tabContent = <FindPlayersTab query={query} />;
+      break;
+    case "requests":
+      tabContent = <RequestsTab />;
+      break;
+    case "blocked":
+      tabContent = <BlockedTab />;
+      break;
+  }
+
   return (
     <div
       className="min-h-screen w-full"
@@ -23,14 +39,7 @@ export default async function CommunityPage({
     >
       <div className="fixed inset-0 pointer-events-none opacity-[0.025]" />
       <div className="relative max-w-2xl mx-auto px-4 py-10">
-        <CommunityNav active={active}>
-          <div key={active}>
-            {active === "friends" && <FriendsTab query={query} />}
-            {active === "find" && <FindPlayersTab query={query} />}
-            {active === "requests" && <RequestsTab />}
-            {active === "blocked" && <BlockedTab />}
-          </div>
-        </CommunityNav>
+        <CommunityNav active={active}>{tabContent}</CommunityNav>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
+import { GameRecord } from "@/types/history";
 import { Chessboard } from "react-chessboard";
-import { GameRecord } from "./game-history-with-board";
 
 interface GameboardSnapshotProps {
   game: GameRecord;
