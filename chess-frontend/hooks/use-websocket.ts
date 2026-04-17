@@ -261,6 +261,12 @@ export function useWebSocket(user: User) {
       sendDirectMessage: (receiverId: string, content: string) => {
         send(WsMessageType.SEND_CHAT_MESSAGE, { receiverId, content });
       },
+      markChatRead: (friendId: string) => {
+        send(WsMessageType.MARK_CHAT_READ, { friendId });
+      },
+      markAllChatsRead: () => {
+        send(WsMessageType.MARK_ALL_CHATS_READ);
+      },
       offerChallenge: (targetId: string, timeControl: string) => {
         send(WsMessageType.OFFER_CHALLENGE, { targetId, timeControl });
       },

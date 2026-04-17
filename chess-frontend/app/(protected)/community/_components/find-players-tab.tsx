@@ -9,15 +9,7 @@ import {
   cancelRequest,
 } from "@/actions/friend";
 import { SearchUsersForm } from "./search-users-form";
-import {
-  Search,
-  Swords,
-  UserPlus,
-  UserX,
-  UserCheck,
-  Check,
-  X,
-} from "lucide-react";
+import { Search, UserPlus, UserX, UserCheck, Check, X } from "lucide-react";
 import { IconBtn } from "./icon-btn";
 import { PlayerCard } from "./player-card";
 import { InfiniteScrollList } from "./infinite-scroll-list";

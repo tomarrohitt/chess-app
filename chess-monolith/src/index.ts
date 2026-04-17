@@ -10,6 +10,7 @@ import gameRouter from "./api/routes/game-router";
 import friendRouter from "./api/routes/friend-router";
 import chatRouter from "./api/routes/chat-router";
 import userRouter from "./api/routes/user-router";
+import { requestLogger } from "./lib/logger";
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(
   }),
 );
 
+app.use(requestLogger);
 app.use(express.json());
 
 app.all("/api/auth/{*any}", toNodeHandler(auth));

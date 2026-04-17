@@ -3,6 +3,7 @@ import { PlayerInfoSchema } from "./player";
 
 const ChatUserSchema = PlayerInfoSchema.omit({ rating: true }).extend({
   name: z.string(),
+  isBlocked: z.boolean(),
 });
 
 export const BaseMessageSchema = z.object({
@@ -18,22 +19,20 @@ export const GameChatMessageSchema = BaseMessageSchema.extend({
   sender: PlayerInfoSchema,
 }).omit({ receiverId: true });
 
-export const ChatMessageSchema = BaseMessageSchema.extend({
-  read: z.boolean(),
-});
 export const ChatMessageSchemaResponseSchema = z.object({
   user: ChatUserSchema,
-  messages: z.array(ChatMessageSchema),
+  messages: z.array(BaseMessageSchema),
 });
 
 export const ChatConversationSchema = z.object({
   user: ChatUserSchema,
-  lastMessage: ChatMessageSchema,
+  lastMessage: BaseMessageSchema,
+  unreadCount: z.number(),
 });
 
 export type BaseMessage = z.infer<typeof BaseMessageSchema>;
 export type GameChatMessage = z.infer<typeof GameChatMessageSchema>;
-export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+export type ChatMessage = z.infer<typeof BaseMessageSchema>;
 export type ChatMessageSchemaResponse = z.infer<
   typeof ChatMessageSchemaResponseSchema
 >;

@@ -1,8 +1,8 @@
 import { clearConversations } from "@/actions/chat";
 import { Loader, Trash2 } from "lucide-react";
 import { useTransition } from "react";
-import { useInbox } from "./inbox-context";
 import { useRouter } from "next/navigation";
+import { useInbox } from "../../_components/inbox-context";
 
 export const ClearChatButton = ({ id }: { id: string }) => {
   const [pending, startTransition] = useTransition();
@@ -19,14 +19,16 @@ export const ClearChatButton = ({ id }: { id: string }) => {
   };
   return (
     <button
-      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-red-500/20 text-zinc-500 hover:text-red-400 shrink-0"
+      className="flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 transition-colors text-red-500 text-sm font-medium w-full text-left cursor-pointer"
       onClick={handleClearChat}
       disabled={pending}
     >
       {pending ? (
-        <Loader size={14} className="animate-spin" />
+        <Loader size={16} className="animate-spin" />
       ) : (
-        <Trash2 size={14} />
+        <>
+          <Trash2 size={16} /> Clear Chat
+        </>
       )}
     </button>
   );

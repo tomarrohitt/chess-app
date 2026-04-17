@@ -58,9 +58,7 @@ export function IconBtn({
         background: colors.bg,
         color: colors.color,
       }}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
+      onClick={() => {
         if (onClick) {
           startTransition(async () => {
             await onClick();

@@ -10,8 +10,9 @@ export enum WsMessageType {
   SEND_CHAT_MESSAGE = "SEND_CHAT_MESSAGE",
   RECEIVE_CHAT_MESSAGE = "RECEIVE_CHAT_MESSAGE",
   CHAT_MESSAGE_ACK = "CHAT_MESSAGE_ACK",
-  CHAT_TYPING = "CHAT_TYPING",
-
+  MARK_CHAT_READ = "MARK_CHAT_READ",
+  MARK_ALL_CHATS_READ = "MARK_ALL_CHATS_READ",
+  CHAT_READ_RECEIPT = "CHAT_READ_RECEIPT",
   JOIN_QUEUE = "JOIN_QUEUE",
   LEAVE_QUEUE = "LEAVE_QUEUE",
   QUEUE_JOINED = "QUEUE_JOINED",
@@ -99,6 +100,9 @@ export const PlayerInfoSchema = z.object({
   rating: z.number(),
   image: z.string().nullable(),
 });
+export const ChatUserSchema = PlayerInfoSchema.extend({
+  name: z.string(),
+});
 
 export type ChatMessage = {
   id: string;
@@ -106,10 +110,10 @@ export type ChatMessage = {
   receiverId: string;
   content: string;
   createdAt: Date;
-  read: boolean;
 };
 
 export type PlayerInfo = z.infer<typeof PlayerInfoSchema>;
+export type ChatUserInfo = z.infer<typeof ChatUserSchema>;
 
 export const GameChatMessageSchema = z.object({
   id: z.string(),

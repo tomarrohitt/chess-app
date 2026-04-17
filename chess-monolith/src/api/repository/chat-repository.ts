@@ -1,5 +1,10 @@
-import { or, and, eq, desc, gt, sql } from "drizzle-orm";
-import { messages, user, clearedChats } from "../../infrastructure/db/schema";
+import { or, and, eq, desc, gt } from "drizzle-orm";
+import {
+  messages,
+  user,
+  friends,
+  chatState,
+} from "../../infrastructure/db/schema";
 import { db } from "../../infrastructure/db/db";
 
 export async function saveMessage(
@@ -29,7 +34,6 @@ export async function saveMessagesBatch(
     receiverId: string;
     content: string;
     createdAt: Date;
-    read: boolean;
   }[],
 ) {
   if (msgs.length === 0) return;
@@ -54,18 +58,18 @@ export async function getChatHistory(
     .then((res) => res[0]);
 
   const chatMessagesPromise = (async () => {
-    const clearedRecord = await db
+    const stateRecord = await db
       .select()
-      .from(clearedChats)
+      .from(chatState)
       .where(
         and(
-          eq(clearedChats.userId, currentUserId),
-          eq(clearedChats.otherUserId, friendId),
+          eq(chatState.userId, currentUserId),
+          eq(chatState.otherUserId, friendId),
         ),
       )
       .limit(1);
 
-    const watermark = clearedRecord[0]?.clearedAt || new Date(0);
+    const watermark = stateRecord[0]?.clearedAt || new Date(0);
 
     return db
       .select()
@@ -89,13 +93,29 @@ export async function getChatHistory(
       .limit(limit);
   })();
 
-  const [friendData, chatMessages] = await Promise.all([
+  const blockCheckPromise = db
+    .select()
+    .from(friends)
+    .where(
+      or(
+        and(eq(friends.userId, currentUserId), eq(friends.friendId, friendId)),
+        and(eq(friends.friendId, currentUserId), eq(friends.userId, friendId)),
+      ),
+    )
+    .limit(1)
+    .then((res) => res[0]);
+
+  const [friendData, chatMessages, friendRecord] = await Promise.all([
     friendDataPromise,
     chatMessagesPromise,
+    blockCheckPromise,
   ]);
 
   return {
-    user: friendData,
+    user: {
+      ...friendData,
+      isBlocked: friendRecord?.status === "BLOCKED",
+    },
     messages: chatMessages,
   };
 }
@@ -107,35 +127,65 @@ export async function getRecentConversations(userId: string) {
     .where(or(eq(messages.senderId, userId), eq(messages.receiverId, userId)))
     .orderBy(desc(messages.createdAt));
 
-  const userClearedRecords = await db
+  const userStateRecords = await db
     .select()
-    .from(clearedChats)
-    .where(eq(clearedChats.userId, userId));
+    .from(chatState)
+    .where(eq(chatState.userId, userId));
 
   const clearedMap = new Map<string, Date>();
-  for (const record of userClearedRecords) {
+  const watermarkMap = new Map<string, Date>();
+  for (const record of userStateRecords) {
     clearedMap.set(record.otherUserId, record.clearedAt);
+    watermarkMap.set(record.otherUserId, record.lastReadAt);
   }
 
   const conversationsMap = new Map<string, any>();
+  const unreadCountsMap = new Map<string, number>();
+
   for (const msg of allMsgs) {
     const otherUserId = msg.senderId === userId ? msg.receiverId : msg.senderId;
     const watermark = clearedMap.get(otherUserId) || new Date(0);
 
-    if (new Date(msg.createdAt) > watermark) {
+    if (new Date(msg.createdAt).getTime() > new Date(watermark).getTime()) {
       if (!conversationsMap.has(otherUserId)) {
         conversationsMap.set(otherUserId, msg);
+      }
+
+      if (msg.receiverId === userId) {
+        const readWatermark = watermarkMap.get(otherUserId) || new Date(0);
+        if (
+          new Date(msg.createdAt).getTime() > new Date(readWatermark).getTime()
+        ) {
+          unreadCountsMap.set(
+            otherUserId,
+            (unreadCountsMap.get(otherUserId) || 0) + 1,
+          );
+        }
       }
     }
   }
 
   const recentConversations = [];
   for (const [otherUserId, lastMessage] of conversationsMap.entries()) {
-    const [otherUser] = await db
-      .select()
-      .from(user)
-      .where(eq(user.id, otherUserId))
-      .limit(1);
+    const [otherUser, friendRecord] = await Promise.all([
+      db
+        .select()
+        .from(user)
+        .where(eq(user.id, otherUserId))
+        .limit(1)
+        .then((res) => res[0]),
+      db
+        .select()
+        .from(friends)
+        .where(
+          or(
+            and(eq(friends.userId, userId), eq(friends.friendId, otherUserId)),
+            and(eq(friends.friendId, userId), eq(friends.userId, otherUserId)),
+          ),
+        )
+        .limit(1)
+        .then((res) => res[0]),
+    ]);
 
     if (otherUser) {
       recentConversations.push({
@@ -144,8 +194,10 @@ export async function getRecentConversations(userId: string) {
           name: otherUser.name,
           username: otherUser.username,
           image: otherUser.image,
+          isBlocked: friendRecord?.status === "BLOCKED",
         },
         lastMessage,
+        unreadCount: unreadCountsMap.get(otherUserId) || 0,
       });
     }
   }
@@ -153,17 +205,59 @@ export async function getRecentConversations(userId: string) {
   return recentConversations;
 }
 
+export async function markChatAsRead(userId: string, otherUserId: string) {
+  const now = new Date();
+  await db
+    .insert(chatState)
+    .values({
+      userId,
+      otherUserId,
+      lastReadAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [chatState.userId, chatState.otherUserId],
+      set: { lastReadAt: now },
+    });
+}
+
+export async function markAllChatsAsRead(userId: string) {
+  const now = new Date();
+
+  const senders = await db
+    .selectDistinct({ senderId: messages.senderId })
+    .from(messages)
+    .where(eq(messages.receiverId, userId));
+
+  if (senders.length === 0) return [];
+
+  const valuesToUpsert = senders.map((s) => ({
+    userId,
+    otherUserId: s.senderId,
+    lastReadAt: now,
+  }));
+
+  await db
+    .insert(chatState)
+    .values(valuesToUpsert)
+    .onConflictDoUpdate({
+      target: [chatState.userId, chatState.otherUserId],
+      set: { lastReadAt: now },
+    });
+
+  return senders.map((s) => s.senderId);
+}
+
 export async function clearChat(userId: string, otherUserId: string) {
   const now = new Date();
   await db
-    .insert(clearedChats)
+    .insert(chatState)
     .values({
       userId,
       otherUserId,
       clearedAt: now,
     })
     .onConflictDoUpdate({
-      target: [clearedChats.userId, clearedChats.otherUserId],
+      target: [chatState.userId, chatState.otherUserId],
       set: { clearedAt: now },
     });
 }

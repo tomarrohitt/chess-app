@@ -1,10 +1,31 @@
-import { Search } from "lucide-react";
+"use client";
+
+import { CheckCheck, Search } from "lucide-react";
 import { cn, scrollClass } from "@/lib/utils";
+import { useInbox } from "./inbox-context";
+import { useSocket } from "@/store/socket-provider";
+
 interface InboxSidebarProps {
   children: React.ReactNode;
 }
 
 export function InboxSidebar({ children }: InboxSidebarProps) {
+  const unreadCounts = useInbox((s) => s.unreadCounts);
+  const markChatAsRead = useInbox((s) => s.markChatAsRead);
+  const { markAllChatsRead } = useSocket();
+
+  const hasUnread = Object.values(unreadCounts).some((count) => count > 0);
+
+  const handleMarkAllAsRead = () => {
+    markAllChatsRead?.();
+
+    Object.entries(unreadCounts).forEach(([chatId, count]) => {
+      if (count > 0) {
+        markChatAsRead(chatId);
+      }
+    });
+  };
+
   return (
     <div
       className="w-80 flex flex-col rounded-2xl overflow-hidden shrink-0 h-[calc(100vh-90px)]"
@@ -14,15 +35,30 @@ export function InboxSidebar({ children }: InboxSidebarProps) {
       }}
     >
       <div className="p-4 border-b border-white/10">
-        <h2
-          className="text-xl font-bold text-white mb-4"
-          style={{
-            fontFamily: "'DM Sans', sans-serif",
-            letterSpacing: "-0.03em",
-          }}
-        >
-          Messages
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2
+            className="text-xl font-bold text-white"
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              letterSpacing: "-0.03em",
+            }}
+          >
+            Messages
+          </h2>
+          <button
+            onClick={handleMarkAllAsRead}
+            disabled={!hasUnread}
+            className={cn(
+              "text-xs flex items-center gap-1 transition-colors",
+              hasUnread
+                ? "cursor-pointer text-blue-400 hover:text-blue-300"
+                : "cursor-not-allowed text-gray-400 hover:text-gray-300",
+            )}
+          >
+            <CheckCheck size={14} />
+            Mark all read
+          </button>
+        </div>
         <div className="relative">
           <Search
             size={14}

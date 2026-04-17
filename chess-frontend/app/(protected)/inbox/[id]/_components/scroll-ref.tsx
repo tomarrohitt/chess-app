@@ -2,14 +2,14 @@
 import { useEffect, useRef } from "react";
 import { useInbox } from "../../_components/inbox-context";
 
-export const ScrollRef = ({ chatId }: { chatId: string }) => {
+export const ScrollRef = ({ otherUserId }: { otherUserId: string }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messages = useInbox((s) => s.messagesMap[chatId]) ?? [];
+  const messages = useInbox((s) => s.messagesMap[otherUserId]) ?? [];
   const isInitial = useRef(true);
 
   useEffect(() => {
     isInitial.current = true;
-  }, [chatId]);
+  }, [otherUserId]);
 
   useEffect(() => {
     if (messages.length === 0) return;

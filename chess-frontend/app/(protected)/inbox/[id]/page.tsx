@@ -1,11 +1,10 @@
 import { getChatHistory } from "@/actions/chat";
 import { InboxChatHeader } from "./_components/inbox-chat-header";
-import { ShowInfoBtn } from "./_components/show-info-btn";
 import { InboxChatList } from "./_components/inbox-chat-list";
 import { ScrollRef } from "./_components/scroll-ref";
 import { InboxChatInput } from "./_components/inbox-chat-input";
 import { InboxInfo } from "./_components/inbox-info";
-import { OfferChallengeBtn } from "./_components/offer-challenge-btn";
+import { InboxChatBlocked } from "./_components/inbox-chat-blocked";
 import { getUserFromSession } from "@/actions/session";
 import { SyncEffects } from "./_components/sync-effects";
 
@@ -33,24 +32,24 @@ export default async function InboxIdPage({
           border: "1px solid rgba(255,255,255,0.06)",
         }}
       >
-        <InboxChatHeader activeData={user}>
-          <ShowInfoBtn />
-        </InboxChatHeader>
+        <InboxChatHeader activeData={user} />
 
         <InboxChatList
           currentUser={currentUser}
-          chatId={id}
+          otherUserId={id}
           initialMessages={messages}
         >
-          <ScrollRef chatId={id} />
+          <ScrollRef otherUserId={id} />
         </InboxChatList>
-        <InboxChatInput currentUserId={currentUser.id} chatId={id} />
+        {user && user.isBlocked ? (
+          <InboxChatBlocked />
+        ) : (
+          <InboxChatInput currentUserId={currentUser.id} otherUserId={id} />
+        )}
       </div>
-      {/* <InboxInfo activeData={user}>
-        <OfferChallengeBtn id={user.id} />
-      </InboxInfo> */}
+      <InboxInfo user={user} />
       <SyncEffects
-        chatId={id}
+        otherUserId={id}
         currentUserId={currentUser.id}
         initialMessages={messages}
       />

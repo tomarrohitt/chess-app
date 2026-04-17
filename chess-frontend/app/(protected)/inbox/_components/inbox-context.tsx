@@ -1,13 +1,13 @@
 "use client";
-import { createContext, useContext, useRef, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 import { useStore } from "zustand";
-import { User } from "@/types/auth";
 import { ChatConversation } from "@/types/chat";
 import {
   createInboxStore,
   InboxStore,
   InboxState,
 } from "../../../../store/inbox-store";
+import { User } from "@/types/auth";
 
 const InboxContext = createContext<InboxStore | null>(null);
 
@@ -22,14 +22,20 @@ export function InboxProvider({
   conversations,
   children,
 }: InboxProviderProps) {
-  const storeRef = useRef<InboxStore>(undefined);
-  if (!storeRef.current) {
-    storeRef.current = createInboxStore(user, conversations);
-  }
+  const [store] = useState(() =>
+    createInboxStore(
+      {
+        name: user.name,
+        id: user.id,
+        image: user.image,
+        username: user.username,
+        isBlocked: false,
+      },
+      conversations,
+    ),
+  );
   return (
-    <InboxContext.Provider value={storeRef.current}>
-      {children}
-    </InboxContext.Provider>
+    <InboxContext.Provider value={store}>{children}</InboxContext.Provider>
   );
 }
 

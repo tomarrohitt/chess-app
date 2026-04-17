@@ -33,6 +33,12 @@ import { DomainError } from "../../lib/errors";
 import { WsMessageType } from "../../types/types";
 import { queueChatMessage } from "../../api/repository/chat-worker";
 import { queueGameChatMessage } from "../../api/repository/game-chat-worker";
+import {
+  markChatAsRead,
+  markAllChatsAsRead,
+} from "../../api/repository/chat-repository";
+import { redis } from "../redis/redis-client";
+import { Keys } from "../../lib/keys";
 
 function sendWs(
   ws: AuthenticatedWebSocket,
@@ -243,13 +249,35 @@ export async function routeMessage(
       case WsMessageType.SEND_CHAT_MESSAGE: {
         const { receiverId, content } = envelope.payload;
 
+        const senderIdsCacheKey = Keys.getBlockedIdsCacheKey(ws.user.id);
+        const receiverIdsCacheKey = Keys.getBlockedIdsCacheKey(receiverId);
+
+        const [hasSenderBlockedReceiver, hasReceiverBlockedSender] =
+          await Promise.all([
+            redis.sismember(senderIdsCacheKey, receiverId),
+            redis.sismember(receiverIdsCacheKey, ws.user.id),
+          ]);
+
+        if (hasSenderBlockedReceiver === 1) {
+          sendWs(ws, WsMessageType.ERROR, {
+            message: "You have blocked this user.",
+          });
+          return;
+        }
+
+        if (hasReceiverBlockedSender === 1) {
+          sendWs(ws, WsMessageType.ERROR, {
+            message: "You are blocked by this user.",
+          });
+          return;
+        }
+
         const msg = {
           id: uuidv7(),
           senderId: ws.user.id,
           receiverId,
           content,
           createdAt: new Date(),
-          read: false,
         };
 
         await queueChatMessage(msg);
@@ -263,6 +291,17 @@ export async function routeMessage(
         console.log(
           `[Chat] Message queued from ${ws.user.id} to ${receiverId}`,
         );
+        break;
+      }
+
+      case WsMessageType.MARK_CHAT_READ: {
+        const friendId = envelope.payload.friendId;
+        await markChatAsRead(ws.user.id, friendId);
+        break;
+      }
+
+      case WsMessageType.MARK_ALL_CHATS_READ: {
+        await markAllChatsAsRead(ws.user.id);
         break;
       }
 

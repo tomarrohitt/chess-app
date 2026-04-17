@@ -65,7 +65,6 @@ async function flushChatBuffer() {
         receiverId: parsed.receiverId,
         content: parsed.content,
         createdAt: new Date(parsed.createdAt),
-        read: parsed.read || false,
       });
     }
 
@@ -111,7 +110,6 @@ async function recoverDeadLetters() {
         receiverId: parsed.receiverId,
         content: parsed.content,
         createdAt: new Date(parsed.createdAt),
-        read: parsed.read || false,
       };
     });
 

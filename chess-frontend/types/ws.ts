@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ChatMessageSchema, GameChatMessageSchema } from "./chat";
+import { BaseMessageSchema, GameChatMessageSchema } from "./chat";
 import {
   GameStartedPayloadSchema,
   GameStatePayloadSchema,
@@ -10,7 +10,7 @@ import {
   ChallengeOfferStateSchema,
   QueueStatus,
 } from "./chess";
-import { PlayerConnectionPayloadSchema, PlayerInfoSchema } from "./player";
+import { PlayerConnectionPayloadSchema } from "./player";
 
 export enum WsMessageType {
   JOIN_QUEUE = "JOIN_QUEUE",
@@ -47,7 +47,8 @@ export enum WsMessageType {
   NEW_GAME_CHAT = "NEW_GAME_CHAT",
   RECEIVE_CHAT_MESSAGE = "RECEIVE_CHAT_MESSAGE",
   CHAT_MESSAGE_ACK = "CHAT_MESSAGE_ACK",
-  CHAT_TYPING = "CHAT_TYPING",
+  MARK_CHAT_READ = "MARK_CHAT_READ",
+  MARK_ALL_CHATS_READ = "MARK_ALL_CHATS_READ",
 
   SEND_CHAT_MESSAGE = "SEND_CHAT_MESSAGE",
 
@@ -137,7 +138,7 @@ export const ServerMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(WsMessageType.QUEUE_JOINED),
     payload: z.object({
-      status: z.enum(QueueStatus as any),
+      status: z.enum(QueueStatus),
       timeControl: z.string(),
     }),
   }),
@@ -162,11 +163,11 @@ export const ServerMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal(WsMessageType.RECEIVE_CHAT_MESSAGE),
-    payload: ChatMessageSchema,
+    payload: BaseMessageSchema,
   }),
   z.object({
     type: z.literal(WsMessageType.CHAT_MESSAGE_ACK),
-    payload: ChatMessageSchema,
+    payload: BaseMessageSchema,
   }),
 
   z.object({

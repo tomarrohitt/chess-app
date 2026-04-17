@@ -8,10 +8,15 @@ import { redirect } from "next/navigation";
 import z from "zod";
 import { LoginInput, loginSchema } from "@/types/auth";
 import { simplifyZodErrors } from "@/lib/constants/error-simplifier";
-import { ChatUserInfo } from "@/types/chat";
+import { User } from "@/types/auth";
 import { safeFetch } from "@/lib/constants/safe-fetch";
+import { ChatUserInfo } from "@/types/chat";
 
-export async function login(redirectTo: string, _: any, formData: FormData) {
+export async function login(
+  redirectTo: string,
+  _: unknown,
+  formData: FormData,
+) {
   const data = Object.fromEntries(formData) as LoginInput;
   const result = loginSchema.safeParse(data);
 

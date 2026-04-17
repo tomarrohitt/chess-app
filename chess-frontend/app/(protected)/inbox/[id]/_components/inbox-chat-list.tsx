@@ -4,6 +4,8 @@ import { formatTime } from "../../_components/inbox-shared";
 import { User } from "@/types/auth";
 import { useInbox } from "../../_components/inbox-context";
 import { ChatMessage } from "@/types/chat";
+import { useEffect } from "react";
+import { useSocket } from "@/store/socket-provider";
 
 function formatSeparatorDate(dateString: string | Date) {
   if (!dateString) return "";
@@ -29,20 +31,27 @@ function formatSeparatorDate(dateString: string | Date) {
 }
 
 interface InboxChatListProps {
-  chatId: string;
+  otherUserId: string;
   currentUser: User;
   initialMessages: ChatMessage[];
   children: React.ReactNode;
 }
 
 export function InboxChatList({
-  chatId,
+  otherUserId,
   currentUser,
   initialMessages,
   children,
 }: InboxChatListProps) {
-  const storeMessages = useInbox((s) => s.messagesMap[chatId]) ?? [];
+  const storeMessages = useInbox((s) => s.messagesMap[otherUserId]) ?? [];
   const messages = storeMessages ?? initialMessages;
+  const markChatAsRead = useInbox((s) => s.markChatAsRead);
+  const { markChatRead } = useSocket();
+
+  useEffect(() => {
+    markChatAsRead(otherUserId);
+    markChatRead?.(otherUserId);
+  }, [otherUserId, messages.length, markChatAsRead, markChatRead]);
 
   return (
     <div

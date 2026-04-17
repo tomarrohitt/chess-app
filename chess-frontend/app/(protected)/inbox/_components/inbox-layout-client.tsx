@@ -10,7 +10,7 @@ export function InboxLayoutClient({ children }: Props) {
   return (
     <>
       <InboxSocketListener />
-      <div className="flex-1 max-w-6xl w-full mx-auto flex gap-4 h-[calc(100vh-100px)] py-6 px-4">
+      <div className="flex-1 max-w-6xl w-full mx-auto flex gap-x-2 h-[calc(100vh-100px)] py-2 px-4">
         <InboxSidebar>
           <ConversationList />
         </InboxSidebar>

@@ -50,6 +50,16 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
     }),
   }),
   z.object({
+    type: z.literal(WsMessageType.MARK_CHAT_READ),
+    payload: z.object({
+      friendId: z.string(),
+    }),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.MARK_ALL_CHATS_READ),
+    payload: EmptyPayload,
+  }),
+  z.object({
     type: z.literal(WsMessageType.JOIN_QUEUE),
     payload: JoinQueueSchema,
   }),

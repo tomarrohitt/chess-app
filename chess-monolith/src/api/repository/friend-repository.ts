@@ -2,6 +2,9 @@ import { and, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { friends, user } from "../../infrastructure/db/schema";
 import { db } from "../../infrastructure/db/db";
+import { redis } from "../../infrastructure/redis/redis-client";
+import { ChatUserInfo } from "../../types/types";
+import { Keys } from "../../lib/keys";
 
 export async function sendFriendRequest(userId: string, friendId: string) {
   const existingReverse = await db.query.friends.findFirst({
@@ -75,6 +78,35 @@ export async function blockUser(userId: string, friendId: string) {
   await db
     .delete(friends)
     .where(and(eq(friends.userId, friendId), eq(friends.friendId, userId)));
+
+  const cacheKey = Keys.getBlockedUsersCacheKey(userId);
+  const idsCacheKey = Keys.getBlockedIdsCacheKey(userId);
+
+  const [blockedUserDetails, cachedBlockedUsers] = await Promise.all([
+    db.query.user.findFirst({
+      where: eq(user.id, friendId),
+      columns: {
+        id: true,
+        name: true,
+        username: true,
+        image: true,
+        rating: true,
+      },
+    }),
+    redis.get(cacheKey),
+  ]);
+
+  if (!blockedUserDetails) return;
+  let blockedUsers: ChatUserInfo[] = cachedBlockedUsers
+    ? JSON.parse(cachedBlockedUsers)
+    : [];
+
+  if (!blockedUsers.some((u) => u.id === friendId)) {
+    blockedUsers.push(blockedUserDetails);
+    await redis.set(cacheKey, JSON.stringify(blockedUsers));
+  }
+
+  await redis.sadd(idsCacheKey, friendId);
 }
 
 export async function unblockUser(userId: string, friendId: string) {
@@ -87,6 +119,19 @@ export async function unblockUser(userId: string, friendId: string) {
         eq(friends.status, "BLOCKED"),
       ),
     );
+
+  const cacheKey = Keys.getBlockedUsersCacheKey(userId);
+  const idsCacheKey = Keys.getBlockedIdsCacheKey(userId);
+
+  const cachedBlockedUsers = await redis.get(cacheKey);
+
+  if (cachedBlockedUsers) {
+    let blockedUsers: ChatUserInfo[] = JSON.parse(cachedBlockedUsers);
+    blockedUsers = blockedUsers.filter((u) => u.id !== friendId);
+    await redis.set(cacheKey, JSON.stringify(blockedUsers));
+  }
+
+  await redis.srem(idsCacheKey, friendId);
 }
 
 export async function getFriendship(userId: string, friendId: string) {
@@ -155,26 +200,40 @@ export async function getFriendRequests(userId: string) {
     .orderBy(desc(f.createdAt), u.id);
 }
 
-export async function getBlockedUsers(userId: string) {
+export async function getBlockedUsers(userId: string): Promise<ChatUserInfo[]> {
+  const cacheKey = Keys.getBlockedUsersCacheKey(userId);
+  const idsCacheKey = Keys.getBlockedIdsCacheKey(userId); // The new Set key
+
+  const cachedBlockedUsers = await redis.get(cacheKey);
+
+  if (cachedBlockedUsers) {
+    return JSON.parse(cachedBlockedUsers);
+  }
+
   const f = alias(friends, "f");
   const u = alias(user, "u");
 
-  return await db
+  const dbBlockedUsers = await db
     .select({
       id: u.id,
       name: u.name,
       username: u.username,
-      rating: u.rating,
-      wins: u.wins,
-      losses: u.losses,
-      draws: u.draws,
       image: u.image,
-      createdAt: u.createdAt,
+      rating: u.rating,
     })
     .from(f)
     .innerJoin(u, eq(f.friendId, u.id))
     .where(and(eq(f.userId, userId), eq(f.status, "BLOCKED")))
     .orderBy(desc(f.createdAt), u.id);
+
+  await redis.set(cacheKey, JSON.stringify(dbBlockedUsers));
+
+  if (dbBlockedUsers.length > 0) {
+    const blockedIds = dbBlockedUsers.map((user) => user.id);
+    await redis.sadd(idsCacheKey, ...blockedIds);
+  }
+
+  return dbBlockedUsers;
 }
 
 export async function searchGlobalUsers(

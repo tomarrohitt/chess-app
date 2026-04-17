@@ -5,11 +5,11 @@ import { useInbox } from "../../_components/inbox-context";
 import { ChatMessage } from "@/types/chat";
 
 export const SyncEffects = ({
-  chatId,
+  otherUserId,
   currentUserId,
   initialMessages,
 }: {
-  chatId: string;
+  otherUserId: string;
   currentUserId: string;
   initialMessages: ChatMessage[];
 }) => {
@@ -18,15 +18,15 @@ export const SyncEffects = ({
 
   useEffect(() => {
     if (initialMessages.length) {
-      setInitialChatMessages(chatId, initialMessages);
+      setInitialChatMessages(otherUserId, initialMessages);
     }
-  }, [chatId, initialMessages]);
+  }, [otherUserId, initialMessages, setInitialChatMessages]);
 
   useEffect(() => {
     if (currentUserId) {
-      markChatAsRead(chatId, currentUserId);
+      markChatAsRead(otherUserId);
     }
-  }, [chatId, currentUserId]);
+  }, [otherUserId, currentUserId, markChatAsRead]);
 
   return null;
 };

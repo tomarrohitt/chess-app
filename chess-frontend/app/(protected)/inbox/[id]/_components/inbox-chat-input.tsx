@@ -8,10 +8,10 @@ import { useSocket } from "@/store/socket-provider";
 
 export function InboxChatInput({
   currentUserId,
-  chatId,
+  otherUserId,
 }: {
   currentUserId: string;
-  chatId: string;
+  otherUserId: string;
 }) {
   const addMessage = useInbox((s) => s.addMessage);
   const { sendDirectMessage } = useSocket();
@@ -26,14 +26,13 @@ export function InboxChatInput({
       id: `temp-${Date.now()}-${Math.random()}`,
       content: message.trim(),
       senderId: currentUserId,
-      receiverId: chatId,
+      receiverId: otherUserId,
       createdAt: new Date().toISOString(),
-      read: true,
     };
 
-    addMessage(chatId, optimistic);
+    addMessage(otherUserId, optimistic);
 
-    sendDirectMessage?.(chatId, message.trim());
+    sendDirectMessage?.(otherUserId, message.trim());
     setMessage("");
   };
 

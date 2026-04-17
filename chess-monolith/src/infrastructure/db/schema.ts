@@ -233,7 +233,6 @@ export const messages = pgTable(
       .notNull(),
     content: text("content").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    read: boolean("read").default(false).notNull(),
   },
   (table) => [
     index("messages_sender_id_idx").on(table.senderId),
@@ -242,8 +241,8 @@ export const messages = pgTable(
   ],
 );
 
-export const clearedChats = pgTable(
-  "cleared_chats",
+export const chatState = pgTable(
+  "chat_state",
   {
     userId: text("user_id")
       .references(() => user.id, { onDelete: "cascade" })
@@ -252,6 +251,7 @@ export const clearedChats = pgTable(
       .references(() => user.id, { onDelete: "cascade" })
       .notNull(),
     clearedAt: timestamp("cleared_at").defaultNow().notNull(),
+    lastReadAt: timestamp("last_read_at").defaultNow().notNull(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.otherUserId] })],
 );

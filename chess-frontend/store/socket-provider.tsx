@@ -36,6 +36,8 @@ type SocketContextType = {
   leaveGameChat: (gameId: string) => void;
 
   sendDirectMessage: (receiverId: string, content: string) => void;
+  markChatRead: (friendId: string) => void;
+  markAllChatsRead: () => void;
 
   offerChallenge: (targetId: string, timeControl: string) => void;
   acceptChallenge: (targetId: string, timeControl: string) => void;
@@ -63,7 +65,7 @@ export function SocketProvider({
 
   useEffect(() => {
     wsApi.connect();
-  }, [wsApi.connect]);
+  }, [wsApi.connect, wsApi]);
 
   useEffect(() => {
     if (queueStatus === "waiting") {
@@ -73,7 +75,7 @@ export function SocketProvider({
 
   useEffect(() => {
     if (pathname === `/game/${activeGameId}`) {
-      setIsTransitioning(false);
+      setTimeout(() => setIsTransitioning(false), 0);
     }
   }, [pathname, activeGameId]);
 
@@ -108,7 +110,7 @@ export function SocketProvider({
       ) {
         wasInQueue.current = false;
         wasChallenging.current = false;
-        setIsTransitioning(true);
+        setTimeout(() => setIsTransitioning(true), 0);
         router.push(`/game/${activeGameId}`);
       }
     }
@@ -132,6 +134,8 @@ export function SocketProvider({
       sendChatMessage: wsApi.sendChatMessage,
       leaveGameChat: wsApi.leaveGameChat,
       sendDirectMessage: wsApi.sendDirectMessage,
+      markChatRead: wsApi.markChatRead,
+      markAllChatsRead: wsApi.markAllChatsRead,
       offerChallenge: (targetId: string, tc: string) => {
         wasChallenging.current = true;
         wsApi.offerChallenge(targetId, tc);

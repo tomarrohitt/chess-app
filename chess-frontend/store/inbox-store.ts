@@ -1,10 +1,9 @@
 import { createStore } from "zustand";
-import { User } from "@/types/auth";
 import { GetFriend } from "@/types/friends";
 import { ChatMessage, ChatConversation, ChatUserInfo } from "@/types/chat";
 
 export interface InboxState {
-  currentUser: User | null;
+  currentUser: ChatUserInfo | null;
   friends: Record<string, GetFriend>;
   conversations: Record<string, ChatConversation>;
   messagesMap: Record<string, ChatMessage[]>;
@@ -12,6 +11,7 @@ export interface InboxState {
   addUserToCache: (user: ChatUserInfo) => void;
   latestMessages: Record<string, ChatMessage | null>;
   sidebarOrder: string[];
+  unreadCounts: Record<string, number>;
 
   addMessage: (
     chatId: string,
@@ -19,14 +19,14 @@ export interface InboxState {
     sender?: { username: string; image: string | null; name: string },
   ) => void;
   setInitialChatMessages: (chatId: string, messages: ChatMessage[]) => void;
-  markChatAsRead: (chatId: string, currentUserId: string) => void;
+  markChatAsRead: (chatId: string) => void;
   clearChat: (chatId: string) => void;
 }
 
 export type InboxStore = ReturnType<typeof createInboxStore>;
 
 export const createInboxStore = (
-  user: User,
+  user: ChatUserInfo,
   conversationsList: ChatConversation[],
 ) => {
   const friends: Record<string, GetFriend> = {};
@@ -34,10 +34,12 @@ export const createInboxStore = (
 
   const conversations: Record<string, ChatConversation> = {};
   const latestMessages: Record<string, ChatMessage | null> = {};
+  const unreadCounts: Record<string, number> = {};
   conversationsList.forEach((c) => {
     conversations[c.user.id] = c;
     latestMessages[c.user.id] = c.lastMessage;
     usersCache[c.user.id] = c.user;
+    unreadCounts[c.user.id] = c.unreadCount || 0;
   });
 
   const enriched = conversationsList.map((c) => {
@@ -64,6 +66,7 @@ export const createInboxStore = (
     messagesMap: {},
     latestMessages,
     sidebarOrder: enriched.map((e) => e.id),
+    unreadCounts,
 
     addMessage: (chatId, msg, sender) => {
       set((state) => {
@@ -97,8 +100,14 @@ export const createInboxStore = (
               username: sender.username,
               name: sender.name,
               image: sender.image,
+              isBlocked: false,
             },
           };
+        }
+
+        const newUnreadCounts = { ...state.unreadCounts };
+        if (!isMe) {
+          newUnreadCounts[chatId] = (newUnreadCounts[chatId] || 0) + 1;
         }
 
         return {
@@ -109,6 +118,7 @@ export const createInboxStore = (
           },
           sidebarOrder: newOrder,
           usersCache: newUsersCache,
+          unreadCounts: newUnreadCounts,
         };
       });
     },
@@ -138,24 +148,10 @@ export const createInboxStore = (
       });
     },
 
-    markChatAsRead: (chatId, currentUserId) => {
-      set((state) => {
-        const chat = state.messagesMap[chatId];
-        if (!chat) return state;
-
-        const hasUnread = chat.some(
-          (m) => !m.read && m.senderId !== currentUserId,
-        );
-
-        if (!hasUnread) return state;
-
-        return {
-          messagesMap: {
-            ...state.messagesMap,
-            [chatId]: chat.map((m) => ({ ...m, read: true })),
-          },
-        };
-      });
+    markChatAsRead: (chatId) => {
+      set((state) => ({
+        unreadCounts: { ...state.unreadCounts, [chatId]: 0 },
+      }));
     },
 
     clearChat: (chatId) => {
@@ -163,6 +159,7 @@ export const createInboxStore = (
         messagesMap: { ...state.messagesMap, [chatId]: [] },
         latestMessages: { ...state.latestMessages, [chatId]: null },
         sidebarOrder: state.sidebarOrder.filter((id) => id !== chatId), // 👈
+        unreadCounts: { ...state.unreadCounts, [chatId]: 0 },
       }));
     },
   }));

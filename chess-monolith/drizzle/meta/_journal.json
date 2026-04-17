@@ -50,6 +50,13 @@
       "when": 1776069284767,
       "tag": "0006_rich_kronos",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776422418019,
+      "tag": "0007_motionless_hercules",
+      "breakpoints": true
     }
   ]
 }

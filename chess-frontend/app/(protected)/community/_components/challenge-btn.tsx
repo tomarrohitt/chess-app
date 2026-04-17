@@ -34,24 +34,49 @@ export function ChallengeButton({ targetId }: { targetId: string }) {
         }}
       />
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-32 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl overflow-hidden z-50">
-          <div className="p-1 flex flex-col">
-            <span className="text-[10px] font-bold text-zinc-500 px-2 py-1.5 uppercase tracking-wider">
+        <div
+          className="
+      absolute right-0 top-full mt-2 w-40
+      bg-zinc-900/95 backdrop-blur-md
+      border border-zinc-800
+      rounded-2xl shadow-2xl
+      overflow-hidden z-50
+      animate-in fade-in zoom-in-95 duration-100
+    "
+        >
+          <div className="p-2">
+            <span className="block text-[10px] font-semibold text-zinc-500 px-2 pb-2 uppercase tracking-wider">
               Time Control
             </span>
-            {TIME_CONTROLS.map((tc) => (
-              <button
-                key={tc}
-                className="text-sm text-left px-2 py-1.5 text-zinc-300 hover:bg-zinc-800 hover:text-white rounded-lg transition-colors cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  offerChallenge(targetId, tc);
-                  setIsOpen(false);
-                }}
-              >
-                {tc}
-              </button>
-            ))}
+
+            <div className="flex flex-col gap-1">
+              {TIME_CONTROLS.map((tc) => (
+                <button
+                  key={tc}
+                  className="
+              group flex items-center justify-between
+              text-sm px-3 py-2
+              text-zinc-300
+              rounded-xl
+              transition-all duration-150
+
+              hover:bg-zinc-800 hover:text-white
+              active:scale-[0.97] cursor-pointer
+            "
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    offerChallenge(targetId, tc);
+                    setIsOpen(false);
+                  }}
+                >
+                  <span>{tc}</span>
+
+                  <span className="opacity-0 group-hover:opacity-100 text-xs text-zinc-500">
+                    →
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

@@ -1,15 +1,16 @@
-import { User as UserIcon, UserMinus, UserX, Swords } from "lucide-react";
+"use client";
 import { Avatar } from "../../_components/inbox-shared";
-import { blockUser, removeFriend } from "@/actions/friend";
 import { ChatUserInfo } from "@/types/chat";
+import { OfferChallengeBtn } from "./offer-challenge-btn";
+import { ClearChatButton } from "./clear-chat-btn";
+import Link from "next/link";
 
 interface InboxInfoProps {
-  activeData: ChatUserInfo | null;
-  children: React.ReactNode;
+  user: ChatUserInfo | null;
 }
 
-export function InboxInfo({ activeData, children }: InboxInfoProps) {
-  if (!activeData) return null;
+export function InboxInfo({ user }: InboxInfoProps) {
+  if (!user) return null;
 
   return (
     <div
@@ -23,40 +24,19 @@ export function InboxInfo({ activeData, children }: InboxInfoProps) {
         className="p-6 flex flex-col items-center border-b border-white/10"
         style={{ background: "rgba(255,255,255,0.02)" }}
       >
-        <Avatar name={activeData.name} image={activeData.image} size={80} />
-        <h3
-          className="mt-4 font-bold text-white text-lg text-center"
+        <Avatar name={user.name} image={user.image} size={80} />
+        <Link
+          href={`/player/${user.id}`}
+          className="mt-4 font-bold text-white text-lg text-center hover:underline underline-offset-4"
           style={{ fontFamily: "'DM Sans', sans-serif" }}
         >
-          {activeData.name}
-        </h3>
-        <p className="text-sm text-zinc-400 font-mono mt-1">
-          @{activeData.username}
-        </p>
+          {user.name}
+        </Link>
+        <p className="text-sm text-zinc-400 font-mono mt-1">@{user.username}</p>
       </div>
       <div className="p-4 flex flex-col gap-2 flex-1 overflow-y-auto min-h-0">
-        <button className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors text-zinc-300 text-sm font-medium w-full text-left cursor-pointer">
-          <UserIcon size={16} className="text-zinc-400" />
-          View Profile
-        </button>
-        {children}
-
-        <div className="h-px w-full bg-white/10 my-2 shrink-0" />
-
-        <button
-          onClick={() => removeFriend(activeData.id)}
-          className="flex items-center gap-3 p-3 rounded-xl hover:bg-rose-500/10 transition-colors text-rose-400 text-sm font-medium w-full text-left cursor-pointer"
-        >
-          <UserMinus size={16} />
-          Unfriend
-        </button>
-        <button
-          onClick={() => blockUser(activeData.id)}
-          className="flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 transition-colors text-red-500 text-sm font-medium w-full text-left cursor-pointer"
-        >
-          <UserX size={16} />
-          Block User
-        </button>
+        {!user.isBlocked && <OfferChallengeBtn id={user.id} />}
+        <ClearChatButton id={user.id} />
       </div>
     </div>
   );
