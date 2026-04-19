@@ -38,6 +38,7 @@ export type ChatMessageSchemaResponse = z.infer<
 >;
 export type ChatConversation = z.infer<typeof ChatConversationSchema>;
 export type ChatUserInfo = z.infer<typeof ChatUserSchema>;
+export type SearchChatUserInfo = Omit<ChatUserInfo, "isBlocked">;
 
 // CHAT HISTORY ENDPOINT
 //  {

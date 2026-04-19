@@ -33,7 +33,7 @@ export function InboxSocketListener() {
         "chat_message",
         handleMessage as EventListener,
       );
-  }, [currentUser?.id, addMessage]);
+  }, [currentUser?.id, addMessage, addUserToCache, usersCache]);
 
   return null;
 }

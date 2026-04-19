@@ -5,6 +5,7 @@ import {
   getChatHistory,
   getRecentConversations,
   clearChat,
+  getAvailableFriends,
 } from "../repository/chat-repository";
 import { z } from "zod";
 
@@ -56,6 +57,16 @@ export async function getRecentConversationsHandler(
   const conversations = await getRecentConversations(session.user.id);
 
   return res.json({ success: true, data: conversations });
+}
+
+export async function getAvailableFriendsHandler(req: Request, res: Response) {
+  const session = await auth.api.getSession({
+    headers: toFetchHeaders(req.headers),
+  });
+  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
+
+  const results = await getAvailableFriends(session.user.id);
+  return res.json({ success: true, data: results });
 }
 
 const ClearChatParamsSchema = z.object({

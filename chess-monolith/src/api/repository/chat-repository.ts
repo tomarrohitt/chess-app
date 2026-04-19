@@ -1,4 +1,4 @@
-import { or, and, eq, desc, gt } from "drizzle-orm";
+import { or, and, eq, desc, gt, ilike, isNull, sql } from "drizzle-orm";
 import {
   messages,
   user,
@@ -260,4 +260,91 @@ export async function clearChat(userId: string, otherUserId: string) {
       target: [chatState.userId, chatState.otherUserId],
       set: { clearedAt: now },
     });
+}
+
+export async function getAvailableFriends(currentUserId: string) {
+  const chats = await db
+    .select({
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      image: user.image,
+      clearedAt: chatState.clearedAt,
+    })
+    .from(chatState)
+    .innerJoin(user, eq(chatState.otherUserId, user.id))
+    .where(eq(chatState.userId, currentUserId));
+
+  const matchingFriends = await db
+    .select({
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      image: user.image,
+    })
+    .from(friends)
+    .innerJoin(
+      user,
+      or(
+        and(eq(friends.userId, currentUserId), eq(friends.friendId, user.id)),
+        and(eq(friends.friendId, currentUserId), eq(friends.userId, user.id)),
+      ),
+    )
+    .where(
+      and(
+        or(
+          eq(friends.userId, currentUserId),
+          eq(friends.friendId, currentUserId),
+        ),
+        eq(friends.status, "ACCEPTED"),
+      ),
+    );
+
+  const chatsWithLastMessage = await Promise.all(
+    chats.map(async (chat) => {
+      const [lastMessage] = await db
+        .select()
+        .from(messages)
+        .where(
+          or(
+            and(
+              eq(messages.senderId, currentUserId),
+              eq(messages.receiverId, chat.id),
+            ),
+            and(
+              eq(messages.senderId, chat.id),
+              eq(messages.receiverId, currentUserId),
+            ),
+          ),
+        )
+        .orderBy(desc(messages.createdAt))
+        .limit(1);
+
+      if (!lastMessage) return null;
+
+      if (
+        chat.clearedAt &&
+        new Date(lastMessage.createdAt).getTime() <=
+          new Date(chat.clearedAt).getTime()
+      ) {
+        return null;
+      }
+
+      return {
+        id: chat.id,
+        name: chat.name,
+        username: chat.username,
+        image: chat.image,
+        lastMessage: lastMessage.content,
+      };
+    }),
+  );
+
+  const validConversations = chatsWithLastMessage.filter((c) => c !== null);
+  const activeChatUserIds = new Set(validConversations.map((c) => c.id));
+  const friendsWithoutActiveChat = matchingFriends.filter(
+    (f) => !activeChatUserIds.has(f.id),
+  );
+
+  return friendsWithoutActiveChat;
 }
