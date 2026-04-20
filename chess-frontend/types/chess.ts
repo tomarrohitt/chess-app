@@ -53,12 +53,14 @@ export interface ActiveGame {
 }
 
 export const DrawOfferStateSchema = z.object({
-  gameId: z.string(),
+  gameId: z.uuid(),
+
   offeredBy: z.string(),
 });
 
 export const RematchOfferStateSchema = z.object({
-  gameId: z.string(),
+  gameId: z.uuid(),
+
   offeredBy: PlayerInfoSchema,
   timeControl: z.string(),
 });
@@ -73,7 +75,7 @@ export type RematchOfferState = z.infer<typeof RematchOfferStateSchema>;
 export type DrawOfferState = z.infer<typeof DrawOfferStateSchema>;
 
 export const GameStartedPayloadSchema = z.object({
-  gameId: z.string(),
+  gameId: z.uuid(),
   fen: z.string(),
   timeControl: z.string(),
   color: z.union([z.enum(FullColor), z.string()]),
@@ -83,7 +85,7 @@ export const GameStartedPayloadSchema = z.object({
 export type GameStartedPayload = z.infer<typeof GameStartedPayloadSchema>;
 
 export const GameStatePayloadSchema = z.object({
-  gameId: z.string(),
+  gameId: z.uuid(),
   fen: z.string(),
   pgn: z.string(),
   turn: z.enum(PlayerColor),
@@ -96,7 +98,7 @@ export const GameStatePayloadSchema = z.object({
 export type GameStatePayload = z.infer<typeof GameStatePayloadSchema>;
 
 export const MoveMadePayloadSchema = z.object({
-  gameId: z.string(),
+  gameId: z.uuid(),
   fen: z.string(),
   pgn: z.string(),
   move: z.string(),

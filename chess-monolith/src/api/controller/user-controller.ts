@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getUserById } from "../repository/user-repository";
 
 const UserParamsSchema = z.object({
-  id: z.string(),
+  id: z.uuid(),
 });
 
 export async function getUserByIdHandler(req: Request, res: Response) {

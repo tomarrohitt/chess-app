@@ -10,11 +10,12 @@ import {
 import { z } from "zod";
 
 const GetHistoryParamsSchema = z.object({
-  userId: z.string(),
+  userId: z.uuid(),
 });
 
 const GetHistoryQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
+  cursor: z.uuid().optional(),
 });
 
 export async function getHistory(req: Request, res: Response) {
@@ -37,10 +38,15 @@ export async function getHistory(req: Request, res: Response) {
     session.user.id,
     paramsResult.data.userId,
     queryResult.data.limit,
+    queryResult.data.cursor,
   );
+
+  const hasMore = messages.length === queryResult.data.limit;
+  const nextCursor = hasMore ? messages[messages.length - 1].id : null;
+
   return res.json({
     success: true,
-    data: { user, messages: messages.reverse() },
+    data: { user, messages: messages.reverse(), nextCursor, hasMore },
   });
 }
 
@@ -70,7 +76,7 @@ export async function getAvailableFriendsHandler(req: Request, res: Response) {
 }
 
 const ClearChatParamsSchema = z.object({
-  userId: z.string(),
+  userId: z.uuid(),
 });
 
 export async function clearChatHandler(req: Request, res: Response) {

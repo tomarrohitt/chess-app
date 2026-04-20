@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "../infrastructure/db/db";
+import { v7 as uuidv7 } from "uuid";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -37,6 +38,11 @@ export const auth = betterAuth({
         type: "number",
         defaultValue: 0,
       },
+    },
+  },
+  advanced: {
+    database: {
+      generateId: () => uuidv7(),
     },
   },
   // socialProviders: {

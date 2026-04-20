@@ -28,7 +28,7 @@ export const JoinQueueSchema = z.object({
 });
 
 export const ChallengeOfferStateSchema = z.object({
-  targetId: z.string(),
+  targetId: z.uuid(),
   timeControl: z.string(),
 });
 
@@ -38,7 +38,7 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(WsMessageType.SEND_CHAT_MESSAGE),
     payload: z.object({
-      receiverId: z.string(),
+      receiverId: z.uuid(),
       content: z.string().min(1),
     }),
   }),
@@ -52,7 +52,7 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(WsMessageType.MARK_CHAT_READ),
     payload: z.object({
-      friendId: z.string(),
+      friendId: z.uuid(),
     }),
   }),
   z.object({

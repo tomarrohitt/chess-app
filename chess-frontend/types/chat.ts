@@ -7,15 +7,15 @@ const ChatUserSchema = PlayerInfoSchema.omit({ rating: true }).extend({
 });
 
 export const BaseMessageSchema = z.object({
-  id: z.string(),
-  receiverId: z.string(),
-  senderId: z.string(),
+  id: z.uuid(),
+  receiverId: z.uuid(),
+  senderId: z.uuid(),
   content: z.string(),
   createdAt: z.union([z.string(), z.date()]),
 });
 
 export const GameChatMessageSchema = BaseMessageSchema.extend({
-  gameId: z.string(),
+  gameId: z.uuid(),
   sender: PlayerInfoSchema,
 }).omit({ receiverId: true });
 

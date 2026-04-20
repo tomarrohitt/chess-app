@@ -1,4 +1,4 @@
-import { or, and, eq, desc, gt, ilike, isNull, sql } from "drizzle-orm";
+import { or, and, eq, desc, gt, lt, ilike, isNull, sql } from "drizzle-orm";
 import {
   messages,
   user,
@@ -44,6 +44,7 @@ export async function getChatHistory(
   currentUserId: string,
   friendId: string,
   limit = 50,
+  cursor?: string,
 ) {
   const friendDataPromise = db
     .select({
@@ -71,25 +72,29 @@ export async function getChatHistory(
 
     const watermark = stateRecord[0]?.clearedAt || new Date(0);
 
+    const conditions = [
+      or(
+        and(
+          eq(messages.senderId, currentUserId),
+          eq(messages.receiverId, friendId),
+        ),
+        and(
+          eq(messages.senderId, friendId),
+          eq(messages.receiverId, currentUserId),
+        ),
+      ),
+      gt(messages.createdAt, watermark),
+    ];
+
+    if (cursor) {
+      conditions.push(lt(messages.id, cursor));
+    }
+
     return db
       .select()
       .from(messages)
-      .where(
-        and(
-          or(
-            and(
-              eq(messages.senderId, currentUserId),
-              eq(messages.receiverId, friendId),
-            ),
-            and(
-              eq(messages.senderId, friendId),
-              eq(messages.receiverId, currentUserId),
-            ),
-          ),
-          gt(messages.createdAt, watermark),
-        ),
-      )
-      .orderBy(desc(messages.createdAt))
+      .where(and(...conditions))
+      .orderBy(desc(messages.id))
       .limit(limit);
   })();
 

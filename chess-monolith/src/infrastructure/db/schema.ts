@@ -38,7 +38,7 @@ export const friendStatusEnum = pgEnum("friend_status", [
 export const user = pgTable(
   "user",
   {
-    id: text("id").primaryKey(),
+    id: uuid("id").primaryKey(),
     name: text("name").notNull(),
     username: varchar("username", { length: 50 }).notNull().unique(),
     email: text("email").notNull().unique(),
@@ -67,7 +67,7 @@ export const user = pgTable(
 export const session = pgTable(
   "session",
   {
-    id: text("id").primaryKey(),
+    id: uuid("id").primaryKey(),
     expiresAt: timestamp("expires_at").notNull(),
     token: text("token").notNull().unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -76,7 +76,7 @@ export const session = pgTable(
       .notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
-    userId: text("user_id")
+    userId: uuid("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
@@ -86,10 +86,10 @@ export const session = pgTable(
 export const account = pgTable(
   "account",
   {
-    id: text("id").primaryKey(),
+    id: uuid("id").primaryKey(),
     accountId: text("account_id").notNull(),
     providerId: text("provider_id").notNull(),
-    userId: text("user_id")
+    userId: uuid("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     accessToken: text("access_token"),
@@ -110,7 +110,7 @@ export const account = pgTable(
 export const verification = pgTable(
   "verification",
   {
-    id: text("id").primaryKey(),
+    id: uuid("id").primaryKey(),
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
@@ -146,13 +146,13 @@ export const games = pgTable(
   "games",
   {
     id: uuid("id").primaryKey().notNull(),
-    whiteId: text("white_id")
+    whiteId: uuid("white_id")
       .references(() => user.id)
       .notNull(),
-    blackId: text("black_id")
+    blackId: uuid("black_id")
       .references(() => user.id)
       .notNull(),
-    winnerId: text("winner_id").references(() => user.id),
+    winnerId: uuid("winner_id").references(() => user.id),
 
     status: gameStatusEnum("status").notNull(),
     result: resultEnum("result").notNull().default("d"),
@@ -208,11 +208,11 @@ export const gamesRelations = relations(games, ({ one }) => ({
 export const friends = pgTable(
   "friends",
   {
-    userId: text("user_id")
+    userId: uuid("user_id")
       .references(() => user.id)
       .notNull(),
 
-    friendId: text("friend_id")
+    friendId: uuid("friend_id")
       .references(() => user.id)
       .notNull(),
     status: friendStatusEnum("status").default("PENDING").notNull(),
@@ -225,10 +225,10 @@ export const messages = pgTable(
   "messages",
   {
     id: uuid("id").defaultRandom().primaryKey().notNull(),
-    senderId: text("sender_id")
+    senderId: uuid("sender_id")
       .references(() => user.id)
       .notNull(),
-    receiverId: text("receiver_id")
+    receiverId: uuid("receiver_id")
       .references(() => user.id)
       .notNull(),
     content: text("content").notNull(),
@@ -244,10 +244,10 @@ export const messages = pgTable(
 export const chatState = pgTable(
   "chat_state",
   {
-    userId: text("user_id")
+    userId: uuid("user_id")
       .references(() => user.id, { onDelete: "cascade" })
       .notNull(),
-    otherUserId: text("other_user_id")
+    otherUserId: uuid("other_user_id")
       .references(() => user.id, { onDelete: "cascade" })
       .notNull(),
     clearedAt: timestamp("cleared_at").defaultNow().notNull(),

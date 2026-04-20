@@ -94,16 +94,16 @@ export const ServerMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal(WsMessageType.ACCEPT_DRAW),
-    payload: z.object({ gameId: z.string() }),
+    payload: z.object({ gameId: z.uuid() }),
   }),
   z.object({
     type: z.literal(WsMessageType.DECLINE_DRAW),
-    payload: z.object({ gameId: z.string(), message: z.string().optional() }),
+    payload: z.object({ gameId: z.uuid(), message: z.string().optional() }),
   }),
   z.object({
     type: z.literal(WsMessageType.GAME_ABORTED),
     payload: z.object({
-      gameId: z.string().optional(),
+      gameId: z.uuid().optional(),
       reason: z.string().optional(),
     }),
   }),
@@ -113,19 +113,19 @@ export const ServerMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal(WsMessageType.ACCEPT_REMATCH),
-    payload: z.object({ gameId: z.string() }),
+    payload: z.object({ gameId: z.uuid() }),
   }),
   z.object({
     type: z.literal(WsMessageType.DECLINE_REMATCH),
-    payload: z.object({ gameId: z.string(), message: z.string().optional() }),
+    payload: z.object({ gameId: z.uuid(), message: z.string().optional() }),
   }),
   z.object({
     type: z.literal(WsMessageType.SPECTATE_GAME),
-    payload: z.object({ gameId: z.string() }),
+    payload: z.object({ gameId: z.uuid() }),
   }),
   z.object({
     type: z.literal(WsMessageType.LEAVE_SPECTATOR),
-    payload: z.object({ gameId: z.string() }),
+    payload: z.object({ gameId: z.uuid() }),
   }),
   z.object({
     type: z.literal(WsMessageType.CHALLENGE_RECEIVED),

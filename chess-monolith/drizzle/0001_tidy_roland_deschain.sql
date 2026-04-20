@@ -1,1 +1,0 @@
-ALTER TABLE "games" ADD COLUMN "chat_logs" json DEFAULT '[]'::json;

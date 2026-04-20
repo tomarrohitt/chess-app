@@ -68,13 +68,13 @@ export function InboxChatList({
         const nextSenderId = nextMsg?.senderId;
 
         const currentCreatedAt = msg.createdAt
-          ? new Date(msg.createdAt as string).getTime()
+          ? new Date(msg.createdAt).getTime()
           : 0;
         const prevCreatedAt = prevMsg?.createdAt
-          ? new Date(prevMsg.createdAt as string).getTime()
+          ? new Date(prevMsg.createdAt).getTime()
           : 0;
         const nextCreatedAt = nextMsg?.createdAt
-          ? new Date(nextMsg.createdAt as string).getTime()
+          ? new Date(nextMsg.createdAt).getTime()
           : 0;
 
         const timeFromPrev =
@@ -110,10 +110,18 @@ export function InboxChatList({
               </div>
             )}
             <div
-              className={`flex flex-col max-w-[75%] ${isMe ? "self-end items-end" : "self-start items-start"} ${marginTop}`}
+              className={cn(
+                "flex flex-col max-w-[75%]",
+                isMe ? "self-end items-end" : "self-start items-start",
+                marginTop,
+              )}
             >
               <div
-                className={`px-4 py-2.5 text-sm rounded-2xl ${isMe ? `bg-blue-600 text-white ${isLastInGroup ? "rounded-br-sm" : ""}` : `bg-zinc-800 text-zinc-200 ${isLastInGroup ? "rounded-bl-sm" : ""}`}`}
+                className={cn(
+                  "px-4 py-2.5 text-sm rounded-2xl",
+                  isMe ? "bg-blue-600 text-white" : "bg-zinc-800 text-zinc-200",
+                  isLastInGroup && (isMe ? "rounded-br-sm" : "rounded-bl-sm"),
+                )}
               >
                 {msg.content}
               </div>

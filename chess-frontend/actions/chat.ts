@@ -12,6 +12,8 @@ export async function getChatHistory(userId: string) {
   const result = await safeFetch<ChatMessageSchemaResponse>(
     `/chat/history/${userId}`,
   );
+
+  console.log({ result });
   return result;
 }
 

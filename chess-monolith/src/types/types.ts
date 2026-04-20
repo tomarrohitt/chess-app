@@ -95,7 +95,7 @@ export const GameIdOnlySchema = z.object({
 });
 
 export const PlayerInfoSchema = z.object({
-  id: z.string(),
+  id: z.uuid(),
   username: z.string(),
   rating: z.number(),
   image: z.string().nullable(),
@@ -116,8 +116,8 @@ export type PlayerInfo = z.infer<typeof PlayerInfoSchema>;
 export type ChatUserInfo = z.infer<typeof ChatUserSchema>;
 
 export const GameChatMessageSchema = z.object({
-  id: z.string(),
-  gameId: z.string(),
+  id: z.uuid(),
+  gameId: z.uuid(),
   sender: PlayerInfoSchema,
   content: z.string(),
   createdAt: z.string(),
@@ -131,14 +131,14 @@ export type InboxChatMessage = {
 export type GameChatMessage = z.infer<typeof GameChatMessageSchema>;
 
 export const RematchRequestSchema = z.object({
-  gameId: z.string(),
+  gameId: z.uuid(),
   timeControl: z.string(),
 });
 
 export type RematchRequest = z.infer<typeof RematchRequestSchema>;
 
 export const RematchEventSchema = z.object({
-  gameId: z.string(),
+  gameId: z.uuid(),
   offeredBy: PlayerInfoSchema,
   timeControl: z.string(),
 });
