@@ -8,12 +8,11 @@ import {
   SearchChatUserInfo,
 } from "@/types/chat";
 
-export async function getChatHistory(userId: string) {
+export async function getChatHistory(userId: string, cursor?: string) {
+  const query = cursor ? `?cursor=${cursor}` : "";
   const result = await safeFetch<ChatMessageSchemaResponse>(
-    `/chat/history/${userId}`,
+    `/chat/history/${userId}${query}`,
   );
-
-  console.log({ result });
   return result;
 }
 

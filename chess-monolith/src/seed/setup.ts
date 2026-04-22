@@ -1,7 +1,8 @@
 import postgres from "postgres";
 import "dotenv/config";
+import { env } from "../config/env";
 
-const sql = postgres(process.env.DATABASE_URL!);
+const sql = postgres(env.DATABASE_URL!);
 
 async function main() {
   try {

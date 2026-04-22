@@ -1,11 +1,14 @@
 import { Request, Response } from "express";
-import { auth } from "../../lib/auth";
 import {
   getGameDetails,
   getUserMatchHistory,
 } from "../repository/game-repository";
-import { toFetchHeaders } from "../../lib/utils/to-fetch-headers";
 import { GameIdOnlySchema } from "../../types/types";
+import z from "zod";
+
+const HistorySchema = z.object({
+  id: z.string(),
+});
 
 export async function getUserMatchDetail(req: Request, res: Response) {
   const { gameId } = req.params;
@@ -27,18 +30,14 @@ export async function getUserMatchDetail(req: Request, res: Response) {
 
 export async function getUserMatches(req: Request, res: Response) {
   try {
-    const session = await auth.api.getSession({
-      headers: toFetchHeaders(req.headers),
-    });
+    const limit = parseInt(req.query.limit as string) || 20;
 
-    if (!session?.user) {
-      return res.status(401).json({ error: "Unauthorized" });
+    const result = HistorySchema.safeParse(req.params);
+
+    if (!result.success) {
+      return res.status(404).json({ success: false, error: "User not found" });
     }
-
-    const limit = parseInt(req.query.limit as string) || 10;
-    const userId = session.user.id;
-
-    const history = await getUserMatchHistory(userId, limit);
+    const history = await getUserMatchHistory(result.data.id, limit);
 
     return res.status(200).json({
       success: true,

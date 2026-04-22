@@ -4,8 +4,16 @@ import { formatTime } from "../../_components/inbox-shared";
 import { User } from "@/types/auth";
 import { useInbox } from "../../_components/inbox-context";
 import { ChatMessage } from "@/types/chat";
-import { useEffect } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useSocket } from "@/store/socket-provider";
+import { getChatHistory } from "@/actions/chat";
 
 function formatSeparatorDate(dateString: string | Date) {
   if (!dateString) return "";
@@ -34,6 +42,8 @@ interface InboxChatListProps {
   otherUserId: string;
   currentUser: User;
   initialMessages: ChatMessage[];
+  initialNextCursor: string | null;
+  initialHasMore: boolean;
   children: React.ReactNode;
 }
 
@@ -41,12 +51,84 @@ export function InboxChatList({
   otherUserId,
   currentUser,
   initialMessages,
+  initialNextCursor,
+  initialHasMore,
+
   children,
 }: InboxChatListProps) {
-  const storeMessages = useInbox((s) => s.messagesMap[otherUserId]) ?? [];
-  const messages = storeMessages ?? initialMessages;
+  const [cursor, setCursor] = useState(initialNextCursor);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loading, startLoading] = useTransition();
+  const [olderMessages, setOlderMessages] = useState<ChatMessage[]>([]);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const observerTargetRef = useRef<HTMLDivElement>(null);
+  const previousScrollHeightRef = useRef<number>(0);
+  const isFetchingRef = useRef(false);
+
+  const storeMessages = useInbox((s) => s.messagesMap[otherUserId]);
+  const messages = [...olderMessages, ...(storeMessages ?? initialMessages)];
   const markChatAsRead = useInbox((s) => s.markChatAsRead);
   const { markChatRead } = useSocket();
+
+  const loadMoreMessages = useCallback(async () => {
+    if (isFetchingRef.current || !hasMore || !cursor) return;
+
+    startLoading(async () => {
+      isFetchingRef.current = true;
+      try {
+        if (scrollContainerRef.current) {
+          previousScrollHeightRef.current =
+            scrollContainerRef.current.scrollHeight;
+        }
+        const result = await getChatHistory(otherUserId, cursor);
+        if (!result) return;
+
+        const {
+          messages: newOlderMessages,
+          nextCursor,
+          hasMore: moreAvailable,
+        } = result;
+
+        setOlderMessages((prev) => [...newOlderMessages, ...prev]);
+        setCursor(nextCursor);
+        setHasMore(moreAvailable);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        isFetchingRef.current = false;
+      }
+    });
+  }, [cursor, hasMore, otherUserId]);
+
+  useEffect(() => {
+    const target = observerTargetRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreMessages();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [loadMoreMessages]);
+
+  useLayoutEffect(() => {
+    if (previousScrollHeightRef.current > 0 && scrollContainerRef.current) {
+      const newScrollHeight = scrollContainerRef.current.scrollHeight;
+      const heightDifference =
+        newScrollHeight - previousScrollHeightRef.current;
+
+      scrollContainerRef.current.scrollTop += heightDifference;
+
+      previousScrollHeightRef.current = 0;
+    }
+  }, [messages.length]);
 
   useEffect(() => {
     markChatAsRead(otherUserId);
@@ -55,8 +137,21 @@ export function InboxChatList({
 
   return (
     <div
+      ref={scrollContainerRef}
       className={cn("flex-1 p-6 overflow-y-scroll flex flex-col", scrollClass)}
     >
+      {hasMore && (
+        <div
+          ref={observerTargetRef}
+          className="w-full h-4 flex justify-center items-center my-2"
+        >
+          {loading && (
+            <span className="text-xs text-zinc-500">
+              Loading older messages...
+            </span>
+          )}
+        </div>
+      )}
       {messages.map((msg, index) => {
         const senderId = msg.senderId;
         const isMe = senderId === currentUser.id;

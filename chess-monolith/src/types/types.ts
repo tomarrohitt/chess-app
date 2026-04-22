@@ -50,6 +50,9 @@ export enum WsMessageType {
 
   SPECTATE_GAME = "SPECTATE_GAME",
   LEAVE_SPECTATOR = "LEAVE_SPECTATOR",
+
+  PING = "PING",
+  PONG = "PONG",
   ERROR = "ERROR",
 }
 

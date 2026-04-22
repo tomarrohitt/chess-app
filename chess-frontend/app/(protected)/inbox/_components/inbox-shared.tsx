@@ -1,4 +1,4 @@
-import { getAvatarHue } from "@/app/(protected)/community/_components/community-shared";
+import { getAvatarHue } from "../../community/_components/community-shared";
 
 export function Avatar({
   name,

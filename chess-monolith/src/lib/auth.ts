@@ -17,7 +17,7 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24 * 7,
     cookieCache: {
       enabled: true,
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 1,
     },
   },
   user: {
@@ -37,6 +37,10 @@ export const auth = betterAuth({
       draws: {
         type: "number",
         defaultValue: 0,
+      },
+      rating: {
+        type: "number",
+        defaultValue: 1000,
       },
     },
   },

@@ -1,6 +1,4 @@
 import { Request, Response } from "express";
-import { auth } from "../../lib/auth";
-import { toFetchHeaders } from "../../lib/utils/to-fetch-headers";
 import {
   getChatHistory,
   getRecentConversations,
@@ -19,11 +17,6 @@ const GetHistoryQuerySchema = z.object({
 });
 
 export async function getHistory(req: Request, res: Response) {
-  const session = await auth.api.getSession({
-    headers: toFetchHeaders(req.headers),
-  });
-  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
-
   const paramsResult = GetHistoryParamsSchema.safeParse(req.params);
   if (!paramsResult.success) {
     return res.status(400).json({ error: "Invalid parameters" });
@@ -35,7 +28,7 @@ export async function getHistory(req: Request, res: Response) {
   }
 
   const { messages, user } = await getChatHistory(
-    session.user.id,
+    req.user.id,
     paramsResult.data.userId,
     queryResult.data.limit,
     queryResult.data.cursor,
@@ -54,24 +47,13 @@ export async function getRecentConversationsHandler(
   req: Request,
   res: Response,
 ) {
-  const session = await auth.api.getSession({
-    headers: toFetchHeaders(req.headers),
-  });
-
-  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
-
-  const conversations = await getRecentConversations(session.user.id);
+  const conversations = await getRecentConversations(req.user.id);
 
   return res.json({ success: true, data: conversations });
 }
 
 export async function getAvailableFriendsHandler(req: Request, res: Response) {
-  const session = await auth.api.getSession({
-    headers: toFetchHeaders(req.headers),
-  });
-  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
-
-  const results = await getAvailableFriends(session.user.id);
+  const results = await getAvailableFriends(req.user.id);
   return res.json({ success: true, data: results });
 }
 
@@ -80,16 +62,11 @@ const ClearChatParamsSchema = z.object({
 });
 
 export async function clearChatHandler(req: Request, res: Response) {
-  const session = await auth.api.getSession({
-    headers: toFetchHeaders(req.headers),
-  });
-  if (!session?.user) return res.status(401).json({ error: "Unauthorized" });
-
   const paramsResult = ClearChatParamsSchema.safeParse(req.params);
   if (!paramsResult.success) {
     return res.status(400).json({ error: "Invalid parameters" });
   }
 
-  await clearChat(session.user.id, paramsResult.data.userId);
+  await clearChat(req.user.id, paramsResult.data.userId);
   return res.json({ success: true });
 }

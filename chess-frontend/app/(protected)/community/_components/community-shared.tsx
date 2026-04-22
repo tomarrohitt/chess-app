@@ -1,14 +1,12 @@
 import { Trophy } from "lucide-react";
 import { getInitials } from "@/lib/constants/get-initials";
 import { GetFriend } from "@/types/friends";
+import { getWinRate } from "@/lib/chess-utils";
+import Image from "next/image";
+import Link from "next/link";
 
 export function getAvatarHue(name: string) {
   return [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
-}
-
-export function winRate(w: number, l: number, d: number) {
-  const t = w + l + d;
-  return t === 0 ? 0 : Math.round((w / t) * 100);
 }
 
 export function Avatar({
@@ -36,26 +34,17 @@ export function Avatar({
         }}
       >
         {player.image ? (
-          <img
+          <Image
             src={player.image}
             alt={player.name}
+            width={size}
+            height={size}
             className="w-full h-full object-cover"
           />
         ) : (
           getInitials(player.name)
         )}
       </div>
-      {/* {player.online !== undefined && (
-        <span
-          className="absolute bottom-0 right-0 rounded-full border-2"
-          style={{
-            width: size * 0.28,
-            height: size * 0.28,
-            background: player.online ? "#22c55e" : "#52525b",
-            borderColor: "#0d0d10",
-          }}
-        />
-      )} */}
     </div>
   );
 }
@@ -104,12 +93,14 @@ export function FriendCard({
 
       <div className="flex-1 min-w-0 flex flex-col gap-1">
         <div className="flex items-baseline gap-2">
-          <span
-            className="text-sm font-semibold text-white truncate"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            {player.name}
-          </span>
+          <Link href={`/profile/${player.id}`} className="underline">
+            <span
+              className="text-sm font-semibold text-white truncate"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              {player.name}
+            </span>
+          </Link>
           <span
             className="text-[11px] text-zinc-500 truncate"
             style={{ fontFamily: "'Fira Code', monospace" }}
@@ -132,7 +123,7 @@ export function FriendCard({
             className="text-[11px] text-zinc-500"
             style={{ fontFamily: "'Fira Code', monospace" }}
           >
-            {winRate(player.wins, player.losses, player.draws)}% WR
+            {getWinRate(player.wins, player.losses, player.draws)}% WR
           </span>
         </div>
         <StatBar

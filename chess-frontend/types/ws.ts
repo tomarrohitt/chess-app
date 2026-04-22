@@ -55,6 +55,8 @@ export enum WsMessageType {
   JOIN_GAME_CHAT = "JOIN_GAME_CHAT",
   LEAVE_GAME_CHAT = "LEAVE_GAME_CHAT",
 
+  PING = "PING",
+  PONG = "PONG",
   ERROR = "ERROR",
   PLAYER_RECONNECTED = "PLAYER_RECONNECTED",
   PLAYER_DISCONNECTED = "PLAYER_DISCONNECTED",
@@ -65,6 +67,7 @@ export enum WsConnectionStatus {
   CONNECTING = "connecting",
   CONNECTED = "connected",
   DISCONNECTED = "disconnected",
+  FAILED = "failed",
 }
 
 export const ServerMessageSchema = z.discriminatedUnion("type", [
@@ -181,6 +184,12 @@ export const ServerMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(WsMessageType.ERROR),
     payload: z.union([z.string(), z.object({ message: z.string() })]),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.PING),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.PONG),
   }),
 ]);
 

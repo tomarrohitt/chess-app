@@ -135,6 +135,12 @@ export const WsMessageSchema = z.discriminatedUnion("type", [
     type: z.literal(WsMessageType.LEAVE_SPECTATOR),
     payload: GameIdOnlySchema,
   }),
+  z.object({
+    type: z.literal(WsMessageType.PING),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.PONG),
+  }),
 ]);
 
 export type WsMessage = z.infer<typeof WsMessageSchema>;

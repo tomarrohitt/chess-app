@@ -5,6 +5,6 @@ import {
 } from "../controller/game-controller";
 const gameRouter = Router();
 
-gameRouter.get("/history", getUserMatches);
+gameRouter.get("/history/:id", getUserMatches);
 gameRouter.get("/:gameId", getUserMatchDetail);
 export default gameRouter;

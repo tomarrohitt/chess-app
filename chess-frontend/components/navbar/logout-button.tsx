@@ -1,4 +1,7 @@
+"use client";
+
 import { logout } from "@/actions/auth";
+import { Loader, LogOut } from "lucide-react";
 import { useTransition } from "react";
 
 export const LogoutButton = () => {
@@ -14,8 +17,13 @@ export const LogoutButton = () => {
     <button
       onClick={handleLogout}
       disabled={pending}
-      className="block w-full text-left px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded transition-colors"
+      className="flex items-center gap-2.5 w-full p-2 rounded-lg text-sm text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors cursor-pointer"
     >
+      {pending ? (
+        <Loader className="h-4 w-4 shrink-0 animate-spin" />
+      ) : (
+        <LogOut className="h-4 w-4 shrink-0" />
+      )}
       Sign Out
     </button>
   );

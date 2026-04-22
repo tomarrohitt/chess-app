@@ -16,7 +16,6 @@ export async function getUserMatchHistory(userId: string, limit = 20) {
       winnerId: games.winnerId,
       finalFen: games.finalFen,
       result: games.result,
-      pgn: games.pgn,
       moveTimes: games.moveTimes,
       white: {
         id: whitePlayer.id,

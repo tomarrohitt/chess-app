@@ -7,23 +7,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, User as UserIcon, Settings, LogOut } from "lucide-react";
+import { ChevronDown, User as UserIcon, Settings } from "lucide-react";
 import { getInitials } from "@/lib/constants/get-initials";
 import { User } from "@/types/auth";
+import { LogoutButton } from "./logout-button";
 
 type UserDropdownProps = {
   user: User;
-  onSignOut?: () => void;
 };
 
-export function UserDropdown({ user, onSignOut }: UserDropdownProps) {
+export function UserDropdown({ user }: UserDropdownProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 hover:bg-zinc-800 transition-colors focus:outline-none data-[state=open]:bg-zinc-800">
           <Avatar className="h-8 w-8 rounded-full">
             <AvatarImage
-              src={user.image ?? undefined}
+              src={user.image ?? ""}
               alt={user.username}
               className="object-cover"
             />
@@ -49,7 +49,7 @@ export function UserDropdown({ user, onSignOut }: UserDropdownProps) {
         <div className="flex items-center gap-3 px-2.5 py-2 mb-1">
           <Avatar className="h-9 w-9 rounded-full">
             <AvatarImage
-              src={user.image ?? undefined}
+              src={user.image ?? ""}
               alt={user.username}
               className="object-cover"
             />
@@ -68,21 +68,17 @@ export function UserDropdown({ user, onSignOut }: UserDropdownProps) {
             )}
           </div>
         </div>
-
         <DropdownMenuSeparator className="bg-zinc-800 mb-1.5" />
-
-        <Item href={`/profile/${user.username}`} icon={UserIcon}>
+        <Item href={`/profile/${user.id}`} icon={UserIcon}>
           View Profile
         </Item>
         <Item href="/settings" icon={Settings}>
           Settings
         </Item>
-
         <DropdownMenuSeparator className="bg-zinc-800 my-1.5" />
-
-        <Item onClick={onSignOut} icon={LogOut} danger>
-          Sign Out
-        </Item>
+        <DropdownMenuItem asChild>
+          <LogoutButton />
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -90,43 +86,24 @@ export function UserDropdown({ user, onSignOut }: UserDropdownProps) {
 
 function Item({
   href,
-  onClick,
   icon: Icon,
   children,
-  danger,
 }: {
-  href?: string;
+  href: string;
   onClick?: () => void;
   icon: React.ElementType;
   children: React.ReactNode;
   danger?: boolean;
 }) {
-  const cls = danger
-    ? "flex items-center gap-2.5 w-full py-2 rounded-lg text-sm text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors cursor-pointer"
-    : "flex items-center gap-2.5 w-full py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer";
-
-  const content = (
-    <>
-      <Icon className="h-4 w-4 shrink-0" />
-      {children}
-    </>
-  );
-
-  if (href) {
-    return (
-      <DropdownMenuItem asChild>
-        <Link href={href} className={cls}>
-          {content}
-        </Link>
-      </DropdownMenuItem>
-    );
-  }
-
   return (
     <DropdownMenuItem asChild>
-      <button onClick={onClick} className={cls}>
-        {content}
-      </button>
+      <Link
+        href={href}
+        className="flex items-center gap-2.5 w-full py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer"
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        {children}
+      </Link>
     </DropdownMenuItem>
   );
 }

@@ -22,6 +22,8 @@ export const GameChatMessageSchema = BaseMessageSchema.extend({
 export const ChatMessageSchemaResponseSchema = z.object({
   user: ChatUserSchema,
   messages: z.array(BaseMessageSchema),
+  nextCursor: z.string().nullable(),
+  hasMore: z.boolean(),
 });
 
 export const ChatConversationSchema = z.object({

@@ -9,7 +9,7 @@ export function ConnectionStatus() {
     connecting: "bg-yellow-500 animate-pulse",
     connected: "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]",
     disconnected: "bg-red-500",
-    error: "bg-red-600",
+    failed: "bg-red-600",
   };
 
   return (

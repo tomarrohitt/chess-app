@@ -6,9 +6,8 @@ import { signIn } from "@/lib/service/auth";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import z from "zod";
-import { LoginInput, loginSchema } from "@/types/auth";
+import { LoginInput, loginSchema, User } from "@/types/auth";
 import { simplifyZodErrors } from "@/lib/constants/error-simplifier";
-import { User } from "@/types/auth";
 import { safeFetch } from "@/lib/constants/safe-fetch";
 import { ChatUserInfo } from "@/types/chat";
 
@@ -36,7 +35,7 @@ export async function login(
 
   try {
     await signIn(result.data);
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof Error) {
       return {
         success: false,
@@ -87,4 +86,15 @@ export async function logout() {
 export async function fetchUserById(userId: string) {
   const user = await safeFetch<ChatUserInfo>(`/user/${userId}`);
   return user;
+}
+export async function getUserById(userId: string) {
+  const user = await safeFetch<Omit<User, "emailVerified">>(
+    `/user/profile/${userId}`,
+  );
+  return user;
+}
+export async function getUserImage(filename: string) {
+  const image = await safeFetch<string>(`/user/avatar/${filename}`);
+  console.log({ filename, image });
+  return image;
 }

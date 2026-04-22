@@ -16,7 +16,7 @@ import {
 } from "@/types/chess";
 import { User } from "@/types/auth";
 import { WsConnectionStatus } from "@/types/ws";
-import { GameChatMessage, BaseMessage } from "@/types/chat";
+import { GameChatMessage } from "@/types/chat";
 
 interface GameStore {
   connectionStatus: WsConnectionStatus;

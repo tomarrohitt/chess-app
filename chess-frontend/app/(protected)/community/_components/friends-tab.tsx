@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Swords, MessageSquare, UserMinus, Users, UserX } from "lucide-react";
+import { UserMinus, Users, UserX } from "lucide-react";
 import { EmptyState, FriendCard, PlayerListSkeleton } from "./community-shared";
 import { blockUser, getFriends, removeFriend } from "@/actions/friend";
 import { SearchUsersForm } from "./search-users-form";

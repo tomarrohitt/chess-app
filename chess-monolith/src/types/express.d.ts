@@ -12,12 +12,6 @@ declare global {
         rating: number;
         image?: string | null;
         emailVerified?: boolean;
-        role?: string | null;
-      };
-      session?: {
-        id: string;
-        userId: string;
-        expiresAt: Date;
       };
     }
   }

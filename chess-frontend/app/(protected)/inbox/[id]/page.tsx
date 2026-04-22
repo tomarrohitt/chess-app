@@ -21,7 +21,7 @@ export default async function InboxIdPage({
 
   if (!history || !currentUser) return;
 
-  const { user, messages } = history;
+  const { user, messages, nextCursor, hasMore } = history;
 
   return (
     <>
@@ -38,6 +38,8 @@ export default async function InboxIdPage({
           currentUser={currentUser}
           otherUserId={id}
           initialMessages={messages}
+          initialNextCursor={nextCursor}
+          initialHasMore={hasMore}
         >
           <ScrollRef otherUserId={id} />
         </InboxChatList>

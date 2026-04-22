@@ -1,6 +1,7 @@
 "use client";
 
 import { PlayerColor } from "@/types/chess";
+import Image from "next/image";
 import { Clock } from "./clock";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -34,9 +35,11 @@ export function PlayerCard({
       )}
     >
       {player.image ? (
-        <img
+        <Image
           src={player.image}
           alt={player.username}
+          width={40}
+          height={40}
           className="w-10 h-10 rounded-full object-cover shrink-0"
         />
       ) : (

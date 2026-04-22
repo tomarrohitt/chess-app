@@ -16,7 +16,6 @@ export type GameRecord = {
   winnerId: string | null;
   result: string;
   finalFen: string;
-  pgn: string;
   moveTimes: number[];
   white: Player;
   black: Player;

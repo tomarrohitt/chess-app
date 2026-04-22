@@ -43,7 +43,7 @@ import { Keys } from "../../lib/keys";
 function sendWs(
   ws: AuthenticatedWebSocket,
   type: WsMessageType,
-  payload: unknown,
+  payload?: unknown,
 ) {
   if (ws.readyState === 1) {
     ws.send(JSON.stringify({ type, payload }));
@@ -312,6 +312,11 @@ export async function routeMessage(
 
       case WsMessageType.LEAVE_GAME_CHAT: {
         leaveGameChatRoom(envelope.payload.gameId, ws);
+        break;
+      }
+
+      case WsMessageType.PING: {
+        sendWs(ws, WsMessageType.PONG);
         break;
       }
 
