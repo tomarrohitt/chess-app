@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
-import { Chess } from "chess.js";
+import { memo, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { MovePair } from "@/worker/chess-worker";
+import { useChessWorker } from "@/worker/use-chess-worker";
 
 interface MoveListProps {
   pgn: string;
@@ -10,20 +11,8 @@ interface MoveListProps {
   live?: boolean;
 }
 
-interface MoveDetail {
-  san: string;
-  timeSpent?: string;
-  index: number;
-}
-
-interface MovePair {
-  number: number;
-  white: MoveDetail;
-  black?: MoveDetail;
-}
-
 interface MoveButtonProps {
-  move: MoveDetail;
+  move: MovePair["white"];
   isActive: boolean;
   color: "w" | "b";
   onClick?: (index: number) => void;
@@ -66,7 +55,12 @@ function SanText({ san, color }: { san: string; color: "w" | "b" }) {
   return <span>{san}</span>;
 }
 
-function MoveButton({ move, isActive, color, onClick }: MoveButtonProps) {
+const MoveButton = memo(function MoveButton({
+  move,
+  isActive,
+  color,
+  onClick,
+}: MoveButtonProps) {
   return (
     <div
       className={cn(
@@ -82,101 +76,36 @@ function MoveButton({ move, isActive, color, onClick }: MoveButtonProps) {
       </span>
     </div>
   );
-}
+});
 
-function clkToSeconds(clk: string): number {
-  const match = clk.match(/(\d+):(\d{2}):(\d+(?:\.\d+)?)/);
-  if (!match) return 0;
-  return (
-    parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseFloat(match[3])
-  );
-}
-
-function parsePgnWithTimes(pgn: string, timeControl: string): MovePair[] {
-  if (!pgn) return [];
-  try {
-    const chess = new Chess();
-    chess.loadPgn(pgn);
-    const history = chess.history();
-
-    const clkMatches = [
-      ...pgn.matchAll(/\[%clk (\d+:\d{2}:\d+(?:\.\d+)?)\]/g),
-    ].map((m) => clkToSeconds(m[1]));
-
-    let initialSeconds = 300;
-    let increment = 0;
-    if (timeControl) {
-      const [mins, inc] = timeControl.split("+").map(Number);
-      if (!isNaN(mins)) initialSeconds = mins * 60;
-      if (!isNaN(inc)) increment = inc;
-    }
-
-    const pairs: MovePair[] = [];
-    let lastWhiteClk = initialSeconds;
-    let lastBlackClk = initialSeconds;
-
-    for (let i = 0; i < history.length; i += 2) {
-      const whiteClk = clkMatches[i];
-      const blackClk = clkMatches[i + 1];
-
-      const whiteDiff =
-        whiteClk !== undefined
-          ? lastWhiteClk - whiteClk + increment
-          : undefined;
-      const blackDiff =
-        blackClk !== undefined
-          ? lastBlackClk - blackClk + increment
-          : undefined;
-
-      pairs.push({
-        number: Math.floor(i / 2) + 1,
-        white: {
-          san: history[i],
-          timeSpent:
-            whiteDiff !== undefined
-              ? `${Math.max(0.1, whiteDiff).toFixed(1)}s`
-              : undefined,
-          index: i,
-        },
-        black: history[i + 1]
-          ? {
-              san: history[i + 1],
-              timeSpent:
-                blackDiff !== undefined
-                  ? `${Math.max(0.1, blackDiff).toFixed(1)}s`
-                  : undefined,
-              index: i + 1,
-            }
-          : undefined,
-      });
-
-      lastWhiteClk = whiteClk !== undefined ? whiteClk : lastWhiteClk;
-      lastBlackClk = blackClk !== undefined ? blackClk : lastBlackClk;
-    }
-    return pairs;
-  } catch {
-    return [];
-  }
-}
-
-export function MoveList({
+export const MoveList = memo(function MoveList({
   pgn,
   timeControl,
   currentMoveIndex,
   onMoveClick,
   live = false,
 }: MoveListProps) {
+  const worker = useChessWorker();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const pairs = parsePgnWithTimes(pgn, timeControl);
+
+  const [pairs, setPairs] = useState<MovePair[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!worker) return;
+    worker.parsePgnWithTimes(pgn, timeControl).then((result) => {
+      if (!cancelled) setPairs(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pgn, timeControl, worker]);
 
   useEffect(() => {
     if (!scrollContainerRef.current) return;
 
     if (currentMoveIndex === -1) {
-      scrollContainerRef.current.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -187,7 +116,6 @@ export function MoveList({
     if (activeMoveElement) {
       activeMoveElement.scrollIntoView({
         behavior: "smooth",
-        block: "nearest",
       });
     } else {
       scrollContainerRef.current.scrollTo({
@@ -238,7 +166,7 @@ export function MoveList({
                     onClick={onMoveClick}
                   />
                 ) : (
-                  <div className="ml-3 px-1.5 py-1 w-30 " />
+                  <div className="ml-3 px-1.5 py-1 w-30" />
                 )}
               </div>
             </div>
@@ -247,4 +175,4 @@ export function MoveList({
       </div>
     </div>
   );
-}
+});

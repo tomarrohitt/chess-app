@@ -2,7 +2,6 @@
 
 import { PlayerColor } from "@/types/chess";
 import Image from "next/image";
-import { Clock } from "./clock";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { getInitials } from "@/lib/constants/get-initials";
@@ -14,6 +13,7 @@ interface PlayerCardProps {
   isActive: boolean;
   pieces: React.ReactNode;
   position?: "top" | "bottom";
+  clock: React.ReactNode;
 }
 
 export function PlayerCard({
@@ -22,6 +22,7 @@ export function PlayerCard({
   isActive,
   pieces,
   position = "top",
+  clock,
 }: PlayerCardProps) {
   const isWhite = color === PlayerColor.WHITE;
 
@@ -55,7 +56,10 @@ export function PlayerCard({
 
       <div className="flex flex-col min-w-0 flex-1 gap-0.5 relative">
         {position === "bottom" && pieces}
-        <Link href={`/player/${player.id}`} className="flex items-center gap-2">
+        <Link
+          href={`/profile/${player.id}`}
+          className="flex items-center gap-2"
+        >
           <span className="font-mono text-sm font-medium text-zinc-300 truncate">
             {player.username}
           </span>
@@ -71,11 +75,7 @@ export function PlayerCard({
         {position === "top" && pieces}
       </div>
 
-      <Clock
-        timeMs={player.timeLeftMs}
-        isRunning={isActive}
-        isWhite={isWhite}
-      />
+      {clock}
     </div>
   );
 }

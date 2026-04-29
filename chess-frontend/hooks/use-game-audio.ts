@@ -5,7 +5,7 @@ import { playAudio, getMoveSoundFile } from "@/lib/audio";
 import { GameOverState } from "@/types/chess";
 
 interface UseGameAudioProps {
-  history: any[];
+  history: string[];
   currentMoveIndex: number;
   isPlayer: boolean;
   isWhite: boolean;
@@ -32,7 +32,6 @@ export function useGameAudio({
   drawOffer = null,
   rematchOffer = null,
 }: UseGameAudioProps) {
-  // 1. Move Audio
   const prevHistoryLength = useRef(history.length);
   const prevMoveIndex = useRef(currentMoveIndex);
 
@@ -69,7 +68,6 @@ export function useGameAudio({
     prevMoveIndex.current = currentMoveIndex;
   }, [history, currentMoveIndex, isPlayer, isWhite, isArchive]);
 
-  // 2. Game Over Audio
   const prevGameOver = useRef<boolean>(false);
   useEffect(() => {
     if (!isArchive && gameOver && !prevGameOver.current) {

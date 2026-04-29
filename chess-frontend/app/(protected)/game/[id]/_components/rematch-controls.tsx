@@ -3,6 +3,7 @@
 import { useGameStore } from "@/store/use-game-store";
 import { useSocket } from "@/store/socket-provider";
 import { DrawOffer } from "@/types/chess";
+import { memo } from "react";
 
 interface RematchControlsProps {
   gameId: string;
@@ -10,12 +11,13 @@ interface RematchControlsProps {
   isPlayer: boolean;
 }
 
-export function RematchControls({
+function RematchControlsComponent({
   gameId,
   timeControl,
   isPlayer,
 }: RematchControlsProps) {
-  const { rematchOffer, rematchOfferSent } = useGameStore();
+  const rematchOffer = useGameStore((s) => s.rematchOffer);
+  const rematchOfferSent = useGameStore((s) => s.rematchOfferSent);
   const { offerRematch } = useSocket();
 
   if (!isPlayer) return null;
@@ -49,3 +51,5 @@ export function RematchControls({
 
   return null;
 }
+
+export const RematchControls = memo(RematchControlsComponent);

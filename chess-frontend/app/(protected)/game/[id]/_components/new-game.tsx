@@ -1,7 +1,8 @@
 "use client";
 import { useSocket } from "@/store/socket-provider";
+import { memo } from "react";
 
-export const NewGame = ({ timeControl }: { timeControl: string }) => {
+const NewGameComponent = ({ timeControl }: { timeControl: string }) => {
   const { joinQueue } = useSocket();
   return (
     <button
@@ -12,3 +13,5 @@ export const NewGame = ({ timeControl }: { timeControl: string }) => {
     </button>
   );
 };
+
+export const NewGame = memo(NewGameComponent);

@@ -7,38 +7,21 @@ interface KeyboardNavigationOptions {
   onArrowDown?: () => void;
 }
 
-export function useKeyboardNavigation(options: KeyboardNavigationOptions) {
-  const optionsRef = useRef(options);
-  optionsRef.current = options;
+export function useKeyboardNavigation(callbacks: KeyboardNavigationOptions) {
+  const callbacksRef = useRef(callbacks);
 
   useEffect(() => {
-    let lastExecution = 0;
+    callbacksRef.current = callbacks;
+  });
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const now = Date.now();
-      if (now - lastExecution < 50) return;
-
-      let handled = false;
-      if (e.key === "ArrowLeft" && optionsRef.current.onArrowLeft) {
-        optionsRef.current.onArrowLeft();
-        handled = true;
-      } else if (e.key === "ArrowRight" && optionsRef.current.onArrowRight) {
-        optionsRef.current.onArrowRight();
-        handled = true;
-      } else if (e.key === "ArrowUp" && optionsRef.current.onArrowUp) {
-        optionsRef.current.onArrowUp();
-        handled = true;
-      } else if (e.key === "ArrowDown" && optionsRef.current.onArrowDown) {
-        optionsRef.current.onArrowDown();
-        handled = true;
-      }
-
-      if (handled) {
-        e.preventDefault();
-        lastExecution = now;
-      }
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") callbacksRef.current.onArrowLeft?.();
+      if (e.key === "ArrowRight") callbacksRef.current.onArrowRight?.();
+      if (e.key === "ArrowUp") callbacksRef.current.onArrowUp?.();
+      if (e.key === "ArrowDown") callbacksRef.current.onArrowDown?.();
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 }

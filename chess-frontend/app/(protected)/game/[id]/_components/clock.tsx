@@ -1,8 +1,42 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import {
+  createContext,
+  memo,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
-export function Clock({
+interface ClockContextValue {
+  tick: number;
+}
+
+const ClockContext = createContext<ClockContextValue>({ tick: 0 });
+
+export function ClockProvider({
+  isRunning,
+  children,
+}: {
+  isRunning: boolean;
+  children: React.ReactNode;
+}) {
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!isRunning) return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [isRunning]);
+
+  return (
+    <ClockContext.Provider value={{ tick }}>{children}</ClockContext.Provider>
+  );
+}
+
+export const Clock = memo(function Clock({
   timeMs,
   isRunning,
   isWhite,
@@ -11,20 +45,18 @@ export function Clock({
   isRunning: boolean;
   isWhite: boolean;
 }) {
-  const [displayMs, setDisplayMs] = useState(timeMs);
+  const { tick } = useContext(ClockContext);
+
+  const startTickRef = useRef<number>(tick);
+  const startMsRef = useRef<number>(timeMs);
 
   useEffect(() => {
-    setDisplayMs(timeMs);
-  }, [timeMs]);
+    startTickRef.current = tick;
+    startMsRef.current = timeMs;
+  }, [timeMs, isRunning, tick]);
 
-  useEffect(() => {
-    if (!isRunning) return;
-    const id = setInterval(
-      () => setDisplayMs((p) => Math.max(0, p - 100)),
-      100,
-    );
-    return () => clearInterval(id);
-  }, [isRunning]);
+  const elapsed = isRunning ? (tick - startTickRef.current) * 100 : 0;
+  const displayMs = Math.max(0, startMsRef.current - elapsed);
 
   const totalSec = Math.ceil(displayMs / 1000);
   const m = Math.floor(totalSec / 60);
@@ -46,4 +78,4 @@ export function Clock({
       {String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
     </div>
   );
-}
+});

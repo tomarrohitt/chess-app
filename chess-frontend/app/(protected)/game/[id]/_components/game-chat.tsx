@@ -1,38 +1,49 @@
-"use client";
-
-import { useState, useRef, useEffect } from "react";
+import { memo, useRef, useEffect, useCallback } from "react";
 import { useGameStore } from "@/store/use-game-store";
 import { useSocket } from "@/store/socket-provider";
 import { cn, scrollClass } from "@/lib/utils";
+import Image from "next/image";
 
 interface GameChatProps {
   gameId: string;
   isPlayer: boolean;
 }
 
-export function GameChat({ gameId, isPlayer }: GameChatProps) {
-  const [input, setInput] = useState("");
+export const GameChat = memo(function GameChat({
+  gameId,
+  isPlayer,
+}: GameChatProps) {
   const chatMessages = useGameStore((s) => s.chatMessages);
   const { sendChatMessage, joinGameChat } = useSocket();
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  console.log({ chatMessages });
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const el = scrollRef.current;
+    if (!el) return;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (isNearBottom) {
+      el.scrollTop = el.scrollHeight;
     }
   }, [chatMessages]);
 
   useEffect(() => {
     if (!joinGameChat) return;
     joinGameChat(gameId);
-  }, [gameId]);
+  }, [gameId, joinGameChat]);
 
-  const handleSend = (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!input.trim() || !isPlayer) return;
-    sendChatMessage(gameId, input.trim());
-    setInput("");
-  };
+  const handleSubmit = useCallback(
+    (e: React.SubmitEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const formData = new FormData(e.currentTarget);
+      const input = formData.get("message") as string;
+      if (!input || !input.trim()) return;
+      sendChatMessage(gameId, input.trim());
+      e.currentTarget.reset();
+    },
+    [gameId, sendChatMessage],
+  );
 
   return (
     <div className="flex flex-col h-70 border-t border-zinc-800/40 w-full bg-zinc-950/50">
@@ -48,44 +59,43 @@ export function GameChat({ gameId, isPlayer }: GameChatProps) {
             No messages yet. Be the first to say hi!
           </p>
         ) : (
-          chatMessages.map((msg, idx) => {
-            return (
-              <div
-                key={msg.id || idx}
-                className="flex items-start gap-2 text-sm mb-3"
-              >
-                {msg.sender.image ? (
-                  <img
-                    src={msg.sender.image}
-                    alt={msg.sender.username}
-                    className="w-6 h-6 rounded object-cover bg-zinc-800 shrink-0"
-                  />
-                ) : (
-                  <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold text-zinc-400">
-                    {msg.sender.username.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="flex flex-col leading-tight">
-                  <span className="font-semibold text-zinc-400 text-xs mb-0.5">
-                    {msg.sender.username}
-                  </span>
-                  <span className="text-zinc-200 wrap-break-word">
-                    {msg.content}
-                  </span>
+          chatMessages.map((msg, idx) => (
+            <div
+              key={msg.id || idx}
+              className="flex items-start gap-2 text-sm mb-3"
+            >
+              {msg.sender.image ? (
+                <Image
+                  src={msg.sender.image}
+                  alt={msg.sender.username}
+                  width={24}
+                  height={24}
+                  className="w-6 h-6 rounded object-cover bg-zinc-800 shrink-0"
+                />
+              ) : (
+                <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold text-zinc-400">
+                  {msg.sender.username.charAt(0).toUpperCase()}
                 </div>
+              )}
+              <div className="flex flex-col leading-tight">
+                <span className="font-semibold text-zinc-400 text-xs mb-0.5">
+                  {msg.sender.username}
+                </span>
+                <span className="text-zinc-200 wrap-break-word">
+                  {msg.content}
+                </span>
               </div>
-            );
-          })
+            </div>
+          ))
         )}
       </div>
       <form
-        onSubmit={handleSend}
+        onSubmit={handleSubmit}
         className="p-2 border-t border-zinc-800/40 flex gap-2"
       >
         <input
+          name="message"
           type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
           placeholder={
             isPlayer ? "Send a message..." : "Chat is for players only"
           }
@@ -95,4 +105,4 @@ export function GameChat({ gameId, isPlayer }: GameChatProps) {
       </form>
     </div>
   );
-}
+});

@@ -1,8 +1,8 @@
 "use client";
 
+import { memo, Dispatch, SetStateAction } from "react";
 import { MoveList } from "./move-list";
 import { ActiveGame, GameOverState } from "@/types/chess";
-import { Dispatch, SetStateAction } from "react";
 import { NewGame } from "./new-game";
 import { IncomingDrawOffer } from "./incoming-draw-offer";
 import { ActiveGameControls } from "./active-game-controls";
@@ -19,7 +19,7 @@ interface GameSidebarProps {
   gameOver: GameOverState | null;
 }
 
-export function GameSidebar({
+export const GameSidebar = memo(function GameSidebar({
   activeGame,
   isPlayer,
   setSpectatorFlipped,
@@ -66,4 +66,4 @@ export function GameSidebar({
       <GameChat gameId={activeGame.gameId} isPlayer={isPlayer} />
     </div>
   );
-}
+});

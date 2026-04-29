@@ -8,7 +8,7 @@ type JoinButtonProps = { label: string; value: string };
 
 const JoinButton = ({ label, value }: JoinButtonProps) => {
   const { joinQueue } = useSocket();
-  const { activeGame } = useGameStore((s) => s);
+  const activeGame = useGameStore((s) => s.activeGame);
   const router = useRouter();
 
   const handleClick = () => {

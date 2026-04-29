@@ -1,21 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { Chessboard } from "react-chessboard";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { User } from "@/types/auth";
-import { FullColor, GameStatus, PlayerColor } from "@/types/chess";
+import { GameStatus, PlayerColor } from "@/types/chess";
 import { PlayerArea } from "./player-area";
 import { MoveList } from "./move-list";
-import { getPlayerAdvantages, getCapturedPieces } from "./advantage";
-import { sharedBoardOptions } from "./board-theme";
+import { getPlayerAdvantages } from "./advantage";
 import { useTimeline } from "@/hooks/use-timeline";
 import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation";
 import { NewGame } from "./new-game";
 import { useGameStore } from "@/store/use-game-store";
 import { useGameAudio } from "@/hooks/use-game-audio";
-import { getTimesAtMove } from "./time-utils";
 import { RematchControls } from "./rematch-controls";
 import { FlipButton } from "./flip-button";
+
+import Chessground from "@bezalel6/react-chessground";
+import type { Config } from "chessground/config";
+import { sharedBoardConfig } from "./board-theme";
 
 export interface GamePlayer {
   id: string;
@@ -49,8 +50,28 @@ interface ArchiveBoardProps {
   user: User;
 }
 
-export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
+const EMPTY_CAPTURED = {
+  capturedByWhite: [],
+  capturedByBlack: [],
+};
+
+export const ArchiveBoard = memo(function ArchiveBoard({
+  gameData,
+  user,
+}: ArchiveBoardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const rematchOffer = useGameStore((s) => s.rematchOffer);
+
+  const timeline = useTimeline(gameData.pgn, gameData.timeControl);
+  const latestIndex = timeline.history.length - 1;
+
+  const [currentMoveIndex, setCurrentMoveIndex] = useState<number>(latestIndex);
+
+  useEffect(() => {
+    if (timeline.history.length > 0) {
+      setCurrentMoveIndex(timeline.history.length - 1);
+    }
+  }, [timeline.history.length]);
 
   const isPlayer =
     user.id === gameData.white.id || user.id === gameData.black.id;
@@ -60,22 +81,29 @@ export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
   const topColor = isViewingWhite ? PlayerColor.BLACK : PlayerColor.WHITE;
   const bottomColor = isViewingWhite ? PlayerColor.WHITE : PlayerColor.BLACK;
 
-  const { rematchOffer } = useGameStore();
-
-  const timeline = useTimeline(gameData.pgn);
-
-  const [currentMoveIndex, setCurrentMoveIndex] = useState(
-    timeline.history.length - 1,
+  const handleArrowLeft = useCallback(
+    () => setCurrentMoveIndex((prev) => Math.max(-1, prev - 1)),
+    [],
+  );
+  const handleArrowRight = useCallback(
+    () => setCurrentMoveIndex((prev) => Math.min(latestIndex, prev + 1)),
+    [latestIndex],
+  );
+  const handleArrowUp = useCallback(() => setCurrentMoveIndex(-1), []);
+  const handleArrowDown = useCallback(
+    () => setCurrentMoveIndex(latestIndex),
+    [latestIndex],
+  );
+  const handleMoveClick = useCallback(
+    (index: number) => setCurrentMoveIndex(index),
+    [],
   );
 
   useKeyboardNavigation({
-    onArrowLeft: () => setCurrentMoveIndex((prev) => Math.max(-1, prev - 1)),
-    onArrowRight: () =>
-      setCurrentMoveIndex((prev) =>
-        Math.min(timeline.history.length - 1, prev + 1),
-      ),
-    onArrowUp: () => setCurrentMoveIndex(-1),
-    onArrowDown: () => setCurrentMoveIndex(timeline.history.length - 1),
+    onArrowLeft: handleArrowLeft,
+    onArrowRight: handleArrowRight,
+    onArrowUp: handleArrowUp,
+    onArrowDown: handleArrowDown,
   });
 
   useGameAudio({
@@ -88,37 +116,61 @@ export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
     rematchOffer,
   });
 
-  const currentFen = timeline.fens[currentMoveIndex + 1];
-  const boardOptions = {
-    position: currentFen,
-    boardOrientation: isViewingWhite ? FullColor.WHITE : FullColor.BLACK,
-    allowDragging: false,
-    allowDrawingArrows: true,
-    clearArrowsOnPositionChange: true,
-    ...sharedBoardOptions,
-  };
+  const safeIndex = Math.max(
+    0,
+    Math.min(currentMoveIndex + 1, timeline.fens.length - 1),
+  );
+  const currentFen = timeline.fens[safeIndex];
 
-  const latestIndex = timeline.history.length - 1;
-
+  const capturedPieces = timeline.captured[safeIndex] || EMPTY_CAPTURED;
   const historicalTimes =
-    currentMoveIndex !== latestIndex
-      ? getTimesAtMove(gameData.pgn, gameData.timeControl, currentMoveIndex)
-      : {
+    currentMoveIndex === latestIndex
+      ? {
+          whiteTimeLeftMs: gameData.white.timeLeftMs,
+          blackTimeLeftMs: gameData.black.timeLeftMs,
+        }
+      : timeline.times[safeIndex] || {
           whiteTimeLeftMs: gameData.white.timeLeftMs,
           blackTimeLeftMs: gameData.black.timeLeftMs,
         };
 
-  const { capturedByWhite, capturedByBlack } = getCapturedPieces(currentFen);
-  const dynamicWhite = {
-    ...gameData.white,
-    capturedPieces: capturedByWhite,
-    timeLeftMs: historicalTimes.whiteTimeLeftMs,
-  };
-  const dynamicBlack = {
-    ...gameData.black,
-    capturedPieces: capturedByBlack,
-    timeLeftMs: historicalTimes.blackTimeLeftMs,
-  };
+  const cgConfig = useMemo(
+    (): Partial<Config> => ({
+      ...sharedBoardConfig,
+      fen: currentFen,
+      orientation: isViewingWhite ? "white" : "black",
+      movable: { free: false, color: undefined },
+      draggable: { enabled: false },
+      drawable: { enabled: true, eraseOnClick: true },
+    }),
+    [currentFen, isViewingWhite],
+  );
+
+  const dynamicWhite = useMemo(
+    () => ({
+      ...gameData.white,
+      capturedPieces: capturedPieces.capturedByWhite,
+      timeLeftMs: historicalTimes.whiteTimeLeftMs,
+    }),
+    [
+      gameData.white,
+      capturedPieces.capturedByWhite,
+      historicalTimes.whiteTimeLeftMs,
+    ],
+  );
+
+  const dynamicBlack = useMemo(
+    () => ({
+      ...gameData.black,
+      capturedPieces: capturedPieces.capturedByBlack,
+      timeLeftMs: historicalTimes.blackTimeLeftMs,
+    }),
+    [
+      gameData.black,
+      capturedPieces.capturedByBlack,
+      historicalTimes.blackTimeLeftMs,
+    ],
+  );
 
   const topPlayer =
     topColor === PlayerColor.WHITE ? dynamicWhite : dynamicBlack;
@@ -144,7 +196,7 @@ export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
           />
 
           <div style={{ width: 500, height: 500 }}>
-            <Chessboard options={boardOptions} />
+            <Chessground width={500} height={500} {...cgConfig} />
           </div>
 
           <PlayerArea
@@ -163,7 +215,7 @@ export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
               pgn={gameData.pgn}
               timeControl={gameData.timeControl}
               currentMoveIndex={currentMoveIndex}
-              onMoveClick={setCurrentMoveIndex}
+              onMoveClick={handleMoveClick}
             />
           </div>
 
@@ -179,4 +231,4 @@ export function ArchiveBoard({ gameData, user }: ArchiveBoardProps) {
       </div>
     </div>
   );
-}
+});

@@ -1,7 +1,20 @@
 "use client";
 import { cn } from "@/lib/utils";
 import { PlayerColor } from "@/types/chess";
-import { defaultPieces } from "react-chessboard";
+import { memo } from "react";
+
+const PIECE_UNICODE: Record<string, string> = {
+  p: "♙",
+  n: "♞",
+  b: "♝",
+  r: "♜",
+  q: "♛",
+  P: "♙",
+  N: "♘",
+  B: "♗",
+  R: "♖",
+  Q: "♕",
+};
 
 interface CapturedPiecesProps {
   capturedPieces: string[] | undefined;
@@ -10,7 +23,7 @@ interface CapturedPiecesProps {
   position: "top" | "bottom";
 }
 
-export function CapturedPieces({
+function CapturedPiecesComponent({
   capturedPieces,
   color,
   materialAdvantage = 0,
@@ -35,6 +48,7 @@ export function CapturedPieces({
     q: 9,
     Q: 9,
   };
+
   const sorted = [...(capturedPieces || [])].sort(
     (a, b) => (pieceValues[a] || 0) - (pieceValues[b] || 0),
   );
@@ -48,21 +62,19 @@ export function CapturedPieces({
         )}
       >
         {sorted.map((piece, i) => {
-          const key = (
+          const unicodeKey =
             color === PlayerColor.WHITE
-              ? `b${piece.toUpperCase()}`
-              : `w${piece.toUpperCase()}`
-          ) as keyof typeof defaultPieces;
-          const PieceSvg = defaultPieces[key];
+              ? piece.toLowerCase()
+              : piece.toUpperCase();
           const isDiff =
             i > 0 && sorted[i - 1].toLowerCase() !== piece.toLowerCase();
           return (
-            <div
+            <span
               key={i}
-              className={`w-5 h-5 ${i === 0 ? "" : isDiff ? "ml-0.5" : "-ml-1.5"}`}
+              className={`text-base leading-none select-none ${i === 0 ? "" : isDiff ? "ml-0.5" : "-ml-1.5"}`}
             >
-              {PieceSvg && <PieceSvg />}
-            </div>
+              {PIECE_UNICODE[unicodeKey]}
+            </span>
           );
         })}
         {materialAdvantage > 0 && (
@@ -74,3 +86,5 @@ export function CapturedPieces({
     </div>
   );
 }
+
+export const CapturedPieces = memo(CapturedPiecesComponent);

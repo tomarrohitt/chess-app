@@ -85,7 +85,7 @@ export const useGameStore = create<GameStore>((set) => ({
   setAnimations: (showAnimations) => set({ showAnimations }),
   setIncomingChallenge: (incomingChallenge) => set({ incomingChallenge }),
 
-  handleGameStarted: (p) =>
+  handleGameStarted: (p) => {
     set(() => {
       const [mins] = p.timeControl.split("+").map(Number);
       const baseMs = mins * 60 * 1000;
@@ -111,9 +111,10 @@ export const useGameStore = create<GameStore>((set) => ({
           status: GameStatus.IN_PROGRESS,
         },
       };
-    }),
+    });
+  },
 
-  handleGameState: (p) =>
+  handleGameState: (p) => {
     set((state) => {
       if (
         state.activeGame &&
@@ -122,24 +123,53 @@ export const useGameStore = create<GameStore>((set) => ({
       ) {
         return state;
       }
+
+      const prev = state.activeGame;
+
+      // If nothing meaningful changed, return same reference → no re-render
+      if (
+        prev &&
+        prev.fen === p.fen &&
+        prev.pgn === p.pgn &&
+        prev.turn === p.turn &&
+        prev.status === p.status &&
+        prev.white.timeLeftMs === p.white.timeLeftMs &&
+        prev.black.timeLeftMs === p.black.timeLeftMs
+      ) {
+        return state; // ← exact same reference, Zustand won't notify
+      }
+
+      const pgnChanged = prev?.pgn !== p.pgn;
+
       return {
         activeGame: {
-          ...state.activeGame,
+          ...prev,
           gameId: p.gameId,
           fen: p.fen,
           pgn: p.pgn,
           turn: p.turn,
           playerColor: p.playerColor,
-          white: p.white,
-          black: p.black,
           timeControl: p.timeControl,
           status: state.gameOver ? state.gameOver.status : p.status,
+          white: {
+            ...p.white,
+            // only accept server time on actual moves, ignore clock-sync pings
+            timeLeftMs: pgnChanged
+              ? p.white.timeLeftMs
+              : (prev?.white.timeLeftMs ?? p.white.timeLeftMs),
+          },
+          black: {
+            ...p.black,
+            timeLeftMs: pgnChanged
+              ? p.black.timeLeftMs
+              : (prev?.black.timeLeftMs ?? p.black.timeLeftMs),
+          },
         } as ActiveGame,
         expectedGameId: null,
       };
-    }),
-
-  handleMoveMade: (p) =>
+    });
+  },
+  handleMoveMade: (p) => {
     set((state) => {
       if (!state.activeGame || state.activeGame.gameId !== p.gameId)
         return state;
@@ -167,7 +197,8 @@ export const useGameStore = create<GameStore>((set) => ({
           status: p.isGameOver ? GameStatus.CHECKMATE : GameStatus.IN_PROGRESS,
         },
       };
-    }),
+    });
+  },
 
   handleMoveRejected: (reason) => {
     set({ lastMoveRejectedReason: reason });

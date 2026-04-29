@@ -1,16 +1,14 @@
 import { getUserFromSession } from "@/actions/session";
 import { LobbyClient } from "@/components/game/lobby-client";
 import { GameHistory } from "@/app/(protected)/_components/game-history";
-import { api } from "@/lib/clients/server";
 import { redirect } from "next/navigation";
+import { getRecentGames } from "@/actions/game";
 
 export default async function HomePage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login");
 
-  const res = await api("/games/history?limit=20");
-  const json = await res.json();
-  const games = json.success ? json.data : null;
+  const games = await getRecentGames(user.id);
 
   return (
     <main className="flex-1 flex flex-col lg:flex-row max-w-6xl mx-auto w-full gap-10 pt-6">

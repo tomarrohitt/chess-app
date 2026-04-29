@@ -52,7 +52,7 @@ export function GameHistory({
   games,
   currentUserId,
 }: {
-  games: GameRecord[];
+  games: GameRecord[] | null;
   currentUserId: string;
 }) {
   if (!games || games.length === 0) {

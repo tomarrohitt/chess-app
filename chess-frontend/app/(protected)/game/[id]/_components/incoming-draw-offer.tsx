@@ -12,7 +12,7 @@ export function IncomingDrawOffer({
   gameId,
   isPlayer,
 }: IncomingDrawOfferProps) {
-  const { drawOffer } = useGameStore();
+  const drawOffer = useGameStore((s) => s.drawOffer);
   const { acceptDraw, declineDraw } = useSocket();
 
   if (!isPlayer || !drawOffer) return null;

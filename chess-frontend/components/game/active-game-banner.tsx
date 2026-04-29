@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { Play } from "lucide-react";
 
 export function ActiveGameBanner() {
-  const { activeGame, gameOver } = useGameStore((s) => s);
+  const gameOver = useGameStore((s) => s.gameOver);
+  const activeGame = useGameStore((s) => s.activeGame);
   const pathname = usePathname();
   const router = useRouter();
 

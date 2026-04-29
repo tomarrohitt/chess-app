@@ -11,8 +11,10 @@ export function GameOverOverlay({
   gameOver: GameOverState;
   userId: string;
 }) {
-  const { resetGame, activeGame, rematchOffer, rematchOfferSent } =
-    useGameStore((s) => s);
+  const resetGame = useGameStore((s) => s.resetGame);
+  const activeGame = useGameStore((s) => s.activeGame);
+  const rematchOffer = useGameStore((s) => s.rematchOffer);
+  const rematchOfferSent = useGameStore((s) => s.rematchOfferSent);
   const { joinQueue, offerRematch } = useSocket();
   const [isVisible, setIsVisible] = useState(true);
 

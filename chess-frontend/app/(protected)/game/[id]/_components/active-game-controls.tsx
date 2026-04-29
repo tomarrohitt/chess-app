@@ -13,7 +13,7 @@ export function ActiveGameControls({
   gameId,
   isPlayer,
 }: ActiveGameControlsProps) {
-  const { drawOfferSent } = useGameStore();
+  const drawOfferSent = useGameStore((s) => s.drawOfferSent);
   const { offerDraw, resign } = useSocket();
 
   if (!isPlayer) return null;

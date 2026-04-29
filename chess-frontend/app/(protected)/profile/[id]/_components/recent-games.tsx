@@ -1,5 +1,4 @@
 import { getUserFromSession } from "@/actions/session";
-import { GameRecord } from "@/types/history";
 import { GameStatus } from "@/types/chess";
 import { Swords } from "lucide-react";
 import Link from "next/link";
@@ -12,16 +11,7 @@ import {
   getMaterialAdvantage,
   PIECE_GLYPHS,
 } from "@/lib/chess-utils";
-import { safeFetch } from "@/lib/constants/safe-fetch";
-
-async function getRecentGames(id: string): Promise<GameRecord[] | null> {
-  try {
-    const res = safeFetch<GameRecord[]>(`/games/history/${id}?limit=20`);
-    return res;
-  } catch {
-    return null;
-  }
-}
+import { getRecentGames } from "@/actions/game";
 
 export async function RecentGames({ id }: { id: string }) {
   const [games, user] = await Promise.all([

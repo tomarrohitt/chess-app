@@ -1,9 +1,10 @@
 "use client";
+import { memo } from "react";
 
-import { Chessboard, defaultPieces } from "react-chessboard";
+import Chessground from "@bezalel6/react-chessground";
+
 import { GameOverOverlay } from "./game-over-overlay";
-import { FullColor, ActiveGame, GameOverState } from "@/types/chess";
-import { sharedBoardOptions } from "./board-theme";
+import { ActiveGame, GameOverState } from "@/types/chess";
 import { useActiveBoard } from "./use-active-board";
 
 export interface ActiveBoardProps {
@@ -17,7 +18,14 @@ export interface ActiveBoardProps {
   isViewingHistory?: boolean;
 }
 
-export function ActiveBoard({
+const PROMOTION_PIECES = ["q", "n", "r", "b"] as const;
+
+const PIECE_UNICODE: Record<string, Record<string, string>> = {
+  w: { q: "♕", n: "♘", r: "♖", b: "♗" },
+  b: { q: "♛", n: "♞", r: "♜", b: "♝" },
+};
+
+export const ActiveBoard = memo(function ActiveBoard({
   activeGame,
   isPlayer,
   isWhite,
@@ -27,55 +35,23 @@ export function ActiveBoard({
   currentFen,
   isViewingHistory,
 }: ActiveBoardProps) {
-  const {
-    position,
-    combinedOptionSquares,
-    promotionMove,
-    setPromotionMove,
-    onSquareClick,
-    onPieceDrop,
-    onSquareRightClick,
-    onPromotionPieceSelect,
-  } = useActiveBoard({
-    activeGame,
-    isPlayer,
-    isWhite,
-    lastMoveRejectedReason,
-    gameOver,
-    currentFen,
-    isViewingHistory,
-  });
+  const { cgConfig, promotionMove, setPromotionMove, onPromotionPieceSelect } =
+    useActiveBoard({
+      activeGame,
+      isPlayer,
+      isWhite,
+      lastMoveRejectedReason,
+      gameOver,
+      currentFen,
+      isViewingHistory,
+    });
 
-  const sanitizedSquareStyles = combinedOptionSquares
-    ? (Object.fromEntries(
-        Object.entries(combinedOptionSquares).map(([square, style]) => {
-          const { background, ...rest } = style as React.CSSProperties;
-          return [
-            square,
-            background
-              ? { ...rest, backgroundColor: background as string }
-              : style,
-          ];
-        }),
-      ) as Record<string, React.CSSProperties>)
-    : combinedOptionSquares;
-
-  const boardOptions = {
-    id: "active-board",
-    position,
-    boardOrientation: isWhite ? FullColor.WHITE : FullColor.BLACK,
-    onPieceDrop,
-    onSquareClick,
-    onSquareRightClick,
-    allowDragging: isPlayer && !isViewingHistory,
-    allowDragOffBoard: false,
-    squareStyles: sanitizedSquareStyles,
-    ...sharedBoardOptions,
-  };
+  const colorKey = isWhite ? "w" : "b";
 
   return (
-    <div style={{ width: 500, height: 500 }}>
-      <Chessboard options={boardOptions} />
+    <div style={{ width: 500, height: 500 }} className="relative">
+      <Chessground width={500} height={500} {...cgConfig} />
+
       {promotionMove && (
         <>
           <div
@@ -85,12 +61,12 @@ export function ActiveBoard({
               e.preventDefault();
               setPromotionMove(null);
             }}
-            style={{ backgroundColor: "rgba(0, 0, 0, 0.2)" }}
+            style={{ backgroundColor: "rgba(0,0,0,0.2)" }}
           />
           <div
             className="absolute z-50 flex flex-col shadow-2xl rounded overflow-hidden"
             style={{
-              backgroundColor: "#f4f4f5", // zinc-100
+              backgroundColor: "#f4f4f5",
               top: 0,
               left: `${
                 isWhite
@@ -100,28 +76,23 @@ export function ActiveBoard({
               width: "12.5%",
             }}
           >
-            {(["q", "n", "r", "b"] as const).map((p) => {
-              const pieceKey =
-                `${isWhite ? "w" : "b"}${p.toUpperCase()}` as keyof typeof defaultPieces;
-              const PieceComponent = defaultPieces[pieceKey];
-              return (
-                <button
-                  key={p}
-                  onClick={() => onPromotionPieceSelect(p)}
-                  className="w-full aspect-square flex items-center justify-center hover:bg-zinc-300 transition-colors"
-                >
-                  {PieceComponent && <PieceComponent />}
-                </button>
-              );
-            })}
+            {PROMOTION_PIECES.map((p) => (
+              <button
+                key={p}
+                onClick={() => onPromotionPieceSelect(p)}
+                className="w-full aspect-square flex items-center justify-center hover:bg-zinc-300 transition-colors text-3xl"
+              >
+                {PIECE_UNICODE[colorKey][p]}
+              </button>
+            ))}
           </div>
         </>
       )}
 
       {lastMoveRejectedReason && (
         <div
-          className="absolute top-2 left-1/2 -translate-x-1/2 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap"
-          style={{ backgroundColor: "rgba(220, 38, 38, 0.9)" }}
+          className="absolute top-2 left-1/2 -translate-x-1/2 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap z-50"
+          style={{ backgroundColor: "rgba(220,38,38,0.9)" }}
         >
           {lastMoveRejectedReason}
         </div>
@@ -130,4 +101,4 @@ export function ActiveBoard({
       {gameOver && <GameOverOverlay gameOver={gameOver} userId={userId} />}
     </div>
   );
-}
+});
