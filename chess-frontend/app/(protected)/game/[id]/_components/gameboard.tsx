@@ -96,13 +96,11 @@ export function Gameboard({ gameId, user }: GameboardProps) {
 
   const isBottomActive =
     activeGame.turn === bottomColor &&
-    !isViewingHistory &&
     activeGame.status === GameStatus.IN_PROGRESS &&
     !gameOver;
 
   const isTopActive =
     activeGame.turn === topColor &&
-    !isViewingHistory &&
     activeGame.status === GameStatus.IN_PROGRESS &&
     !gameOver;
 

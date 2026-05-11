@@ -25,7 +25,7 @@ export const BoardColumn = memo(function BoardColumn({
   const { topColor, bottomColor, topPlayer, bottomPlayer } =
     useGameContext(userId);
 
-  const timeline = useTimeline(activeGame?.pgn);
+  const timeline = useTimeline(activeGame?.pgn, activeGame?.timeControl);
   const latestIndex = timeline.history.length - 1;
   const safeIndex = Math.max(
     0,
@@ -40,8 +40,16 @@ export const BoardColumn = memo(function BoardColumn({
   const gameIsActive = activeGame?.status === GameStatus.IN_PROGRESS;
   const atLatest = viewingIndex === null;
 
-  const whiteTimeMs = activeGame?.white.timeLeftMs ?? 0;
-  const blackTimeMs = activeGame?.black.timeLeftMs ?? 0;
+  const historicalTimes =
+    viewingIndex === null || viewingIndex === latestIndex
+      ? {
+          whiteTimeLeftMs: activeGame?.white.timeLeftMs ?? 0,
+          blackTimeLeftMs: activeGame?.black.timeLeftMs ?? 0,
+        }
+      : timeline.times[safeIndex] || {
+          whiteTimeLeftMs: activeGame?.white.timeLeftMs ?? 0,
+          blackTimeLeftMs: activeGame?.black.timeLeftMs ?? 0,
+        };
 
   const isWhiteTurn = activeGame?.fen?.split(" ")[1] === "w";
   const isTopActive =
@@ -50,9 +58,14 @@ export const BoardColumn = memo(function BoardColumn({
     atLatest;
   const isBottomActive = !isTopActive && gameIsActive && atLatest;
 
-  const topTimeMs = topColor === PlayerColor.WHITE ? whiteTimeMs : blackTimeMs;
+  const topTimeMs =
+    topColor === PlayerColor.WHITE
+      ? historicalTimes.whiteTimeLeftMs
+      : historicalTimes.blackTimeLeftMs;
   const bottomTimeMs =
-    bottomColor === PlayerColor.WHITE ? whiteTimeMs : blackTimeMs;
+    bottomColor === PlayerColor.WHITE
+      ? historicalTimes.whiteTimeLeftMs
+      : historicalTimes.blackTimeLeftMs;
 
   const { topAdvantage, bottomAdvantage } = getPlayerAdvantages(
     captured.capturedByWhite,

@@ -49,10 +49,18 @@ export function useActiveBoard({
     lastMove: [Key, Key];
   } | null>(null);
 
-  // Clear optimistic state when the server game state updates
-  useEffect(() => {
+  const [prevGameData, setPrevGameData] = useState({
+    fen: activeGame.fen,
+    pgn: activeGame.pgn,
+  });
+
+  if (
+    activeGame.fen !== prevGameData.fen ||
+    activeGame.pgn !== prevGameData.pgn
+  ) {
+    setPrevGameData({ fen: activeGame.fen, pgn: activeGame.pgn });
     setOptimisticState(null);
-  }, [activeGame.fen, activeGame.pgn]);
+  }
 
   const [promotionMove, setPromotionMove] = useState<{
     sourceSquare: Key;
@@ -103,10 +111,14 @@ export function useActiveBoard({
     if (displayedFen === lastProcessedFen.current) return;
     if (!isMyTurn || premovesRef.current.length === 0) return;
 
-    lastProcessedFen.current = displayedFen;
-    const next = premovesRef.current.shift()!;
+    lastProcessedFen.current = displayedFen ?? null;
 
     const moves = game.moves({ verbose: true });
+
+    const next = premovesRef.current.shift();
+
+    if (!next) return;
+
     const legal = moves.some(
       (m) => m.from === next.sourceSquare && m.to === next.targetSquare,
     );

@@ -4,13 +4,15 @@ export const playAudio = (soundFile: string) => {
 };
 
 export const getMoveSoundFile = (
-  move: string,
+  move: string | undefined | null,
   isMyMove: boolean,
   isViewer: boolean = false,
 ): string => {
   let soundFile = isMyMove ? "/move-self.mp3" : "/move-opponent.mp3";
 
   if (isViewer) soundFile = "/move-self.mp3";
+
+  if (!move) return soundFile;
 
   if (move.includes("=")) {
     soundFile = "/promote.mp3";

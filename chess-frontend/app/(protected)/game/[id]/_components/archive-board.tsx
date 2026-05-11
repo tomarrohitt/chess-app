@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { User } from "@/types/auth";
 import { GameStatus, PlayerColor } from "@/types/chess";
 import { PlayerArea } from "./player-area";
@@ -13,6 +13,7 @@ import { useGameStore } from "@/store/use-game-store";
 import { useGameAudio } from "@/hooks/use-game-audio";
 import { RematchControls } from "./rematch-controls";
 import { FlipButton } from "./flip-button";
+import { CapturedPieces } from "./captured-pieces";
 
 import Chessground from "@bezalel6/react-chessground";
 import type { Config } from "chessground/config";
@@ -66,12 +67,12 @@ export const ArchiveBoard = memo(function ArchiveBoard({
   const latestIndex = timeline.history.length - 1;
 
   const [currentMoveIndex, setCurrentMoveIndex] = useState<number>(latestIndex);
+  const [prevLatestIndex, setPrevLatestIndex] = useState<number>(latestIndex);
 
-  useEffect(() => {
-    if (timeline.history.length > 0) {
-      setCurrentMoveIndex(timeline.history.length - 1);
-    }
-  }, [timeline.history.length]);
+  if (latestIndex !== prevLatestIndex) {
+    setPrevLatestIndex(latestIndex);
+    setCurrentMoveIndex(latestIndex);
+  }
 
   const isPlayer =
     user.id === gameData.white.id || user.id === gameData.black.id;
@@ -193,6 +194,16 @@ export const ArchiveBoard = memo(function ArchiveBoard({
             isActive={false}
             materialAdvantage={topAdvantage}
             position="top"
+            timeMs={topPlayer.timeLeftMs}
+            clockRunning={false}
+            pieces={
+              <CapturedPieces
+                capturedPieces={topPlayer.capturedPieces}
+                color={topColor}
+                materialAdvantage={topAdvantage}
+                position="top"
+              />
+            }
           />
 
           <div style={{ width: 500, height: 500 }}>
@@ -205,11 +216,21 @@ export const ArchiveBoard = memo(function ArchiveBoard({
             isActive={false}
             materialAdvantage={bottomAdvantage}
             position="bottom"
+            timeMs={bottomPlayer.timeLeftMs}
+            clockRunning={false}
+            pieces={
+              <CapturedPieces
+                capturedPieces={bottomPlayer.capturedPieces}
+                color={bottomColor}
+                materialAdvantage={bottomAdvantage}
+                position="bottom"
+              />
+            }
           />
         </div>
 
         <div className="flex flex-col justify-center items-start relative">
-          <FlipButton isPlayer={!isPlayer} setSpectatorFlipped={setIsFlipped} />
+          {/* <FlipButton isPlayer={!isPlayer} setSpectatorFlipped={setIsFlipped} /> */}
           <div className="flex-1 flex flex-col overflow-hidden p-4">
             <MoveList
               pgn={gameData.pgn}

@@ -13,6 +13,13 @@ export const Clock = memo(function Clock({
   const [displayTime, setDisplayTime] = useState(timeMs);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [prevTime, setPrevTime] = useState(timeMs);
+
+  if (prevTime !== timeMs) {
+    setPrevTime(timeMs);
+    setDisplayTime(timeMs);
+  }
+
   useEffect(() => {
     if (isRunning) {
       const startTime = Date.now();
@@ -27,7 +34,6 @@ export const Clock = memo(function Clock({
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      setDisplayTime(timeMs);
     }
 
     return () => {
