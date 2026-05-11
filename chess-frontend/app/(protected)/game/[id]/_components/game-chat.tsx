@@ -17,8 +17,6 @@ export const GameChat = memo(function GameChat({
   const { sendChatMessage, joinGameChat } = useSocket();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  console.log({ chatMessages });
-
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;

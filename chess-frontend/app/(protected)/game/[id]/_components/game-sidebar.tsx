@@ -1,6 +1,7 @@
+// _components/game-sidebar.tsx
 "use client";
 
-import { memo, Dispatch, SetStateAction } from "react";
+import { memo } from "react";
 import { MoveList } from "./move-list";
 import { ActiveGame, GameOverState } from "@/types/chess";
 import { NewGame } from "./new-game";
@@ -9,39 +10,43 @@ import { ActiveGameControls } from "./active-game-controls";
 import { RematchControls } from "./rematch-controls";
 import { FlipButton } from "./flip-button";
 import { GameChat } from "./game-chat";
+import { useGameNavigation } from "./use-game-navigation";
+import { useGameUIStore } from "./use-game-ui-store";
+import { useTimeline } from "@/hooks/use-timeline";
 
 interface GameSidebarProps {
   activeGame: ActiveGame;
   isPlayer: boolean;
-  setSpectatorFlipped: Dispatch<SetStateAction<boolean>>;
-  currentMoveIndex?: number;
-  onMoveClick?: (index: number) => void;
   gameOver: GameOverState | null;
 }
 
 export const GameSidebar = memo(function GameSidebar({
   activeGame,
   isPlayer,
-  setSpectatorFlipped,
-  currentMoveIndex,
-  onMoveClick,
   gameOver,
 }: GameSidebarProps) {
-  if (!activeGame) return null;
+  const timeline = useTimeline(activeGame.pgn);
+  const latestIndex = timeline.history.length - 1;
+
+  const { currentMoveIndex, handleMoveClick } = useGameNavigation(latestIndex);
+
+  const setSpectatorFlipped = useGameUIStore(
+    (s) => s.actions.setSpectatorFlipped,
+  );
 
   return (
     <div className="flex flex-col justify-center items-center relative">
-      <FlipButton
-        isPlayer={isPlayer}
-        setSpectatorFlipped={setSpectatorFlipped}
-      />
+      {!isPlayer && (
+        <FlipButton onFlip={() => setSpectatorFlipped((p) => !p)} />
+      )}
+
       <div className="flex-1 flex flex-col overflow-hidden p-4">
         <MoveList
           pgn={activeGame.pgn}
           timeControl={activeGame.timeControl}
           currentMoveIndex={currentMoveIndex}
-          onMoveClick={onMoveClick}
-          live={true}
+          onMoveClick={handleMoveClick}
+          live
         />
       </div>
 
@@ -49,7 +54,6 @@ export const GameSidebar = memo(function GameSidebar({
         {isPlayer && !gameOver && (
           <ActiveGameControls gameId={activeGame.gameId} isPlayer={isPlayer} />
         )}
-
         <IncomingDrawOffer gameId={activeGame.gameId} isPlayer={isPlayer} />
         {gameOver && (
           <div className="flex gap-4 w-full mt-4">

@@ -55,28 +55,35 @@ function SanText({ san, color }: { san: string; color: "w" | "b" }) {
   return <span>{san}</span>;
 }
 
-const MoveButton = memo(function MoveButton({
-  move,
-  isActive,
-  color,
-  onClick,
-}: MoveButtonProps) {
-  return (
-    <div
-      className={cn(
-        "ml-3 flex justify-between items-center px-1.5 py-1 rounded transition-colors group/m w-30 font-bold cursor-pointer text-white",
-        isActive && "bg-gray-800",
-      )}
-      data-active={isActive ? "true" : undefined}
-      onClick={() => onClick?.(move.index)}
-    >
-      <SanText san={move.san} color={color} />
-      <span className="text-xs font-mono opacity-80 group-hover/m:opacity-100 transition-opacity">
-        {move.timeSpent}
-      </span>
-    </div>
-  );
-});
+const MoveButton = memo(
+  function MoveButton({ move, isActive, color, onClick }: MoveButtonProps) {
+    return (
+      <div
+        className={cn(
+          "ml-3 flex justify-between items-center px-1.5 py-1 rounded transition-colors group/m w-30 font-bold cursor-pointer text-white",
+          isActive && "bg-gray-800",
+        )}
+        data-active={isActive ? "true" : undefined}
+        onClick={() => onClick?.(move.index)}
+      >
+        <SanText san={move.san} color={color} />
+        <span className="text-xs font-mono opacity-80 group-hover/m:opacity-100 transition-opacity">
+          {move.timeSpent}
+        </span>
+      </div>
+    );
+  },
+  (prev, next) => {
+    return (
+      prev.move.index === next.move.index &&
+      prev.move.san === next.move.san &&
+      prev.move.timeSpent === next.move.timeSpent &&
+      prev.isActive === next.isActive &&
+      prev.color === next.color &&
+      prev.onClick === next.onClick
+    );
+  },
+);
 
 export const MoveList = memo(function MoveList({
   pgn,
@@ -105,7 +112,7 @@ export const MoveList = memo(function MoveList({
     if (!scrollContainerRef.current) return;
 
     if (currentMoveIndex === -1) {
-      scrollContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: "instant" });
       return;
     }
 
@@ -115,12 +122,12 @@ export const MoveList = memo(function MoveList({
 
     if (activeMoveElement) {
       activeMoveElement.scrollIntoView({
-        behavior: "smooth",
+        behavior: "instant",
       });
     } else {
       scrollContainerRef.current.scrollTo({
         top: scrollContainerRef.current.scrollHeight,
-        behavior: "smooth",
+        behavior: "instant",
       });
     }
   }, [pairs.length, currentMoveIndex]);

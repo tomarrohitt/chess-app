@@ -25,6 +25,10 @@ export function useWebSocket(user: User) {
   const heartbeatInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const heartbeatTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const action = useGameStore.getState().actions;
+  const activeGame = useGameStore((s) => s.activeGame);
+  const rematchOfferSent = useGameStore((s) => s.rematchOfferSent);
+
   useEffect(() => {
     userRef.current = user;
   }, [user]);
@@ -43,7 +47,7 @@ export function useWebSocket(user: User) {
 
         heartbeatTimeout.current = setTimeout(() => {
           console.warn("[WS] Heartbeat timeout. Forcing reconnect...");
-          // Manually fire the close event because ws.close() hangs on dead networks
+
           const event = {
             code: 4000,
             reason: "Heartbeat timeout",
@@ -51,7 +55,7 @@ export function useWebSocket(user: User) {
           } as CloseEvent;
           if (ws.onclose) {
             ws.onclose(event);
-            ws.onclose = null; // Prevent it from double-firing later
+            ws.onclose = null;
           }
           ws.close(4000, "Heartbeat timeout");
         }, HEARTBEAT_TIMEOUT);
@@ -90,54 +94,53 @@ export function useWebSocket(user: User) {
 
       const msg = result.data;
 
-      const store = useGameStore.getState();
       switch (msg.type) {
         case WsMessageType.MOVE_MADE:
-          store.handleMoveMade(msg.payload);
+          action.handleMoveMade(msg.payload);
           break;
         case WsMessageType.MOVE_REJECTED:
-          store.handleMoveRejected(msg.payload.reason);
+          action.handleMoveRejected(msg.payload.reason);
           break;
         case WsMessageType.GAME_STARTED:
-          store.handleGameStarted(msg.payload);
+          action.handleGameStarted(msg.payload);
           break;
         case WsMessageType.GAME_STATE:
-          store.handleGameState(msg.payload);
+          action.handleGameState(msg.payload);
           break;
         case WsMessageType.GAME_OVER:
-          store.handleGameOver(msg.payload);
+          action.handleGameOver(msg.payload);
           break;
         case WsMessageType.QUEUE_JOINED:
-          store.setQueue(msg.payload.status, msg.payload.timeControl);
+          action.setQueue(msg.payload.status, msg.payload.timeControl);
           break;
         case WsMessageType.MATCHMAKING_TIMEOUT:
-          store.setQueue(QueueStatus.IDLE);
+          action.setQueue(QueueStatus.IDLE);
           break;
         case WsMessageType.OFFER_DRAW:
-          store.setDrawOffer(msg.payload);
+          action.setDrawOffer(msg.payload);
           break;
         case WsMessageType.DECLINE_DRAW:
-          store.setDrawOfferSent(DrawOffer.DECLINE);
-          setTimeout(() => store.setDrawOfferSent(null), 5000);
+          action.setDrawOfferSent(DrawOffer.DECLINE);
+          setTimeout(() => action.setDrawOfferSent(null), 5000);
           break;
         case WsMessageType.GAME_ABORTED:
-          store.handleGameOver({
+          action.handleGameOver({
             status: GameStatus.ABANDONED,
             reason: msg.payload?.reason,
           });
           break;
         case WsMessageType.OFFER_REMATCH:
-          store.setRematchOffer(msg.payload);
+          action.setRematchOffer(msg.payload);
           break;
         case WsMessageType.DECLINE_REMATCH:
-          store.setRematchOfferSent(DrawOffer.DECLINE);
-          setTimeout(() => store.setRematchOfferSent(null), 5000);
+          action.setRematchOfferSent(DrawOffer.DECLINE);
+          setTimeout(() => action.setRematchOfferSent(null), 5000);
           break;
         case WsMessageType.NEW_GAME_CHAT:
-          store.addChatMessage(msg.payload);
+          action.addChatMessage(msg.payload);
           break;
         case WsMessageType.CHALLENGE_RECEIVED:
-          store.setIncomingChallenge(msg.payload);
+          action.setIncomingChallenge(msg.payload);
           break;
         case WsMessageType.RECEIVE_CHAT_MESSAGE:
         case WsMessageType.CHAT_MESSAGE_ACK:
@@ -167,7 +170,6 @@ export function useWebSocket(user: User) {
   const connect = useCallback(
     function connectWebSocket() {
       isIntentionalClose.current = false;
-      const store = useGameStore.getState();
 
       if (
         wsRef.current &&
@@ -183,13 +185,12 @@ export function useWebSocket(user: User) {
       }
 
       console.log("[WS] Attempting to connect to:", WS_URL);
-      store.setConnection(WsConnectionStatus.CONNECTING);
-      store.setUser(userRef.current);
+      action.setConnection(WsConnectionStatus.CONNECTING);
+      action.setUser(userRef.current);
 
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
 
-      // Connection timeout to prevent hanging in "CONNECTING" state
       const connectionTimeout = setTimeout(() => {
         if (ws.readyState === WebSocket.CONNECTING) {
           console.warn("[WS] Connection timeout. Aborting...");
@@ -204,11 +205,11 @@ export function useWebSocket(user: User) {
           }
           ws.close();
         }
-      }, 5000); // 5 seconds to connect before we try backing off again
+      }, 5000);
 
       ws.onopen = () => {
         clearTimeout(connectionTimeout);
-        store.setConnection(WsConnectionStatus.CONNECTED);
+        action.setConnection(WsConnectionStatus.CONNECTED);
         startHeartbeat(ws);
         reconnectAttempts.current = 0;
 
@@ -239,13 +240,13 @@ export function useWebSocket(user: User) {
         console.warn(
           `[WS] Closed. Code: ${event.code}, Reason: ${event.reason || "No reason given"}`,
         );
-        store.setConnection(WsConnectionStatus.DISCONNECTED);
+        action.setConnection(WsConnectionStatus.DISCONNECTED);
         wsRef.current = null;
 
         if (!isIntentionalClose.current) {
           if (reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) {
             console.error("[WS] Max reconnect attempts reached. Giving up.");
-            store.setConnection(WsConnectionStatus.FAILED);
+            action.setConnection(WsConnectionStatus.FAILED);
             return;
           }
 
@@ -273,7 +274,7 @@ export function useWebSocket(user: User) {
     const handleOffline = () => {
       console.warn("[WS] Network offline detected.");
       isIntentionalClose.current = true;
-      useGameStore.getState().setConnection(WsConnectionStatus.DISCONNECTED);
+      action.setConnection(WsConnectionStatus.DISCONNECTED);
       if (wsRef.current) {
         wsRef.current.close(1000, "Browser offline");
       }
@@ -293,7 +294,7 @@ export function useWebSocket(user: User) {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       isIntentionalClose.current = true;
-      clearHeartbeat(); // ← added: onclose won't run since we null it below
+      clearHeartbeat();
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
 
       if (wsRef.current) {
@@ -304,7 +305,7 @@ export function useWebSocket(user: User) {
         wsRef.current.onmessage = null;
         wsRef.current.close(1000, "Component unmounted");
         wsRef.current = null;
-        useGameStore.getState().setConnection(WsConnectionStatus.DISCONNECTED);
+        action.setConnection(WsConnectionStatus.DISCONNECTED);
       }
     };
   }, [connect, clearHeartbeat]);
@@ -316,7 +317,7 @@ export function useWebSocket(user: User) {
         send(WsMessageType.JOIN_QUEUE, { timeControl }),
       leaveQueue: () => {
         send(WsMessageType.LEAVE_QUEUE);
-        useGameStore.getState().setQueue(QueueStatus.IDLE);
+        action.setQueue(QueueStatus.IDLE);
       },
       makeMove: (
         gameId: string,
@@ -326,39 +327,35 @@ export function useWebSocket(user: User) {
       ) => send(WsMessageType.MAKE_MOVE, { gameId, from, to, promotion }),
       resign: (gameId: string) => send(WsMessageType.RESIGN_GAME, { gameId }),
       offerDraw: (gameId: string) => {
-        const store = useGameStore.getState();
         send(WsMessageType.OFFER_DRAW, { gameId });
-        store.setDrawOfferSent(DrawOffer.SENT);
+        action.setDrawOfferSent(DrawOffer.SENT);
       },
       acceptDraw: (gameId: string) => {
         send(WsMessageType.ACCEPT_DRAW, { gameId });
-        useGameStore.getState().setDrawOffer(null);
+        action.setDrawOffer(null);
       },
       declineDraw: (gameId: string) => {
         send(WsMessageType.DECLINE_DRAW, { gameId });
-        useGameStore.getState().setDrawOffer(null);
+        action.setDrawOffer(null);
       },
       offerRematch: (gameId: string, timeControl: string) => {
-        const store = useGameStore.getState();
         send(WsMessageType.OFFER_REMATCH, { gameId, timeControl });
-        store.setRematchOfferSent(DrawOffer.SENT);
+        action.setRematchOfferSent(DrawOffer.SENT);
         setTimeout(() => {
-          if (useGameStore.getState().rematchOfferSent === DrawOffer.SENT) {
-            store.setRematchOfferSent(null);
+          if (rematchOfferSent === DrawOffer.SENT) {
+            action.setRematchOfferSent(null);
           }
         }, 15000);
       },
       acceptRematch: (gameId: string, timeControl: string) => {
         send(WsMessageType.ACCEPT_REMATCH, { gameId, timeControl });
-        useGameStore.getState().setRematchOffer(null);
+        action.setRematchOffer(null);
       },
       declineRematch: (gameId: string, timeControl: string) => {
         send(WsMessageType.DECLINE_REMATCH, { gameId, timeControl });
-        useGameStore.getState().setRematchOffer(null);
+        action.setRematchOffer(null);
       },
       spectateGame: (gameId: string) => {
-        const store = useGameStore.getState();
-        const activeGame = store.activeGame;
         const currentUser = userRef.current;
 
         if (
@@ -370,12 +367,12 @@ export function useWebSocket(user: User) {
           return;
         }
 
-        store.setExpectedGameId(gameId);
+        action.setExpectedGameId(gameId);
         send(WsMessageType.SPECTATE_GAME, { gameId });
       },
       leaveSpectator: (gameId: string) => {
-        const store = useGameStore.getState();
-        const activeGame = store.activeGame;
+        const action = useGameStore.getState();
+        const activeGame = action.activeGame;
         const currentUser = userRef.current;
 
         if (

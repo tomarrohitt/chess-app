@@ -44,6 +44,16 @@ export function useActiveBoard({
 }: UseActiveBoardProps) {
   const { makeMove } = useSocket();
 
+  const [optimisticState, setOptimisticState] = useState<{
+    fen: string;
+    lastMove: [Key, Key];
+  } | null>(null);
+
+  // Clear optimistic state when the server game state updates
+  useEffect(() => {
+    setOptimisticState(null);
+  }, [activeGame.fen, activeGame.pgn]);
+
   const [promotionMove, setPromotionMove] = useState<{
     sourceSquare: Key;
     targetSquare: Key;
@@ -57,7 +67,8 @@ export function useActiveBoard({
   const lastProcessedFen = useRef<string | null>(null);
   const prevRejectedReason = useRef<string | null>(null);
 
-  const displayedFen = currentFen || activeGame.fen;
+  const displayedFen =
+    optimisticState?.fen || (isViewingHistory ? currentFen : activeGame.fen);
 
   const game = useMemo(() => {
     try {
@@ -104,6 +115,18 @@ export function useActiveBoard({
       const remaining = [...premovesRef.current];
       updateQueue(remaining);
 
+      const move = game.move({
+        from: next.sourceSquare as string,
+        to: next.targetSquare as string,
+        promotion: next.promotion || "q",
+      });
+      if (move) {
+        setOptimisticState({
+          fen: game.fen(),
+          lastMove: [next.sourceSquare, next.targetSquare],
+        });
+      }
+
       makeMove(
         activeGame.gameId,
         next.sourceSquare,
@@ -139,10 +162,21 @@ export function useActiveBoard({
         return;
       }
 
+      const move = game.move({
+        from: from as string,
+        to: to as string,
+      });
+      if (move) {
+        setOptimisticState({
+          fen: game.fen(),
+          lastMove: [from, to],
+        });
+      }
+
       makeMove(activeGame.gameId, from, to, undefined);
-      lastProcessedFen.current = displayedFen;
+      lastProcessedFen.current = game.fen();
     },
-    [canMove, game, isWhite, makeMove, activeGame.gameId, displayedFen],
+    [canMove, game, isWhite, makeMove, activeGame.gameId],
   );
 
   const afterPremove = useCallback(
@@ -178,6 +212,18 @@ export function useActiveBoard({
           promotion: piece,
         });
       } else {
+        const move = game.move({
+          from: promotionMove.sourceSquare as string,
+          to: promotionMove.targetSquare as string,
+          promotion: piece,
+        });
+        if (move) {
+          setOptimisticState({
+            fen: game.fen(),
+            lastMove: [promotionMove.sourceSquare, promotionMove.targetSquare],
+          });
+        }
+
         makeMove(
           activeGame.gameId,
           promotionMove.sourceSquare,
@@ -187,10 +233,14 @@ export function useActiveBoard({
       }
       setPromotionMove(null);
     },
-    [promotionMove, makeMove, activeGame.gameId],
+    [promotionMove, makeMove, activeGame.gameId, game],
   );
 
   const lastMove = useMemo((): [Key, Key] | undefined => {
+    if (optimisticState) {
+      return optimisticState.lastMove;
+    }
+
     const pgn = activeGame.pgn;
     if (!pgn) return undefined;
     try {
@@ -203,7 +253,7 @@ export function useActiveBoard({
     } catch {
       return undefined;
     }
-  }, [activeGame.pgn]);
+  }, [activeGame.pgn, optimisticState]);
 
   const cgConfig = useMemo(
     (): Partial<Config> => ({
@@ -263,5 +313,6 @@ export function useActiveBoard({
     promotionMove,
     setPromotionMove,
     onPromotionPieceSelect,
+    premoveQueue,
   };
 }

@@ -1,19 +1,12 @@
-"use client";
 import { memo } from "react";
 
 import Chessground from "@bezalel6/react-chessground";
 
 import { GameOverOverlay } from "./game-over-overlay";
-import { ActiveGame, GameOverState } from "@/types/chess";
 import { useActiveBoard } from "./use-active-board";
+import { useGameStore } from "@/store/use-game-store";
 
 export interface ActiveBoardProps {
-  activeGame: ActiveGame;
-  isPlayer: boolean;
-  isWhite: boolean;
-  lastMoveRejectedReason: string | null;
-  gameOver: GameOverState | null;
-  userId: string;
   currentFen?: string;
   isViewingHistory?: boolean;
 }
@@ -26,31 +19,70 @@ const PIECE_UNICODE: Record<string, Record<string, string>> = {
 };
 
 export const ActiveBoard = memo(function ActiveBoard({
-  activeGame,
-  isPlayer,
-  isWhite,
-  lastMoveRejectedReason,
-  gameOver,
-  userId,
   currentFen,
   isViewingHistory,
 }: ActiveBoardProps) {
-  const { cgConfig, promotionMove, setPromotionMove, onPromotionPieceSelect } =
-    useActiveBoard({
-      activeGame,
-      isPlayer,
-      isWhite,
-      lastMoveRejectedReason,
-      gameOver,
-      currentFen,
-      isViewingHistory,
-    });
+  const activeGame = useGameStore((s) => s.activeGame);
+  const gameOver = useGameStore((s) => s.gameOver);
+  const currentUserId = useGameStore((s) => s.user?.id);
+  const isWhite = currentUserId === activeGame?.white.id;
+
+  const lastMoveRejectedReason = useGameStore((s) => s.lastMoveRejectedReason);
+
+  const isPlayer =
+    currentUserId === activeGame?.white.id ||
+    currentUserId === activeGame?.black.id;
 
   const colorKey = isWhite ? "w" : "b";
+
+  const squareToPosition = (square: string) => {
+    const file = square.charCodeAt(0) - 97;
+    const rank = parseInt(square[1]) - 1;
+    const x = isWhite ? file : 7 - file;
+    const y = isWhite ? 7 - rank : rank;
+    return { left: `${x * 12.5}%`, top: `${y * 12.5}%` };
+  };
+
+  const {
+    cgConfig,
+    promotionMove,
+    setPromotionMove,
+    onPromotionPieceSelect,
+    premoveQueue,
+  } = useActiveBoard({
+    activeGame: activeGame!,
+    isPlayer,
+    isWhite,
+    lastMoveRejectedReason,
+    gameOver,
+    currentFen,
+    isViewingHistory,
+  });
+
+  if (!currentUserId) return;
 
   return (
     <div style={{ width: 500, height: 500 }} className="relative">
       <Chessground width={500} height={500} {...cgConfig} />
+
+      {premoveQueue
+        .flatMap((move, i) => [
+          { sq: move.sourceSquare, i },
+          { sq: move.targetSquare, i },
+        ])
+        .map(({ sq, i }) => (
+          <div
+            key={`${sq}-${i}`}
+            className="absolute pointer-events-none"
+            style={{
+              ...squareToPosition(sq),
+              width: "12.5%",
+              height: "12.5%",
+              backgroundColor:
+                i === 0 ? "rgba(100,180,255,0.5)" : "rgba(180,180,180,0.35)",
+            }}
+          />
+        ))}
 
       {promotionMove && (
         <>
@@ -98,7 +130,9 @@ export const ActiveBoard = memo(function ActiveBoard({
         </div>
       )}
 
-      {gameOver && <GameOverOverlay gameOver={gameOver} userId={userId} />}
+      {gameOver && (
+        <GameOverOverlay gameOver={gameOver} userId={currentUserId} />
+      )}
     </div>
   );
 });

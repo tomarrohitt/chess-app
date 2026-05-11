@@ -6,10 +6,9 @@ import { ChatMessage } from "@/types/chat";
 import { fetchUserById } from "@/actions/auth";
 
 export function InboxSocketListener() {
-  const addMessage = useInbox((s) => s.addMessage);
+  const { addMessage, addUserToCache } = useInbox((s) => s.actions);
   const currentUser = useInbox((s) => s.currentUser);
   const usersCache = useInbox((s) => s.usersCache);
-  const addUserToCache = useInbox((s) => s.addUserToCache);
 
   useEffect(() => {
     const handleMessage = (e: CustomEvent) => {

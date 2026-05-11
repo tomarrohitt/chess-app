@@ -25,6 +25,7 @@ export const OfferChallengeBtn = ({ id }: { id: string }) => {
     <div className="relative w-full" ref={ref}>
       <button
         onClick={() => setOpen((p) => !p)}
+        suppressHydrationWarning={true}
         className="
           flex items-center gap-3 p-3 rounded-xl
           hover:bg-white/5 active:scale-[0.98]

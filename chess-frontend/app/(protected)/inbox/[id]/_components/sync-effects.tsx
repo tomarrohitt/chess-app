@@ -13,8 +13,7 @@ export const SyncEffects = ({
   currentUserId: string;
   initialMessages: ChatMessage[];
 }) => {
-  const setInitialChatMessages = useInbox((s) => s.setInitialChatMessages);
-  const markChatAsRead = useInbox((s) => s.markChatAsRead);
+  const { setInitialChatMessages, markChatAsRead } = useInbox((s) => s.actions);
 
   useEffect(() => {
     if (initialMessages.length) {

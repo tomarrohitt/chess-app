@@ -1,10 +1,8 @@
-"use client";
-
-import { PlayerCard } from "./player-card";
-import { CapturedPieces } from "./captured-pieces";
 import { PlayerColor } from "@/types/chess";
-import { GameStateUser } from "@/types/player";
+import { Clock } from "./clock";
+import { PlayerCard } from "./player-card";
 import { memo } from "react";
+import { GameStateUser } from "@/types/player";
 
 interface PlayerAreaProps {
   player: GameStateUser;
@@ -12,34 +10,32 @@ interface PlayerAreaProps {
   isActive: boolean;
   materialAdvantage: number;
   position: "top" | "bottom";
-  clock: React.ReactNode;
+  timeMs: number;
+  pieces: React.ReactNode;
+  clockRunning: boolean;
 }
 
 export const PlayerArea = memo(function PlayerArea({
-  player,
+  timeMs,
+  clockRunning,
+  pieces,
   color,
-  isActive,
-  materialAdvantage,
-  position,
-  clock,
+  ...rest
 }: PlayerAreaProps) {
-  const card = (
-    <PlayerCard
-      player={player}
-      color={color}
-      isActive={isActive}
-      pieces={
-        <CapturedPieces
-          capturedPieces={player.capturedPieces}
-          color={color}
-          materialAdvantage={materialAdvantage}
-          position={position}
-        />
-      }
-      position={position}
-      clock={clock}
-    />
+  return (
+    <div className="flex flex-col gap-1">
+      <PlayerCard
+        {...rest}
+        pieces={pieces}
+        clock={
+          <Clock
+            timeMs={timeMs}
+            isRunning={clockRunning}
+            isWhite={color === PlayerColor.WHITE}
+          />
+        }
+        color={color}
+      />
+    </div>
   );
-
-  return <div className="flex flex-col gap-1">{card}</div>;
 });

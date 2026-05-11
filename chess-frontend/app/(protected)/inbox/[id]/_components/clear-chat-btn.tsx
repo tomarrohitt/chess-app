@@ -6,7 +6,7 @@ import { useInbox } from "../../_components/inbox-context";
 
 export const ClearChatButton = ({ id }: { id: string }) => {
   const [pending, startTransition] = useTransition();
-  const clearChat = useInbox((s) => s.clearChat);
+  const { clearChat } = useInbox((s) => s.actions);
 
   const router = useRouter();
 

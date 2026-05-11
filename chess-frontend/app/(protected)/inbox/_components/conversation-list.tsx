@@ -1,46 +1,43 @@
 "use client";
 
-import { useMemo } from "react";
+import { memo } from "react";
 import { useInbox } from "./inbox-context";
 import { ChatRedirectBtn } from "./chat-redirect-button";
 import { ConversationUserItem } from "./conversation-user-item";
 
+const ConnectedConversationItem = memo(function ConnectedConversationItem({
+  fid,
+}: {
+  fid: string;
+}) {
+  const user = useInbox((s) => s.usersCache[fid]);
+  const lastMsg = useInbox((s) => s.latestMessages[fid]);
+  const unreadCount = useInbox((s) => s.unreadCounts[fid]);
+
+  if (!user || !lastMsg) return null;
+
+  const f = {
+    ...user,
+    lastMessage: lastMsg.content,
+    timestamp: lastMsg.createdAt,
+    unreadCount: unreadCount || 0,
+  };
+
+  return (
+    <ChatRedirectBtn fid={fid}>
+      <ConversationUserItem f={f} />
+    </ChatRedirectBtn>
+  );
+});
+
 export const ConversationList = () => {
-  const usersCache = useInbox((s) => s.usersCache);
   const sidebarOrder = useInbox((s) => s.sidebarOrder);
-  const latestMessages = useInbox((s) => s.latestMessages);
-  const unreadCounts = useInbox((s) => s.unreadCounts);
-
-  const displayItems = useMemo(() => {
-    const items = sidebarOrder
-      .map((id) => {
-        const user = usersCache[id];
-        const lastMsg = latestMessages[id];
-
-        if (!user || !lastMsg) return null;
-
-        return {
-          ...user,
-          lastMessage: lastMsg.content,
-          timestamp: lastMsg && lastMsg.createdAt,
-          unreadCount: unreadCounts[id] || 0,
-        };
-      })
-      .filter(Boolean);
-
-    return items;
-  }, [sidebarOrder, usersCache, latestMessages, unreadCounts]);
 
   return (
     <>
-      {displayItems.map((f) => {
-        if (!f) return;
-        return (
-          <ChatRedirectBtn fid={f.id} key={f.id}>
-            <ConversationUserItem f={f} />
-          </ChatRedirectBtn>
-        );
-      })}
+      {sidebarOrder.map((id) => (
+        <ConnectedConversationItem fid={id} key={id} />
+      ))}
     </>
   );
 };

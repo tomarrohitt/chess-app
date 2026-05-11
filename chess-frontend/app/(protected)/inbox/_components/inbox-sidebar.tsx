@@ -1,5 +1,5 @@
 import { cn, scrollClass } from "@/lib/utils";
-import { MarkAsReadBtn } from "./mark-as-read-burron";
+import { MarkAsReadBtn } from "./mark-as-read-button";
 
 interface InboxSidebarProps {
   content: React.ReactNode;

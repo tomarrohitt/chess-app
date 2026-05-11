@@ -1,40 +1,5 @@
-"use client";
-
-import {
-  createContext,
-  memo,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { memo, useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
-
-interface ClockContextValue {
-  tick: number;
-}
-
-const ClockContext = createContext<ClockContextValue>({ tick: 0 });
-
-export function ClockProvider({
-  isRunning,
-  children,
-}: {
-  isRunning: boolean;
-  children: React.ReactNode;
-}) {
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    if (!isRunning) return;
-    const id = setInterval(() => setTick((t) => t + 1), 1000);
-    return () => clearInterval(id);
-  }, [isRunning]);
-
-  return (
-    <ClockContext.Provider value={{ tick }}>{children}</ClockContext.Provider>
-  );
-}
 
 export const Clock = memo(function Clock({
   timeMs,
@@ -45,20 +10,35 @@ export const Clock = memo(function Clock({
   isRunning: boolean;
   isWhite: boolean;
 }) {
-  const { tick } = useContext(ClockContext);
-
-  const startTickRef = useRef<number>(tick);
-  const startMsRef = useRef<number>(timeMs);
+  const [displayTime, setDisplayTime] = useState(timeMs);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    startTickRef.current = tick;
-    startMsRef.current = timeMs;
-  }, [timeMs, isRunning, tick]);
+    if (isRunning) {
+      const startTime = Date.now();
+      const initialTime = timeMs;
 
-  const elapsed = isRunning ? (tick - startTickRef.current) * 100 : 0;
-  const displayMs = Math.max(0, startMsRef.current - elapsed);
+      intervalRef.current = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        setDisplayTime(Math.max(0, initialTime - elapsed));
+      }, 100);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      setDisplayTime(timeMs);
+    }
 
-  const totalSec = Math.ceil(displayMs / 1000);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isRunning, timeMs]);
+
+  const totalSec = Math.ceil(displayTime / 1000);
   const m = Math.floor(totalSec / 60);
   const s = totalSec % 60;
   const isCritical = totalSec <= 10;

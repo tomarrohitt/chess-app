@@ -68,7 +68,7 @@ export function InboxChatList({
 
   const storeMessages = useInbox((s) => s.messagesMap[otherUserId]);
   const messages = [...olderMessages, ...(storeMessages ?? initialMessages)];
-  const markChatAsRead = useInbox((s) => s.markChatAsRead);
+  const { markChatAsRead } = useInbox((s) => s.actions);
   const { markChatRead } = useSocket();
 
   const loadMoreMessages = useCallback(async () => {

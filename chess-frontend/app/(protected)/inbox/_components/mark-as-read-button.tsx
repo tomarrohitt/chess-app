@@ -4,10 +4,11 @@ import { CheckCheck } from "lucide-react";
 import { useInbox } from "./inbox-context";
 import { useSocket } from "@/store/socket-provider";
 import { cn } from "@/lib/utils";
+import { memo } from "react";
 
-export const MarkAsReadBtn = () => {
+export const MarkAsReadBtn = memo(function MarkAsReadBtn() {
   const unreadCounts = useInbox((s) => s.unreadCounts);
-  const markChatAsRead = useInbox((s) => s.markChatAsRead);
+  const markChatAsRead = useInbox((s) => s.actions.markChatAsRead);
   const { markAllChatsRead } = useSocket();
 
   const hasUnread = Object.values(unreadCounts).some((count) => count > 0);
@@ -36,4 +37,4 @@ export const MarkAsReadBtn = () => {
       Mark all read
     </button>
   );
-};
+});

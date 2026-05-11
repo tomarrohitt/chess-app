@@ -1,12 +1,13 @@
 import { useParams, useRouter } from "next/navigation";
+import { memo } from "react";
 
-export const ChatRedirectBtn = ({
+export const ChatRedirectBtn = memo(function ChatRedirectBtn({
   children,
   fid,
 }: {
   children: React.ReactNode;
   fid: string;
-}) => {
+}) {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
@@ -22,4 +23,4 @@ export const ChatRedirectBtn = ({
       {children}
     </div>
   );
-};
+});

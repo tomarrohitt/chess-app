@@ -4,21 +4,20 @@ import {
   GameOverState,
   DrawOfferState,
   QueueStatus,
-  GameStatus,
   GameStartedPayload,
   GameStatePayload,
   MoveMadePayload,
-  PlayerColor,
   RematchOfferState,
   ChallengeOfferState,
   DrawOffer,
-  FullColor,
 } from "@/types/chess";
 import { User } from "@/types/auth";
 import { WsConnectionStatus } from "@/types/ws";
 import { GameChatMessage } from "@/types/chat";
+import * as gameActions from "./game-store-actions";
+import { immer } from "zustand/middleware/immer";
 
-interface GameStore {
+export type GameState = {
   connectionStatus: WsConnectionStatus;
   user: User | null;
   queueStatus: QueueStatus;
@@ -34,29 +33,37 @@ interface GameStore {
   showAnimations: boolean;
   chatMessages: GameChatMessage[];
   incomingChallenge: ChallengeOfferState | null;
+};
 
-  setConnection: (status: WsConnectionStatus) => void;
-  setUser: (user: User | null) => void;
-  setQueue: (status: QueueStatus, timeControl?: string | null) => void;
-  setExpectedGameId: (gameId: string | null) => void;
-  setDrawOffer: (offer: DrawOfferState | null) => void;
-  setDrawOfferSent: (status: DrawOffer.SENT | DrawOffer.DECLINE | null) => void;
-  setRematchOffer: (offer: RematchOfferState | null) => void;
-  setRematchOfferSent: (
-    status: DrawOffer.SENT | DrawOffer.DECLINE | null,
-  ) => void;
-  setAnimations: (enabled: boolean) => void;
-  setIncomingChallenge: (challenge: ChallengeOfferState | null) => void;
-  handleGameStarted: (p: GameStartedPayload) => void;
-  handleGameState: (p: GameStatePayload) => void;
-  handleMoveMade: (p: MoveMadePayload) => void;
-  handleMoveRejected: (reason: string) => void;
-  handleGameOver: (p: GameOverState) => void;
-  addChatMessage: (msg: GameChatMessage) => void;
-  resetGame: () => void;
-}
+export type GameAction = {
+  actions: {
+    setConnection: (status: WsConnectionStatus) => void;
+    setUser: (user: User | null) => void;
+    setQueue: (status: QueueStatus, timeControl?: string | null) => void;
+    setExpectedGameId: (gameId: string | null) => void;
+    setDrawOffer: (offer: DrawOfferState | null) => void;
+    setDrawOfferSent: (
+      status: DrawOffer.SENT | DrawOffer.DECLINE | null,
+    ) => void;
+    setRematchOffer: (offer: RematchOfferState | null) => void;
+    setRematchOfferSent: (
+      status: DrawOffer.SENT | DrawOffer.DECLINE | null,
+    ) => void;
+    setAnimations: (enabled: boolean) => void;
+    setIncomingChallenge: (challenge: ChallengeOfferState | null) => void;
+    handleGameStarted: (p: GameStartedPayload) => void;
+    handleGameState: (p: GameStatePayload) => void;
+    handleMoveMade: (p: MoveMadePayload) => void;
+    handleMoveRejected: (reason: string) => void;
+    handleGameOver: (p: GameOverState) => void;
+    addChatMessage: (msg: GameChatMessage) => void;
+    resetGame: () => void;
+  };
+};
 
-export const useGameStore = create<GameStore>((set) => ({
+export type GameStore = GameState & GameAction;
+
+const initialState: GameState = {
   connectionStatus: WsConnectionStatus.IDLE,
   user: null,
   queueStatus: QueueStatus.IDLE,
@@ -72,170 +79,50 @@ export const useGameStore = create<GameStore>((set) => ({
   showAnimations: true,
   chatMessages: [],
   incomingChallenge: null,
+};
 
-  setConnection: (connectionStatus) => set({ connectionStatus }),
-  setUser: (user) => set({ user }),
-  setQueue: (queueStatus, timeControl = null) =>
-    set({ queueStatus, queueTimeControl: timeControl }),
-  setExpectedGameId: (expectedGameId) => set({ expectedGameId }),
-  setDrawOffer: (drawOffer) => set({ drawOffer }),
-  setDrawOfferSent: (drawOfferSent) => set({ drawOfferSent }),
-  setRematchOffer: (rematchOffer) => set({ rematchOffer }),
-  setRematchOfferSent: (rematchOfferSent) => set({ rematchOfferSent }),
-  setAnimations: (showAnimations) => set({ showAnimations }),
-  setIncomingChallenge: (incomingChallenge) => set({ incomingChallenge }),
-
-  handleGameStarted: (p) => {
-    set(() => {
-      const [mins] = p.timeControl.split("+").map(Number);
-      const baseMs = mins * 60 * 1000;
-      return {
-        queueStatus: QueueStatus.IDLE,
-        queueTimeControl: null,
-        gameOver: null,
-        rematchOffer: null,
-        rematchOfferSent: null,
-        chatMessages: [],
-        incomingChallenge: null,
-        activeGame: {
-          gameId: p.gameId,
-          fen: p.fen,
-          pgn: "",
-          turn: PlayerColor.WHITE,
-          playerColor:
-            p.color === FullColor.WHITE ? PlayerColor.WHITE : PlayerColor.BLACK,
-          white: { ...p.white, timeLeftMs: baseMs, capturedPieces: [] },
-          black: { ...p.black, timeLeftMs: baseMs, capturedPieces: [] },
-
-          timeControl: p.timeControl,
-          status: GameStatus.IN_PROGRESS,
-        },
-      };
-    });
-  },
-
-  handleGameState: (p) => {
-    set((state) => {
-      if (
-        state.activeGame &&
-        state.activeGame.gameId !== p.gameId &&
-        state.expectedGameId !== p.gameId
-      ) {
-        return state;
-      }
-
-      const prev = state.activeGame;
-
-      // If nothing meaningful changed, return same reference → no re-render
-      if (
-        prev &&
-        prev.fen === p.fen &&
-        prev.pgn === p.pgn &&
-        prev.turn === p.turn &&
-        prev.status === p.status &&
-        prev.white.timeLeftMs === p.white.timeLeftMs &&
-        prev.black.timeLeftMs === p.black.timeLeftMs
-      ) {
-        return state; // ← exact same reference, Zustand won't notify
-      }
-
-      const pgnChanged = prev?.pgn !== p.pgn;
-
-      return {
-        activeGame: {
-          ...prev,
-          gameId: p.gameId,
-          fen: p.fen,
-          pgn: p.pgn,
-          turn: p.turn,
-          playerColor: p.playerColor,
-          timeControl: p.timeControl,
-          status: state.gameOver ? state.gameOver.status : p.status,
-          white: {
-            ...p.white,
-            // only accept server time on actual moves, ignore clock-sync pings
-            timeLeftMs: pgnChanged
-              ? p.white.timeLeftMs
-              : (prev?.white.timeLeftMs ?? p.white.timeLeftMs),
-          },
-          black: {
-            ...p.black,
-            timeLeftMs: pgnChanged
-              ? p.black.timeLeftMs
-              : (prev?.black.timeLeftMs ?? p.black.timeLeftMs),
-          },
-        } as ActiveGame,
-        expectedGameId: null,
-      };
-    });
-  },
-  handleMoveMade: (p) => {
-    set((state) => {
-      if (!state.activeGame || state.activeGame.gameId !== p.gameId)
-        return state;
-      return {
-        drawOffer: null,
-        drawOfferSent: null,
-        activeGame: {
-          ...state.activeGame,
-          fen: p.fen,
-          pgn: p.pgn,
-          turn:
-            state.activeGame.turn === PlayerColor.WHITE
-              ? PlayerColor.BLACK
-              : PlayerColor.WHITE,
-          white: {
-            ...state.activeGame.white,
-            timeLeftMs: p.white.timeLeftMs,
-            capturedPieces: p.white.capturedPieces,
-          },
-          black: {
-            ...state.activeGame.black,
-            timeLeftMs: p.black.timeLeftMs,
-            capturedPieces: p.black.capturedPieces,
-          },
-          status: p.isGameOver ? GameStatus.CHECKMATE : GameStatus.IN_PROGRESS,
-        },
-      };
-    });
-  },
-
-  handleMoveRejected: (reason) => {
-    set({ lastMoveRejectedReason: reason });
-    setTimeout(() => set({ lastMoveRejectedReason: null }), 3000);
-  },
-
-  handleGameOver: (p) =>
-    set((state) => ({
-      activeGame: state.activeGame
-        ? { ...state.activeGame, status: p.status }
-        : null,
-      gameOver: { status: p.status, winnerId: p.winnerId, reason: p.reason },
-      drawOffer: null,
-      drawOfferSent: null,
-      rematchOffer: null,
-      rematchOfferSent: null,
-    })),
-
-  addChatMessage: (msg: GameChatMessage) =>
-    set((state) => {
-      if (state.activeGame?.gameId !== msg.gameId) {
-        return state;
-      }
-      return { chatMessages: [...state.chatMessages, msg] };
-    }),
-
-  resetGame: () =>
-    set({
-      activeGame: null,
-      expectedGameId: null,
-      gameOver: null,
-      queueStatus: QueueStatus.IDLE,
-      queueTimeControl: null,
-      drawOffer: null,
-      drawOfferSent: null,
-      rematchOffer: null,
-      rematchOfferSent: null,
-      chatMessages: [],
-    }),
-}));
+export const useGameStore = create<GameStore>()(
+  immer((set) => ({
+    ...initialState,
+    actions: {
+      setConnection: (status) =>
+        set((state) => gameActions.setConnection(state, status)),
+      setUser: (user) => set((state) => gameActions.setUser(state, user)),
+      setQueue: (status, timeControl) =>
+        set((state) => gameActions.setQueue(state, status, timeControl)),
+      setExpectedGameId: (gameId) =>
+        set((state) => gameActions.setExpectedGameId(state, gameId)),
+      setDrawOffer: (offer) =>
+        set((state) => gameActions.setDrawOffer(state, offer)),
+      setDrawOfferSent: (status) =>
+        set((state) => gameActions.setDrawOfferSent(state, status)),
+      setRematchOffer: (offer) =>
+        set((state) => gameActions.setRematchOffer(state, offer)),
+      setRematchOfferSent: (status) =>
+        set((state) => gameActions.setRematchOfferSent(state, status)),
+      setAnimations: (enabled) =>
+        set((state) => gameActions.setAnimations(state, enabled)),
+      setIncomingChallenge: (challenge) =>
+        set((state) => gameActions.setIncomingChallenge(state, challenge)),
+      handleGameStarted: (p) =>
+        set((state) => gameActions.handleGameStarted(state, p)),
+      handleGameState: (p) =>
+        set((state) => gameActions.handleGameState(state, p)),
+      handleMoveMade: (p) =>
+        set((state) => gameActions.handleMoveMade(state, p)),
+      handleMoveRejected: (reason) => {
+        set((state) => gameActions.setLastMoveRejectedReason(state, reason));
+        setTimeout(
+          () =>
+            set((state) => gameActions.setLastMoveRejectedReason(state, null)),
+          3000,
+        );
+      },
+      handleGameOver: (p) =>
+        set((state) => gameActions.handleGameOver(state, p)),
+      addChatMessage: (msg) =>
+        set((state) => gameActions.addChatMessage(state, msg)),
+      resetGame: () => set(gameActions.resetGame),
+    },
+  })),
+);
