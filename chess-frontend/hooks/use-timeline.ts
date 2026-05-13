@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useChessWorker } from "../worker/use-chess-worker";
 import { CapturedPieces, TimesResult } from "../worker/chess-worker";
 
@@ -23,13 +23,11 @@ export function useTimeline(pgn?: string | null, timeControl?: string) {
     captured: [{ capturedByWhite: [], capturedByBlack: [] }],
   });
 
-  const fetchedPgnRef = useRef<string | null>(null);
   const chessWorker = useChessWorker();
 
   useEffect(() => {
-    if (!chessWorker || normalizedPgn === fetchedPgnRef.current) return;
+    if (!chessWorker || !normalizedPgn) return;
 
-    fetchedPgnRef.current = normalizedPgn;
     let isMounted = true;
 
     chessWorker.getTimelineCache(normalizedPgn, timeControl).then((result) => {

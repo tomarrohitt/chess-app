@@ -89,6 +89,12 @@ export function useWebSocket(user: User) {
       const result = ServerMessageSchema.safeParse(raw);
 
       if (!result.success) {
+        console.error(
+          "[WS Client] Message validation failed! Raw:",
+          raw,
+          "Zod Errors:",
+          result.error.format(),
+        );
         return;
       }
 
@@ -160,7 +166,7 @@ export function useWebSocket(user: User) {
         case WsMessageType.CHALLENGE_DECLINED:
           break;
         default:
-          console.warn(`[WS] Unhandled message type: ${msg.type}`);
+          console.warn(`[WS Client] Unhandled message type:`, msg.type);
       }
     } catch (err) {
       console.log("[WS] Failed to parse message:", err);
@@ -184,7 +190,6 @@ export function useWebSocket(user: User) {
         reconnectTimeout.current = null;
       }
 
-      console.log("[WS] Attempting to connect to:", WS_URL);
       action.setConnection(WsConnectionStatus.CONNECTING);
       action.setUser(userRef.current);
 
@@ -260,9 +265,7 @@ export function useWebSocket(user: User) {
           const finalDelay = Math.floor(exponentialDelay + jitter);
 
           reconnectAttempts.current++;
-          console.log(
-            `[WS] Reconnecting in ${finalDelay}ms (Attempt ${reconnectAttempts.current})...`,
-          );
+
           reconnectTimeout.current = setTimeout(connectWebSocket, finalDelay);
         }
       };
@@ -281,7 +284,6 @@ export function useWebSocket(user: User) {
     };
 
     const handleOnline = () => {
-      console.log("[WS] Network online. Reconnecting...");
       isIntentionalClose.current = false;
       reconnectAttempts.current = 0;
       connect();
@@ -298,7 +300,6 @@ export function useWebSocket(user: User) {
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
 
       if (wsRef.current) {
-        console.log("[WS] Component unmounted, closing socket.");
         wsRef.current.onopen = null;
         wsRef.current.onerror = null;
         wsRef.current.onclose = null;

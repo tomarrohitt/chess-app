@@ -3,8 +3,8 @@ import Link from "next/link";
 const links = [
   { name: "Play", href: "/" },
   { name: "Leaderboard", href: "/leaderboard" },
-  { name: "History", href: "/history" },
   { name: "Community", href: "/community" },
+  { name: "Inbox", href: "/inbox" },
 ];
 
 export function NavLinks() {

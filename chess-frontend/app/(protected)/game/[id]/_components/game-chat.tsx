@@ -27,16 +27,17 @@ export const GameChat = memo(function GameChat({
   }, [chatMessages]);
 
   useEffect(() => {
-    if (!joinGameChat) return;
     joinGameChat(gameId);
-  }, [gameId, joinGameChat]);
+  }, [gameId]);
 
   const handleSubmit = useCallback(
     (e: React.SubmitEvent<HTMLFormElement>) => {
       e.preventDefault();
       const formData = new FormData(e.currentTarget);
       const input = formData.get("message") as string;
+
       if (!input || !input.trim()) return;
+
       sendChatMessage(gameId, input.trim());
       e.currentTarget.reset();
     },

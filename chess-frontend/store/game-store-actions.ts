@@ -177,6 +177,12 @@ export const handleGameOver = (state: GameState, p: GameOverState) => {
 
 export const addChatMessage = (state: GameState, msg: GameChatMessage) => {
   if (state.activeGame?.gameId !== msg.gameId) {
+    console.warn(
+      "[Store Action] Dropping message! gameId mismatch. Expected:",
+      state.activeGame?.gameId,
+      "Got:",
+      msg.gameId,
+    );
     return;
   }
   state.chatMessages.push(msg);

@@ -1,4 +1,3 @@
-// _components/game-sidebar.tsx
 "use client";
 
 import { memo } from "react";

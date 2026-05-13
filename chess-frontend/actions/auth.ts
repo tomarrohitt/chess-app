@@ -95,6 +95,5 @@ export async function getUserById(userId: string) {
 }
 export async function getUserImage(filename: string) {
   const image = await safeFetch<string>(`/user/avatar/${filename}`);
-  console.log({ filename, image });
   return image;
 }

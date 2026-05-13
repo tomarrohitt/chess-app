@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import Chessground from "@bezalel6/react-chessground";
 import { GameRecord } from "@/types/history";
 import type { Config } from "chessground/config";
+import Chessground from "@bezalel6/react-chessground";
 
 interface GameboardSnapshotProps {
   game: GameRecord;
@@ -29,8 +29,14 @@ export const GameboardSnapshot = ({
   );
 
   return (
-    <div style={{ width: 164, height: 164, overflow: "hidden" }}>
-      <Chessground contained config={config} />
+    <div
+      style={{
+        width: 164,
+        height: 164,
+        overflow: "hidden",
+      }}
+    >
+      <Chessground width={164} height={164} {...config} />
     </div>
   );
 };

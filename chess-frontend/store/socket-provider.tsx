@@ -131,7 +131,9 @@ export function SocketProvider({
       spectateGame: wsApi.spectateGame,
       leaveSpectator: wsApi.leaveSpectator,
       joinGameChat: wsApi.joinGameChat,
-      sendChatMessage: wsApi.sendChatMessage,
+      sendChatMessage: (gameId: string, content: string) => {
+        wsApi.sendChatMessage(gameId, content);
+      },
       leaveGameChat: wsApi.leaveGameChat,
       sendDirectMessage: wsApi.sendDirectMessage,
       markChatRead: wsApi.markChatRead,

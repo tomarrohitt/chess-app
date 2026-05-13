@@ -14,10 +14,12 @@ export const BaseMessageSchema = z.object({
   createdAt: z.union([z.string(), z.date()]),
 });
 
-export const GameChatMessageSchema = BaseMessageSchema.extend({
-  gameId: z.uuid(),
-  sender: PlayerInfoSchema,
-}).omit({ receiverId: true });
+export const GameChatMessageSchema = BaseMessageSchema.omit({ senderId: true })
+  .extend({
+    gameId: z.uuid(),
+    sender: PlayerInfoSchema,
+  })
+  .omit({ receiverId: true });
 
 export const ChatMessageSchemaResponseSchema = z.object({
   user: ChatUserSchema,
