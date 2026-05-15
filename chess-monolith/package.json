@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push && npm run seed",
     "db:studio": "drizzle-kit studio",
-    "seed": "tsx src/seed/seed-users.ts"
+    "seed": "tsx src/seed/setup.ts && tsx src/seed/seed-users.ts",
+    "setup": "npm install && npm run build && npm run db:generate && npm run db:push && npm run seed"
   },
   "keywords": [],
   "author": "",
