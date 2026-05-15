@@ -1,9 +1,10 @@
+import "dotenv/config";
+
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "../infrastructure/db/db";
 import { v7 as uuidv7 } from "uuid";
 import { authHooks } from "./utils/auth-hooks";
-import { env } from "@/config/env";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -13,7 +14,7 @@ export const auth = betterAuth({
     enabled: true,
   },
 
-  trustedOrigins: [env.CLIENT_URL],
+  trustedOrigins: [process.env.CLIENT_URL || "http://localhost:3000"],
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24 * 7,
