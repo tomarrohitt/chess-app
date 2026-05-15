@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LoginForm } from "./_components/login-form";
+import { Suspense } from "react";
 
 export default function LoginPage() {
   return (
@@ -12,7 +13,6 @@ export default function LoginPage() {
           "0 0 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(201,168,76,0.05) inset",
       }}
     >
-      {/* Subtle top gradient bar */}
       <div
         className="absolute top-0 left-0 right-0 h-px"
         style={{
@@ -22,7 +22,6 @@ export default function LoginPage() {
       />
 
       <div className="text-center mb-8">
-        {/* Chess king icon */}
         <div className="flex justify-center mb-4">
           <span
             className="text-5xl select-none"
@@ -48,9 +47,9 @@ export default function LoginPage() {
           Sign in to your account to continue
         </p>
       </div>
-
-      <LoginForm />
-
+      <Suspense fallback={<div>loading...</div>}>
+        <LoginForm />
+      </Suspense>
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full" style={{ borderTop: "1px solid #222" }} />
