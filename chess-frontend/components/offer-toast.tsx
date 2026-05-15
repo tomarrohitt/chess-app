@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { Check, X } from "lucide-react";
 
 interface OfferToastProps {
   id: string | null;
@@ -52,12 +53,19 @@ export function OfferToast({
         duration: 15000,
         onAutoClose: () => dismissRef.current(),
         onDismiss: () => dismissRef.current(),
+        classNames: {
+          actionButton:
+            "!bg-transparent hover:!bg-zinc-800 !border-0 !p-2 !-ml-1",
+          cancelButton: "!bg-transparent hover:!bg-zinc-800 !border-0 !p-2",
+        },
         action: {
-          label: "Accept",
+          label: (
+            <Check size={22} strokeWidth={6} className="text-emerald-500" />
+          ),
           onClick: () => acceptRef.current(),
         },
         cancel: {
-          label: "Decline",
+          label: <X size={22} strokeWidth={6} className="text-rose-500" />,
           onClick: () => declineRef.current(),
         },
       });
@@ -67,19 +75,5 @@ export function OfferToast({
     }
   }, [id, title, timeControl]);
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: `
-          @keyframes offer-toast-progress {
-            0% { transform: scaleX(1); }
-            100% { transform: scaleX(0); }
-          }
-          [data-sonner-toast]:hover .toast-progress-bar {
-            animation-play-state: paused !important;
-          }
-        `,
-      }}
-    />
-  );
+  return null;
 }

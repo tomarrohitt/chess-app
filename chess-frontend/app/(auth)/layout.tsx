@@ -1,4 +1,7 @@
+import { LottieAnimation } from "@/components/ui/lottie-animation";
 import type { Metadata } from "next";
+import WildKnight from "@/public/assets/lottie/knight.json";
+import Stamp from "@/public/assets/lottie/Stamp.json";
 
 export const metadata: Metadata = {
   title: "Chess",
@@ -22,23 +25,14 @@ export default async function AuthLayout({
         backgroundSize: "60px 60px",
       }}
     >
-      {/* Corner chess board accents */}
-      <div
-        className="fixed top-0 left-0 w-40 h-40 opacity-[0.07] pointer-events-none"
-        style={{
-          backgroundImage: `repeating-conic-gradient(#c9a84c 0% 25%, transparent 0% 50%)`,
-          backgroundSize: "20px 20px",
-        }}
-      />
-      <div
-        className="fixed bottom-0 right-0 w-40 h-40 opacity-[0.07] pointer-events-none"
-        style={{
-          backgroundImage: `repeating-conic-gradient(#c9a84c 0% 25%, transparent 0% 50%)`,
-          backgroundSize: "20px 20px",
-        }}
-      />
+      <div className="hidden lg:block fixed left-12 top-2/5 -translate-y-1/2 size-100 pointer-events-none opacity-80">
+        <LottieAnimation data={WildKnight} />
+      </div>
 
       <div className="w-full max-w-md relative z-10">{children}</div>
+      <div className="hidden lg:block fixed right-12 top-1/2 -translate-y-1/2 size-100 pointer-events-none opacity-80 ">
+        <LottieAnimation data={Stamp} />
+      </div>
     </div>
   );
 }
