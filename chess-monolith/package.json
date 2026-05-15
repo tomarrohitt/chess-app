@@ -11,7 +11,7 @@
     "db:studio": "drizzle-kit studio",
     "seed": "tsx src/seed/setup.ts && tsx src/seed/seed-users.ts",
     "db:push": "drizzle-kit push",
-    "setup": "npm install && npm run build && npm run db:generate && npm run db:setup-extensions && npm run db:push && npm run seed"
+    "setup": "npm install && npm run build && npm run db:generate && npm run db:push && npm run seed"
   },
   "keywords": [],
   "author": "",
