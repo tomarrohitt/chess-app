@@ -8,14 +8,13 @@
     "build": "npx tsc --build --force",
     "start": "node -r dotenv/config dist/src/index.js",
     "db:generate": "drizzle-kit generate",
-    "db:push": "tsx seed/setup-db.ts",
+    "db:push": "drizzle-kit push && npm run seed",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx src/seed/seed-users.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
     "better-auth": "^1.4.19",
     "bullmq": "^5.70.1",
