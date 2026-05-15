@@ -14,9 +14,9 @@ type NextFetchOptions = Omit<RequestInit, "body"> & {
 
 function normalizeBody(
   body: SmartBody,
-  customHeaders: HeadersInit | undefined,
-) {
-  const finalHeaders = new Headers(customHeaders);
+  customHeaders?: HeadersInit,
+): { body?: BodyInit; headers: Headers } {
+  const headers = new Headers(customHeaders);
 
   if (
     body &&
@@ -25,32 +25,37 @@ function normalizeBody(
     !(body instanceof Blob) &&
     !(body instanceof ArrayBuffer)
   ) {
-    if (!finalHeaders.has("Content-Type")) {
-      finalHeaders.set("Content-Type", "application/json");
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
     }
-    return { body: JSON.stringify(body), headers: finalHeaders };
+    return {
+      body: JSON.stringify(body),
+      headers,
+    };
   }
 
-  return { body: body as BodyInit | undefined, headers: finalHeaders };
+  return { body: body as BodyInit | undefined, headers };
 }
 
 export async function baseApi(
   endpoint: string,
   options: NextFetchOptions = {},
-) {
-  const { body, headers, ...rest } = options;
+): Promise<Response> {
+  const { body, headers: optionHeaders, ...rest } = options;
 
-  const normalized = normalizeBody(body, headers);
+  const { body: finalBody, headers: finalHeaders } = normalizeBody(
+    body,
+    optionHeaders,
+  );
 
-  const res = await fetch(`${API_URL}${endpoint}`, {
+  if (!finalHeaders.has("Origin")) {
+    finalHeaders.set("Origin", ORIGIN_URL ?? "http://localhost:3000");
+  }
+
+  return fetch(`${API_URL}${endpoint}`, {
     ...rest,
     credentials: "omit",
-    body: normalized.body,
-    headers: {
-      ...normalized.headers,
-      Origin: ORIGIN_URL ?? "https://rohit-ecommerce-microservice.dedyn.io",
-    },
+    body: finalBody,
+    headers: finalHeaders,
   });
-
-  return res;
 }
