@@ -41,6 +41,14 @@ export const loginSchema = registrationSchema.omit({
   username: true,
 });
 
+interface AuthErrorResponse {
+  status?: ConstructorParameters<typeof APIError>[0];
+  body?: {
+    code?: string;
+    message?: string;
+  };
+}
+
 export const authHooks: BetterAuthOptions["hooks"] = {
   before: createAuthMiddleware(async (ctx) => {
     let schema = null;
@@ -66,18 +74,24 @@ export const authHooks: BetterAuthOptions["hooks"] = {
   }),
 
   after: createAuthMiddleware(async (ctx) => {
-    const response = ctx.context.returned as APIError;
-    if (response && typeof response === "object" && "body" in response) {
+    const response = ctx.context.returned as AuthErrorResponse | undefined;
+    if (response && typeof response === "object" && response.body) {
       const body = response.body;
-      if (body && body.code && body.message) {
-        throw new APIError(response.status, {
-          success: false,
-          errors: [
-            {
-              message: body.message,
-            },
-          ],
-        });
+      if (body.code && body.message) {
+        throw new APIError(
+          response.status ||
+            ("INTERNAL_SERVER_ERROR" as ConstructorParameters<
+              typeof APIError
+            >[0]),
+          {
+            success: false,
+            errors: [
+              {
+                message: body.message,
+              },
+            ],
+          },
+        );
       }
     }
   }),
