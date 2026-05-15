@@ -8,11 +8,16 @@ export async function getTokenFromSession(): Promise<string | null> {
 
   return token.value;
 }
-
 export async function getUserFromSession(): Promise<User | null> {
   const cookieStore = await cookies();
-  const sessionData = cookieStore.get("better-auth.session_data");
-  const sessionToken = cookieStore.get("better-auth.session_token");
+
+  const sessionData =
+    cookieStore.get("__Secure-better-auth.session_data") ||
+    cookieStore.get("better-auth.session_data");
+
+  const sessionToken =
+    cookieStore.get("__Secure-better-auth.session_token") ||
+    cookieStore.get("better-auth.session_token");
 
   if (!sessionData || !sessionToken) {
     return null;
@@ -31,6 +36,8 @@ export async function getUserFromSession(): Promise<User | null> {
 
     return data.session.user;
   } catch {
+    cookieStore.delete("__Secure-better-auth.session_data");
+    cookieStore.delete("__Secure-better-auth.session_token");
     cookieStore.delete("better-auth.session_data");
     cookieStore.delete("better-auth.session_token");
     return null;
