@@ -3,7 +3,9 @@ import { cookies } from "next/headers";
 
 export async function getTokenFromSession(): Promise<string | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get("better-auth.session_token");
+  const token =
+    cookieStore.get("__Secure-better-auth.session_token") ||
+    cookieStore.get("better-auth.session_token");
   if (!token) return null;
 
   return token.value;

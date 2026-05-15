@@ -4,6 +4,7 @@ import * as cookie from "cookie";
 export class AuthUtil {
   private static readonly BEARER_PREFIX = "Bearer ";
   private static readonly COOKIE_NAMES = [
+    "__Secure-better-auth.session_token",
     "better-auth.session_token",
     "auth_token",
     "session",
@@ -20,7 +21,7 @@ export class AuthUtil {
       parsedCookies =
         typeof cookie.parseCookie === "function"
           ? cookie.parseCookie(req.headers.cookie)
-          : (cookie as any).parse(req.headers.cookie);
+          : cookie.parse(req.headers.cookie);
     }
 
     for (const cookieName of this.COOKIE_NAMES) {

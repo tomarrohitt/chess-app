@@ -8,8 +8,12 @@ export function proxy(request: NextRequest) {
 
   const shouldSkipRedirect = isServerAction || isRSCRequest || isApiRoute;
 
-  const sessionToken = request.cookies.get("better-auth.session_token");
-  const sessionData = request.cookies.get("better-auth.session_data");
+  const sessionToken =
+    request.cookies.get("__Secure-better-auth.session_token") ||
+    request.cookies.get("better-auth.session_token");
+  const sessionData =
+    request.cookies.get("__Secure-better-auth.session_data") ||
+    request.cookies.get("better-auth.session_data");
 
   let isValidSession = false;
 
@@ -28,7 +32,7 @@ export function proxy(request: NextRequest) {
   const protectedPaths = ["/", "/game"];
 
   const isAuthRoute = authPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
+    request.nextUrl.pathname.startsWith(path),
   );
 
   // 2. Fix the Wildcard Trap
@@ -42,6 +46,8 @@ export function proxy(request: NextRequest) {
   if (shouldSkipRedirect) {
     const response = NextResponse.next();
     if ((sessionToken || sessionData) && !isValidSession) {
+      response.cookies.delete("__Secure-better-auth.session_token");
+      response.cookies.delete("__Secure-better-auth.session_data");
       response.cookies.delete("better-auth.session_token");
       response.cookies.delete("better-auth.session_data");
     }
@@ -60,6 +66,8 @@ export function proxy(request: NextRequest) {
     // If cookies are invalid, clear them but let them stay on /login
     if (!isValidSession && (sessionToken || sessionData)) {
       const response = NextResponse.next();
+      response.cookies.delete("__Secure-better-auth.session_token");
+      response.cookies.delete("__Secure-better-auth.session_data");
       response.cookies.delete("better-auth.session_token");
       response.cookies.delete("better-auth.session_data");
       return response;
@@ -77,6 +85,8 @@ export function proxy(request: NextRequest) {
     const response = NextResponse.redirect(signInUrl);
 
     if (sessionToken || sessionData) {
+      response.cookies.delete("__Secure-better-auth.session_token");
+      response.cookies.delete("__Secure-better-auth.session_data");
       response.cookies.delete("better-auth.session_token");
       response.cookies.delete("better-auth.session_data");
     }
@@ -90,5 +100,5 @@ export function proxy(request: NextRequest) {
 // Removed /login from the exclusion list so the proxy can handle redirecting
 // logged-in users away from the login page!
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
-}
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+};
