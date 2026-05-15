@@ -9,10 +9,11 @@
     "start": "node -r dotenv/config dist/src/index.js",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
-    "seed": "tsx src/seed/setup.ts && tsx src/seed/seed-users.ts",
+    "seed": "tsx src/seed/seed-users.ts",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
-    "setup": "npm install && npm run build && npm run db:migrate && npm run seed"
+    "db:mark-migrated": "tsx src/seed/setup.ts",
+    "setup": "npm install && npm run build && npm run db:mark-migrated && npm run db:migrate && npm run seed"
   },
   "keywords": [],
   "author": "",
