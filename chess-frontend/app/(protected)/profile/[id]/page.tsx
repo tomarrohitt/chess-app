@@ -6,6 +6,7 @@ import { UserInfoCard } from "./_components/userinfo-card";
 import { RatingCard } from "./_components/rating-card";
 import { StatCard } from "./_components/common";
 import { RecentGames } from "./_components/recent-games";
+import { getUserFromSession } from "@/actions/session";
 
 export default async function ProfilePage({
   params,
@@ -14,8 +15,11 @@ export default async function ProfilePage({
 }) {
   const { id } = await params;
 
-  const user = await getUserById(id);
-  if (!user) return;
+  const [user, currentUser] = await Promise.all([
+    getUserById(id),
+    getUserFromSession(),
+  ]);
+  if (!user) return null;
 
   const rank = getRankTitle(user.rating);
   const winRate = getWinRate(user.wins, user.losses, user.draws);
@@ -32,6 +36,7 @@ export default async function ProfilePage({
           <div className="flex flex-col gap-3.5">
             <UserInfoCard
               user={user}
+              currentUser={currentUser}
               rank={rank}
               totalGames={totalGames}
               winRate={winRate}

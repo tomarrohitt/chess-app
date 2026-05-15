@@ -1,15 +1,16 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-type SmartBody = BodyInit | Record<string, any> | null | undefined;
+type SmartBody = BodyInit | Record<string, unknown> | null | undefined;
 
 type FetchOptions = Omit<RequestInit, "body"> & {
   body?: SmartBody;
 };
 
-function normalizeBody(body: SmartBody, headers: HeadersInit | undefined) {
-  const finalHeaders: Record<string, string> = {
-    ...(headers as any),
-  };
+function normalizeBody(
+  body: SmartBody,
+  customHeaders: HeadersInit | undefined,
+) {
+  const finalHeaders = new Headers(customHeaders);
 
   if (
     body &&
@@ -18,7 +19,9 @@ function normalizeBody(body: SmartBody, headers: HeadersInit | undefined) {
     !(body instanceof Blob) &&
     !(body instanceof ArrayBuffer)
   ) {
-    finalHeaders["Content-Type"] ||= "application/json";
+    if (!finalHeaders.has("Content-Type")) {
+      finalHeaders.set("Content-Type", "application/json");
+    }
     return { body: JSON.stringify(body), headers: finalHeaders };
   }
 

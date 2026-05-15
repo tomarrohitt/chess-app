@@ -1,3 +1,4 @@
+import { getFriendshipCounts } from "@/actions/friend";
 import { BlockedTab } from "./_components/blocked-tab";
 import { CommunityNav } from "./_components/community-client";
 import { FindPlayersTab } from "./_components/find-players-tab";
@@ -12,6 +13,8 @@ export default async function CommunityPage({
   const { tab, q } = await searchParams;
   const active = tab || "friends";
   const query = q || "";
+
+  const counts = await getFriendshipCounts();
 
   let tabContent = null;
   switch (active) {
@@ -29,6 +32,8 @@ export default async function CommunityPage({
       break;
   }
 
+  console.log({ counts });
+
   return (
     <div
       className="min-h-screen w-full"
@@ -39,7 +44,9 @@ export default async function CommunityPage({
     >
       <div className="fixed inset-0 pointer-events-none opacity-[0.025]" />
       <div className="relative max-w-2xl mx-auto px-4 py-10">
-        <CommunityNav active={active}>{tabContent}</CommunityNav>
+        <CommunityNav active={active} counts={counts}>
+          {tabContent}
+        </CommunityNav>
       </div>
     </div>
   );

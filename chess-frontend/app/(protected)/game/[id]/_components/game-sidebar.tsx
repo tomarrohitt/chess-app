@@ -7,10 +7,8 @@ import { NewGame } from "./new-game";
 import { IncomingDrawOffer } from "./incoming-draw-offer";
 import { ActiveGameControls } from "./active-game-controls";
 import { RematchControls } from "./rematch-controls";
-import { FlipButton } from "./flip-button";
 import { GameChat } from "./game-chat";
 import { useGameNavigation } from "./use-game-navigation";
-import { useGameUIStore } from "./use-game-ui-store";
 import { useTimeline } from "@/hooks/use-timeline";
 
 interface GameSidebarProps {
@@ -29,16 +27,8 @@ export const GameSidebar = memo(function GameSidebar({
 
   const { currentMoveIndex, handleMoveClick } = useGameNavigation(latestIndex);
 
-  const setSpectatorFlipped = useGameUIStore(
-    (s) => s.actions.setSpectatorFlipped,
-  );
-
   return (
     <div className="flex flex-col justify-center items-center relative">
-      {!isPlayer && (
-        <FlipButton onFlip={() => setSpectatorFlipped((p) => !p)} />
-      )}
-
       <div className="flex-1 flex flex-col overflow-hidden p-4">
         <MoveList
           pgn={activeGame.pgn}

@@ -8,6 +8,7 @@ import {
   block,
   unblock,
   listFriends,
+  getCounts,
   listRequests,
   listBlocked,
   searchUsers,
@@ -16,6 +17,7 @@ import {
 const friendRouter = Router();
 
 friendRouter.get("/", listFriends);
+friendRouter.get("/counts", getCounts);
 friendRouter.get("/requests", listRequests);
 friendRouter.get("/blocked", listBlocked);
 friendRouter.get("/search", searchUsers);

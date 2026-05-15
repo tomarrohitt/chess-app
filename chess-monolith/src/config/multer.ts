@@ -24,7 +24,7 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback,
 ) => {
-  const allowed = ["image/webp"];
+  const allowed = ["image/jpg", "image/jpeg", "image/png", "image/webp"];
   if (allowed.includes(file.mimetype)) {
     cb(null, true);
   } else {

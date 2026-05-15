@@ -12,12 +12,12 @@ import { NewGame } from "./new-game";
 import { useGameStore } from "@/store/use-game-store";
 import { useGameAudio } from "@/hooks/use-game-audio";
 import { RematchControls } from "./rematch-controls";
-import { FlipButton } from "./flip-button";
 import { CapturedPieces } from "./captured-pieces";
 
 import Chessground from "@bezalel6/react-chessground";
 import type { Config } from "chessground/config";
 import { sharedBoardConfig } from "./board-theme";
+import Image from "next/image";
 
 export interface GamePlayer {
   id: string;
@@ -230,7 +230,12 @@ export const ArchiveBoard = memo(function ArchiveBoard({
         </div>
 
         <div className="flex flex-col justify-center items-start relative">
-          {/* <FlipButton isPlayer={!isPlayer} setSpectatorFlipped={setIsFlipped} /> */}
+          <button
+            onClick={() => setIsFlipped((p) => !p)}
+            className="absolute top-5 -left-16 cursor-pointer hover:scale-110 transition-transform p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+          >
+            <Image src="/flip.svg" alt="Flip board" height={20} width={20} />
+          </button>{" "}
           <div className="flex-1 flex flex-col overflow-hidden p-4">
             <MoveList
               pgn={gameData.pgn}
@@ -239,7 +244,6 @@ export const ArchiveBoard = memo(function ArchiveBoard({
               onMoveClick={handleMoveClick}
             />
           </div>
-
           <div className="flex gap-4 w-full mt-4">
             <NewGame timeControl={gameData.timeControl} />
             <RematchControls

@@ -10,6 +10,7 @@ import {
   unblockUser,
   getFriends,
   getFriendRequests,
+  getFriendshipCounts,
   getBlockedUsers,
   getFriendship,
   searchGlobalUsers,
@@ -253,6 +254,11 @@ export async function unblock(req: Request, res: Response) {
 export async function listFriends(req: Request, res: Response) {
   const friendsList = await getFriends(req.user.id);
   return res.json({ success: true, data: friendsList });
+}
+
+export async function getCounts(req: Request, res: Response) {
+  const counts = await getFriendshipCounts(req.user.id);
+  return res.json({ success: true, data: counts });
 }
 
 export async function listRequests(req: Request, res: Response) {

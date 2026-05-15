@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { friends, user } from "../../infrastructure/db/schema";
 import { db } from "../../infrastructure/db/db";
@@ -177,6 +177,37 @@ export async function getFriends(userId: string) {
       ),
     )
     .orderBy(desc(f.createdAt), u.id);
+}
+
+export async function getFriendshipCounts(userId: string) {
+  const [friendsCountRes, requestsCountRes, blockedCountRes] =
+    await Promise.all([
+      db
+        .select({ value: count() })
+        .from(friends)
+        .where(
+          and(
+            or(eq(friends.userId, userId), eq(friends.friendId, userId)),
+            eq(friends.status, "ACCEPTED"),
+          ),
+        ),
+      db
+        .select({ value: count() })
+        .from(friends)
+        .where(
+          and(eq(friends.friendId, userId), eq(friends.status, "PENDING")),
+        ),
+      db
+        .select({ value: count() })
+        .from(friends)
+        .where(and(eq(friends.userId, userId), eq(friends.status, "BLOCKED"))),
+    ]);
+
+  return {
+    friends: friendsCountRes[0]?.value ?? 0,
+    requests: requestsCountRes[0]?.value ?? 0,
+    blocked: blockedCountRes[0]?.value ?? 0,
+  };
 }
 
 export async function getFriendRequests(userId: string) {

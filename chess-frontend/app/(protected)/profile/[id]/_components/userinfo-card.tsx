@@ -1,15 +1,18 @@
-import { Calendar, Camera, Crown } from "lucide-react";
-import Image from "next/image";
-import { getInitials } from "@/lib/constants/get-initials";
+import { Calendar, Crown } from "lucide-react";
+
 import { User } from "@/types/auth";
 import { MiniStat } from "./common";
+import { UserProfile } from "./user-profile";
+import { PlayerProfile } from "./player-profile";
 
 export async function UserInfoCard({
   user,
+  currentUser,
   rank,
   totalGames,
   winRate,
 }: {
+  currentUser: User | null;
   user: Omit<User, "emailVerified">;
   rank: { title: string; color: string };
   totalGames: number;
@@ -19,26 +22,13 @@ export async function UserInfoCard({
     <div className="bg-[#141414] border border-[#242424] rounded-[14px] backdrop-blur-sm pt-8 px-6 pb-8 flex flex-col items-center relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-[#4ade80] to-transparent opacity-70" />
       <div className="relative mb-4.5">
-        <div className="w-25 h-25 rounded-full bg-[#0c0c0c] border-2 border-[#2a2a2a] flex items-center justify-center overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.8)]">
-          {user.image ? (
-            <Image
-              src={user.image}
-              alt={user.name}
-              width={100}
-              height={100}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-[#181818] flex items-center justify-center">
-              <span className="text-[32px] font-bold text-[#4ade80] tracking-[0.05em]">
-                {getInitials(user.name)}
-              </span>
-            </div>
-          )}
-        </div>
-        <button className="absolute bottom-0.5 right-0.5 w-7.5 h-7.5 rounded-full bg-[#4ade80] border-2 border-[#0c0c0c] flex items-center justify-center cursor-pointer">
-          <Camera size={16} color="#111" />
-        </button>
+        {currentUser?.id === user.id ? (
+          <UserProfile name={user.name} image={user.image} />
+        ) : (
+          <div className="w-25 h-25 rounded-full bg-[#0c0c0c] border-2 border-[#2a2a2a] flex items-center justify-center overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+            <PlayerProfile name={user.name} image={user.image} />
+          </div>
+        )}
       </div>
 
       <h2 className="text-[20px] font-bold text-[#f5f5f5] m-0 tracking-[0.02em]">
@@ -70,7 +60,10 @@ export async function UserInfoCard({
         </p>
         <div className="flex items-center gap-2.5">
           <Calendar size={14} color="#555" />
-          <span className="text-[13px] text-[#737373] overflow-hidden text-ellipsis whitespace-nowrap">
+          <span
+            suppressHydrationWarning
+            className="text-[13px] text-[#737373] overflow-hidden text-ellipsis whitespace-nowrap"
+          >
             {new Date(user.createdAt).toLocaleDateString("en-US", {
               month: "long",
               day: "numeric",

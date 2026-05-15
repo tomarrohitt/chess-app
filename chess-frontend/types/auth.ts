@@ -1,6 +1,18 @@
 import * as z from "zod";
 
-export const loginSchema = z.object({
+export const registrationSchema = z.object({
+  name: z
+    .string({ error: "Name is required" })
+    .min(1, "Name is required")
+    .trim()
+    .min(3, "Must be at least 3 characters")
+    .max(128, "Must not exceed 128 characters"),
+  username: z
+    .string({ error: "Username is required" })
+    .min(1, "Username is required")
+    .trim()
+    .min(3, "Must be at least 3 characters")
+    .max(128, "Must not exceed 128 characters"),
   email: z
     .string({ error: "Email is required" })
     .min(1, "Email is required")
@@ -20,7 +32,13 @@ export const loginSchema = z.object({
     ),
 });
 
+export const loginSchema = registrationSchema.omit({
+  name: true,
+  username: true,
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
+export type RegisterInput = z.infer<typeof registrationSchema>;
 
 export type User = {
   id: string;

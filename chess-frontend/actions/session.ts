@@ -1,5 +1,4 @@
 import { User } from "@/types/auth";
-import { ChatUserInfo } from "@/types/chat";
 import { cookies } from "next/headers";
 
 export async function getTokenFromSession(): Promise<string | null> {
@@ -31,7 +30,7 @@ export async function getUserFromSession(): Promise<User | null> {
     }
 
     return data.session.user;
-  } catch (error) {
+  } catch {
     cookieStore.delete("better-auth.session_data");
     cookieStore.delete("better-auth.session_token");
     return null;

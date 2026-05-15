@@ -138,3 +138,16 @@ export async function unblockUser(userId: string): Promise<boolean> {
   revalidatePath("/community");
   return true;
 }
+
+export async function getFriendshipCounts(): Promise<{
+  friends: number;
+  requests: number;
+  blocked: number;
+}> {
+  const counts = await safeFetch<{
+    friends: number;
+    requests: number;
+    blocked: number;
+  }>("/friends/counts");
+  return counts ?? { friends: 0, requests: 0, blocked: 0 };
+}

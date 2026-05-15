@@ -1,10 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 
-import { login } from "@/actions/auth";
+import { register } from "@/actions/auth";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
@@ -13,23 +11,21 @@ const initialState = {
   success: false,
   message: "",
   errors: {
+    name: "",
+    username: "",
     email: "",
     password: "",
   },
   inputs: {
+    name: "",
+    username: "",
     email: "",
     password: "",
   },
 };
 
-export const LoginForm = () => {
-  const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") ?? "/";
-
-  const [state, action, pending] = useActionState(
-    login.bind(null, redirectTo),
-    initialState,
-  );
+export const RegisterForm = () => {
+  const [state, action, pending] = useActionState(register, initialState);
 
   return (
     <form action={action} className="space-y-5">
@@ -48,6 +44,47 @@ export const LoginForm = () => {
       <Field className="gap-0">
         <FieldLabel
           className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-[#5a5a5a]"
+          htmlFor="name"
+        >
+          Full name
+        </FieldLabel>
+        <Input
+          id="name"
+          name="name"
+          type="text"
+          disabled={pending}
+          defaultValue={state.inputs.name}
+          placeholder="John Doe"
+          className="bg-[#0a0a0a] border border-[#222] text-[#e8e8e8] rounded-lg py-2.5 outline-none transition-colors focus:border-[rgba(201,168,76,0.5)]"
+        />
+        <FieldError className="my-1 text-xs text-[#e07070]">
+          {state.errors.name}
+        </FieldError>
+      </Field>
+
+      <Field className="gap-0">
+        <FieldLabel
+          className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-[#5a5a5a]"
+          htmlFor="username"
+        >
+          Username
+        </FieldLabel>
+        <Input
+          id="username"
+          name="username"
+          disabled={pending}
+          defaultValue={state.inputs.username}
+          placeholder="johndoe"
+          className="bg-[#0a0a0a] border border-[#222] text-[#e8e8e8] rounded-lg py-2.5 outline-none transition-colors focus:border-[rgba(201,168,76,0.5)]"
+        />
+        <FieldError className="my-1 text-xs text-[#e07070]">
+          {state.errors.username}
+        </FieldError>
+      </Field>
+
+      <Field className="gap-0">
+        <FieldLabel
+          className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-[#5a5a5a]"
           htmlFor="email"
         >
           Email address
@@ -56,11 +93,10 @@ export const LoginForm = () => {
           id="email"
           name="email"
           type="email"
-          autoComplete="email"
           disabled={pending}
           defaultValue={state.inputs.email}
           placeholder="you@example.com"
-          className="bg-[#0a0a0a] border border-[#222] text-[#e8e8e8] rounded-lg py-2.5 outline-none transition-colors focus:border-[rgba(201,168,76,0.5)]"
+          className="bg-[#0a0a0a] border border-[#222] text-[#e8e8e8] rounded-lg  py-2.5 outline-none transition-colors focus:border-[rgba(201,168,76,0.5)]"
         />
         <FieldError className="my-1 text-xs text-[#e07070]">
           {state.errors.email}
@@ -68,27 +104,19 @@ export const LoginForm = () => {
       </Field>
 
       <Field className="gap-0">
-        <div className="flex items-center justify-between mb-1.5">
-          <FieldLabel
-            htmlFor="password"
-            className="text-xs font-semibold uppercase tracking-widest text-[#5a5a5a]"
-          >
-            Password
-          </FieldLabel>
-          <Link
-            href="/forgot-password"
-            className="text-xs transition-colors text-[#c9a84c] hover:text-[#e8c86a]"
-          >
-            Forgot password?
-          </Link>
-        </div>
+        <FieldLabel
+          className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-[#5a5a5a]"
+          htmlFor="password"
+        >
+          Password
+        </FieldLabel>
         <Input
           id="password"
           name="password"
           type="password"
           disabled={pending}
           defaultValue={state.inputs.password}
-          placeholder="•••••••••••••••••"
+          placeholder="••••••••••••••••"
           className="bg-[#0a0a0a] border border-[#222] text-[#e8e8e8] rounded-lg py-2.5 outline-none transition-colors focus:border-[rgba(201,168,76,0.5)]"
         />
         <FieldError className="my-1 text-xs text-[#e07070]">
@@ -103,11 +131,11 @@ export const LoginForm = () => {
       >
         {pending ? (
           <>
-            <Loader2 className="size-5 animate-spin mr-2" />
-            Signing in…
+            <Loader2 className="size-5 animate-spin" />
+            Creating account…
           </>
         ) : (
-          "Sign In"
+          "Create account"
         )}
       </button>
     </form>

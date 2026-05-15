@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { LoginForm } from "./_components/login-form";
+import { RegisterForm } from "./_components/register-form";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
     <div
       className="rounded-2xl p-8 relative overflow-hidden"
@@ -12,7 +12,6 @@ export default function LoginPage() {
           "0 0 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(201,168,76,0.05) inset",
       }}
     >
-      {/* Subtle top gradient bar */}
       <div
         className="absolute top-0 left-0 right-0 h-px"
         style={{
@@ -22,7 +21,6 @@ export default function LoginPage() {
       />
 
       <div className="text-center mb-8">
-        {/* Chess king icon */}
         <div className="flex justify-center mb-4">
           <span
             className="text-5xl select-none"
@@ -31,7 +29,7 @@ export default function LoginPage() {
               filter: "drop-shadow(0 0 12px rgba(201,168,76,0.4))",
             }}
           >
-            ♔
+            ♟
           </span>
         </div>
         <h1
@@ -42,14 +40,14 @@ export default function LoginPage() {
             letterSpacing: "-0.02em",
           }}
         >
-          Welcome Back
+          Create Account
         </h1>
         <p style={{ color: "#5a5a5a", fontSize: "0.875rem" }}>
-          Sign in to your account to continue
+          Join and start playing today
         </p>
       </div>
 
-      <LoginForm />
+      <RegisterForm />
 
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
@@ -60,17 +58,17 @@ export default function LoginPage() {
             className="px-3"
             style={{ backgroundColor: "#111111", color: "#3a3a3a" }}
           >
-            Don&apos;t have an account?
+            Already have an account?
           </span>
         </div>
       </div>
 
       <div className="text-center">
         <Link
-          href="/register"
+          href="/login"
           className="font-semibold transition-colors duration-200 text-[#c9a84c] hover:text-[#e8c86a]"
         >
-          Create an account
+          Sign in instead
         </Link>
       </div>
     </div>

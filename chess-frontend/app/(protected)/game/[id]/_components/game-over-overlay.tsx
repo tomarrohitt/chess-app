@@ -11,7 +11,6 @@ export function GameOverOverlay({
   gameOver: GameOverState;
   userId: string;
 }) {
-  const resetGame = useGameStore((s) => s.resetGame);
   const activeGame = useGameStore((s) => s.activeGame);
   const rematchOffer = useGameStore((s) => s.rematchOffer);
   const rematchOfferSent = useGameStore((s) => s.rematchOfferSent);
@@ -97,7 +96,6 @@ export function GameOverOverlay({
             <button
               onClick={() => {
                 const tc = activeGame?.timeControl;
-                resetGame();
                 if (tc) joinQueue(tc);
               }}
               className="flex-1 py-2.5 font-mono text-[11px] font-medium text-emerald-400/80 bg-emerald-950/30 border border-emerald-900/40 rounded-lg hover:bg-emerald-950/50 hover:text-emerald-300 transition-all"

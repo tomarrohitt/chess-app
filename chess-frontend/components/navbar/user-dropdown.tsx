@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, User as UserIcon, Settings } from "lucide-react";
+import { ChevronDown, User as UserIcon } from "lucide-react";
 import { getInitials } from "@/lib/constants/get-initials";
 import { User } from "@/types/auth";
 import { LogoutButton } from "./logout-button";
@@ -72,9 +72,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
         <Item href={`/profile/${user.id}`} icon={UserIcon}>
           View Profile
         </Item>
-        <Item href="/settings" icon={Settings}>
-          Settings
-        </Item>
+
         <DropdownMenuSeparator className="bg-zinc-800 my-1.5" />
         <DropdownMenuItem asChild>
           <LogoutButton />

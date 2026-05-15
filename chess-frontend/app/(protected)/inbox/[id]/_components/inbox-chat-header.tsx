@@ -17,7 +17,7 @@ export function InboxChatHeader({ activeData }: InboxChatHeaderProps) {
         <Avatar name={activeData.name} image={activeData.image} />
         <div>
           <Link
-            href={`/player/${activeData.id}`}
+            href={`/profile/${activeData.id}`}
             className="font-bold text-white text-sm  hover:underline underline-offset-3"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >

@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { useOptimistic, useTransition } from "react";
 import { useSpinDelay } from "spin-delay";
 
-import { STUB_FRIENDS, STUB_REQUESTS, STUB_BLOCKED } from "./community-types";
 import { cn } from "@/lib/utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PlayerListSkeleton } from "./community-shared";
@@ -15,39 +14,37 @@ const TABS = [
     id: "friends",
     label: "Friends",
     icon: Users,
-    badge: STUB_FRIENDS.length,
   },
   {
     id: "find",
     label: "Find Players",
     icon: Search,
-    badge: null,
   },
   {
     id: "requests",
     label: "Requests",
     icon: Bell,
-    badge: STUB_REQUESTS.length,
   },
   {
     id: "blocked",
     label: "Blocked",
     icon: UserX,
-    badge: STUB_BLOCKED.length > 0 ? STUB_BLOCKED.length : null,
   },
 ] as const;
 
 export function CommunityNav({
   active,
+  counts,
   children,
 }: {
   active: string;
+  counts: { friends: number; requests: number; blocked: number };
   children: React.ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [_pending, startTransition] = useTransition();
+  const [_, startTransition] = useTransition();
   const [optimisticActive, setOptimisticActive] = useOptimistic(active);
 
   const isPendingNav = optimisticActive !== active;
@@ -89,8 +86,10 @@ export function CommunityNav({
           isolation: "isolate",
         }}
       >
-        {TABS.map(({ id, label, icon: Icon, badge }) => {
+        {TABS.map(({ id, label, icon: Icon }) => {
           const isActive = optimisticActive === id;
+          const displayBadge =
+            id === "find" ? 0 : counts[id as keyof typeof counts];
           return (
             <button
               key={id}
@@ -122,7 +121,7 @@ export function CommunityNav({
               )}
               <Icon size={13} />
               <span className="hidden sm:inline">{label}</span>
-              {badge != null && badge > 0 && (
+              {displayBadge > 0 && (
                 <span
                   className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold px-1"
                   style={{
@@ -131,7 +130,7 @@ export function CommunityNav({
                     color: id === "requests" ? "#fff" : "#a1a1aa",
                   }}
                 >
-                  {badge}
+                  {displayBadge}
                 </span>
               )}
             </button>

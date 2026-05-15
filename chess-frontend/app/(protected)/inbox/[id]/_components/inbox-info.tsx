@@ -26,7 +26,7 @@ export function InboxInfo({ user }: InboxInfoProps) {
       >
         <Avatar name={user.name} image={user.image} size={80} />
         <Link
-          href={`/player/${user.id}`}
+          href={`/profile/${user.id}`}
           className="mt-4 font-bold text-white text-lg text-center hover:underline underline-offset-4"
           style={{ fontFamily: "'DM Sans', sans-serif" }}
         >
