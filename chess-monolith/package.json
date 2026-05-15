@@ -8,10 +8,10 @@
     "build": "npx tsc --build --force",
     "start": "node -r dotenv/config dist/src/index.js",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push && npm run seed",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx src/seed/setup.ts && tsx src/seed/seed-users.ts",
-    "setup": "npm install && npm run build && npm run db:generate && npm run seed && npm run db:push"
+    "db:push": "drizzle-kit push",
+    "setup": "npm install && npm run build && npm run db:generate && npm run db:setup-extensions && npm run db:push && npm run seed"
   },
   "keywords": [],
   "author": "",
@@ -42,7 +42,7 @@
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
     "cross-env": "^10.1.0",
-    "drizzle-kit": "^0.31.9",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.3",
     "eslint-plugin-import": "^2.32.0",
     "nodemon": "^3.1.14",
