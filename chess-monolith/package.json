@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "cross-env NODE_OPTIONS='--network-family-autoselection-attempt-timeout=500' nodemon --exec tsx src/index.ts",
     "build": "npx tsc --build --force",
-    "start": "node -r dotenv/config dist/index.js",
+    "start": "node -r dotenv/config dist/src/index.js",
     "db:generate": "drizzle-kit generate",
     "db:push": "tsx seed/setup-db.ts",
     "db:studio": "drizzle-kit studio",
