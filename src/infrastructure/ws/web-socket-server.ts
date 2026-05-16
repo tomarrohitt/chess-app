@@ -26,7 +26,7 @@ import { user as userSchema } from "../db/schema";
 import { eq, InferSelectModel } from "drizzle-orm";
 
 import { Request } from "express";
-import { toFetchHeaders } from "@/lib/utils/to-fetch-headers";
+import { IncomingHttpHeaders } from "node:http";
 
 import * as cookie from "cookie";
 
@@ -46,6 +46,18 @@ const COOKIE_NAMES = [
   "auth_token",
   "session",
 ];
+
+export function toFetchHeaders(headers: IncomingHttpHeaders): Headers {
+  const result = new Headers();
+
+  for (const [key, value] of Object.entries(headers)) {
+    if (typeof value === "string") {
+      result.set(key, value);
+    }
+  }
+
+  return result;
+}
 
 function extractToken(req: Request): string | null {
   const authHeader = req.headers.authorization;
