@@ -14,6 +14,7 @@ import { PlayerConnectionPayloadSchema } from "./player";
 
 export enum WsMessageType {
   AUTH_SUCCESS = "AUTH_SUCCESS",
+  AUTH = "AUTH",
 
   JOIN_QUEUE = "JOIN_QUEUE",
   LEAVE_QUEUE = "LEAVE_QUEUE",
@@ -195,6 +196,9 @@ export const ServerMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal(WsMessageType.AUTH_SUCCESS),
+  }),
+  z.object({
+    type: z.literal(WsMessageType.AUTH),
   }),
 ]);
 

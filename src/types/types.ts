@@ -54,6 +54,8 @@ export enum WsMessageType {
   PING = "PING",
   PONG = "PONG",
   ERROR = "ERROR",
+  AUTH = "AUTH",
+  AUTH_SUCCESS = "AUTH_SUCCESS",
 }
 
 export enum GameStatus {

@@ -9,11 +9,26 @@ import {
 } from "@/types/ws";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 const MAX_RECONNECT_ATTEMPTS = 10;
 const MAX_QUEUE_SIZE = 50;
 const HEARTBEAT_INTERVAL = 5000;
-
 const HEARTBEAT_TIMEOUT = 3000;
+
+// Fetch a short-lived one-time ticket from the backend over credentialed HTTP
+async function getWsTicket(): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_URL}/api/ws/ticket`, {
+      credentials: "include", // sends cookie cross-origin — works over HTTP
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.ticket ?? null;
+  } catch (err) {
+    console.error("[WS] Failed to fetch ticket:", err);
+    return null;
+  }
+}
 
 export function useWebSocket(user: User) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -47,7 +62,6 @@ export function useWebSocket(user: User) {
 
         heartbeatTimeout.current = setTimeout(() => {
           console.warn("[WS] Heartbeat timeout. Forcing reconnect...");
-
           const event = {
             code: 4000,
             reason: "Heartbeat timeout",
@@ -157,8 +171,11 @@ export function useWebSocket(user: User) {
         case WsMessageType.PONG:
           if (heartbeatTimeout.current) clearTimeout(heartbeatTimeout.current);
           break;
+        case WsMessageType.AUTH_SUCCESS:
+          console.log("[WS] Authenticated.");
+          break;
         case WsMessageType.ERROR:
-          console.error(msg.payload);
+          console.error("[WS] Server error:", msg.payload);
           break;
         case WsMessageType.QUEUE_LEFT:
         case WsMessageType.PLAYER_RECONNECTED:
@@ -193,82 +210,98 @@ export function useWebSocket(user: User) {
       action.setConnection(WsConnectionStatus.CONNECTING);
       action.setUser(userRef.current);
 
-      const ws = new WebSocket(WS_URL);
-      wsRef.current = ws;
-
-      const connectionTimeout = setTimeout(() => {
-        if (ws.readyState === WebSocket.CONNECTING) {
-          console.warn("[WS] Connection timeout. Aborting...");
-          const event = {
-            code: 4008,
-            reason: "Connection timeout",
-            wasClean: false,
-          } as CloseEvent;
-          if (ws.onclose) {
-            ws.onclose(event);
-            ws.onclose = null;
-          }
-          ws.close();
+      // Fetch ticket first, then open socket
+      getWsTicket().then((ticket) => {
+        if (!ticket) {
+          console.error("[WS] Could not obtain ticket. Aborting connection.");
+          action.setConnection(WsConnectionStatus.FAILED);
+          return;
         }
-      }, 5000);
 
-      ws.onopen = () => {
-        clearTimeout(connectionTimeout);
-        action.setConnection(WsConnectionStatus.CONNECTED);
-        startHeartbeat(ws);
-        reconnectAttempts.current = 0;
+        const ws = new WebSocket(WS_URL);
+        wsRef.current = ws;
 
-        ws.send(JSON.stringify({ type: WsMessageType.SYNC_GAME }));
-
-        while (messageQueue.current.length > 0) {
-          const msg = messageQueue.current[0];
-          try {
-            ws.send(msg);
-            messageQueue.current.shift();
-          } catch (err) {
-            console.error("[WS] Failed to drain queued message:", err);
-            break;
+        const connectionTimeout = setTimeout(() => {
+          if (ws.readyState === WebSocket.CONNECTING) {
+            console.warn("[WS] Connection timeout. Aborting...");
+            const event = {
+              code: 4008,
+              reason: "Connection timeout",
+              wasClean: false,
+            } as CloseEvent;
+            if (ws.onclose) {
+              ws.onclose(event);
+              ws.onclose = null;
+            }
+            ws.close();
           }
-        }
-      };
+        }, 5000);
 
-      ws.onmessage = handleMessage;
+        ws.onopen = () => {
+          clearTimeout(connectionTimeout);
+          action.setConnection(WsConnectionStatus.CONNECTED);
+          startHeartbeat(ws);
+          reconnectAttempts.current = 0;
 
-      ws.onerror = (error) => {
-        clearTimeout(connectionTimeout);
-        console.error("[WS] Connection Error:", error);
-      };
-
-      ws.onclose = (event) => {
-        clearTimeout(connectionTimeout);
-        clearHeartbeat();
-        console.warn(
-          `[WS] Closed. Code: ${event.code}, Reason: ${event.reason || "No reason given"}`,
-        );
-        action.setConnection(WsConnectionStatus.DISCONNECTED);
-        wsRef.current = null;
-
-        if (!isIntentionalClose.current) {
-          if (reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) {
-            console.error("[WS] Max reconnect attempts reached. Giving up.");
-            action.setConnection(WsConnectionStatus.FAILED);
-            return;
-          }
-
-          const baseDelay = 1000;
-          const maxDelay = 30000;
-          const exponentialDelay = Math.min(
-            baseDelay * Math.pow(2, reconnectAttempts.current),
-            maxDelay,
+          // First message must always be AUTH with the ticket
+          ws.send(
+            JSON.stringify({
+              type: WsMessageType.AUTH,
+              payload: { ticket },
+            }),
           );
-          const jitter = exponentialDelay * 0.2 * Math.random();
-          const finalDelay = Math.floor(exponentialDelay + jitter);
 
-          reconnectAttempts.current++;
+          ws.send(JSON.stringify({ type: WsMessageType.SYNC_GAME }));
 
-          reconnectTimeout.current = setTimeout(connectWebSocket, finalDelay);
-        }
-      };
+          while (messageQueue.current.length > 0) {
+            const msg = messageQueue.current[0];
+            try {
+              ws.send(msg);
+              messageQueue.current.shift();
+            } catch (err) {
+              console.error("[WS] Failed to drain queued message:", err);
+              break;
+            }
+          }
+        };
+
+        ws.onmessage = handleMessage;
+
+        ws.onerror = (error) => {
+          clearTimeout(connectionTimeout);
+          console.error("[WS] Connection Error:", error);
+        };
+
+        ws.onclose = (event) => {
+          clearTimeout(connectionTimeout);
+          clearHeartbeat();
+          console.warn(
+            `[WS] Closed. Code: ${event.code}, Reason: ${event.reason || "No reason given"}`,
+          );
+          action.setConnection(WsConnectionStatus.DISCONNECTED);
+          wsRef.current = null;
+
+          if (!isIntentionalClose.current) {
+            if (reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) {
+              console.error("[WS] Max reconnect attempts reached. Giving up.");
+              action.setConnection(WsConnectionStatus.FAILED);
+              return;
+            }
+
+            const baseDelay = 1000;
+            const maxDelay = 30000;
+            const exponentialDelay = Math.min(
+              baseDelay * Math.pow(2, reconnectAttempts.current),
+              maxDelay,
+            );
+            const jitter = exponentialDelay * 0.2 * Math.random();
+            const finalDelay = Math.floor(exponentialDelay + jitter);
+
+            reconnectAttempts.current++;
+            reconnectTimeout.current = setTimeout(connectWebSocket, finalDelay);
+          }
+        };
+      });
     },
     [handleMessage, startHeartbeat, clearHeartbeat],
   );
@@ -358,7 +391,6 @@ export function useWebSocket(user: User) {
       },
       spectateGame: (gameId: string) => {
         const currentUser = userRef.current;
-
         if (
           activeGame?.gameId === gameId &&
           currentUser &&
@@ -367,7 +399,6 @@ export function useWebSocket(user: User) {
         ) {
           return;
         }
-
         action.setExpectedGameId(gameId);
         send(WsMessageType.SPECTATE_GAME, { gameId });
       },
@@ -375,7 +406,6 @@ export function useWebSocket(user: User) {
         const action = useGameStore.getState();
         const activeGame = action.activeGame;
         const currentUser = userRef.current;
-
         if (
           activeGame?.gameId === gameId &&
           currentUser &&
@@ -384,7 +414,6 @@ export function useWebSocket(user: User) {
         ) {
           return;
         }
-
         send(WsMessageType.LEAVE_SPECTATOR, { gameId });
       },
       sendChatMessage: (gameId: string, content: string) =>
