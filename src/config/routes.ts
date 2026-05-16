@@ -10,10 +10,6 @@ export interface RouteConfig {
 
 export const routeConfigs: RouteConfig[] = [
   {
-    path: "/api/health",
-    rules: [{ method: "GET", protected: false }],
-  },
-  {
     path: "/api/auth",
     rules: [{ method: "ALL", protected: false }],
   },

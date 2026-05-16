@@ -14,8 +14,6 @@ import { routeConfigs } from "./config/routes";
 import { env } from "./config/env";
 import { currentUser } from "./lib/utils/get-current-user";
 
-import { healthCheck } from "./api/controller/health-controller";
-
 const app = express();
 
 app.use(
@@ -56,8 +54,6 @@ app.use((req, res, next) => {
 
   next();
 });
-
-app.get("/api/health", healthCheck);
 
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 
