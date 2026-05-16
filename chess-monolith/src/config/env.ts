@@ -8,7 +8,7 @@ const schema = z.object({
     .string()
     .default("postgresql://postgres:password@localhost:5432/chess"),
 
-  BETTER_AUTH_URL: z.string().default("http://localhost:8080"),
+  BETTER_AUTH_URL: z.string().default("http://localhost:7860"),
   CLOUDINARY_URL: z.string(),
   REDIS_URL: z.string().default("redis://localhost:6379"),
   BETTER_AUTH_SECRET: z.string(),

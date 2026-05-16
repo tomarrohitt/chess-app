@@ -1,4 +1,4 @@
-import { Queue, Worker } from "bullmq";
+import { Queue, Worker, ConnectionOptions } from "bullmq";
 import { redis } from "../../infrastructure/redis/redis-client";
 import { broadcastGameUpdate } from "../../infrastructure/ws/session-manager";
 import { Keys } from "../../lib/keys";
@@ -9,7 +9,9 @@ const TIMER_QUEUE_NAME = "game-timers";
 const ABANDONMENT_QUEUE_NAME = "game-abandonment";
 const DISCONNECT_GRACE_MS = 5000;
 
-export const timerQueue = new Queue(TIMER_QUEUE_NAME, { connection: redis });
+export const timerQueue = new Queue(TIMER_QUEUE_NAME, {
+  connection: redis as unknown as ConnectionOptions,
+});
 
 export const timerWorker = new Worker(
   TIMER_QUEUE_NAME,
@@ -32,11 +34,11 @@ export const timerWorker = new Worker(
       flushGameToDatabase(gameId, GameStatus.TIME_OUT, winnerId),
     ]);
   },
-  { connection: redis },
+  { connection: redis as unknown as ConnectionOptions },
 );
 
 export const abandonmentQueue = new Queue(ABANDONMENT_QUEUE_NAME, {
-  connection: redis,
+  connection: redis as unknown as ConnectionOptions,
 });
 
 export const abandonmentWorker = new Worker(
@@ -67,7 +69,7 @@ export const abandonmentWorker = new Worker(
     await broadcastGameUpdate(gameId, gameOverPayload);
     await flushGameToDatabase(gameId, GameStatus.ABANDONED, winnerId);
   },
-  { connection: redis },
+  { connection: redis as unknown as ConnectionOptions },
 );
 
 export async function startPlayerTimer(
