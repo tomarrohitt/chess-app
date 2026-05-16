@@ -18,8 +18,8 @@ const HEARTBEAT_TIMEOUT = 3000;
 // Fetch a short-lived one-time ticket from the backend over credentialed HTTP
 async function getWsTicket(): Promise<string | null> {
   try {
-    const res = await fetch(`${API_URL}/api/ws/ticket`, {
-      credentials: "include", // sends cookie cross-origin — works over HTTP
+    const res = await fetch(`${API_URL}/ws/ticket`, {
+      credentials: "include",
     });
     if (!res.ok) return null;
     const data = await res.json();
