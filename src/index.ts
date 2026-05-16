@@ -4,10 +4,7 @@ import express from "express";
 import { toNodeHandler } from "better-auth/node";
 
 import { auth } from "./lib/auth";
-import {
-  initializeWebSocketServer,
-  registerWsTicketRoute,
-} from "./infrastructure/ws/web-socket-server";
+import { initializeWebSocketServer } from "./infrastructure/ws/web-socket-server";
 import gameRouter from "./api/routes/game-router";
 import friendRouter from "./api/routes/friend-router";
 import chatRouter from "./api/routes/chat-router";
@@ -80,7 +77,6 @@ app.all("{*any}", (req, res) => {
 const server = http.createServer(app);
 
 initializeWebSocketServer(server);
-registerWsTicketRoute(app);
 
 const PORT = env.PORT;
 

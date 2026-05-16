@@ -131,7 +131,9 @@ export async function routeMessage(
       case WsMessageType.SYNC_GAME: {
         const state = await getSyncState(ws.user.id);
 
-        if (!state) return;
+        if (!state) {
+          return;
+        }
 
         subscribeToGameUpdates(state.gameId, ws);
         sendWs(ws, WsMessageType.GAME_STATE, state);

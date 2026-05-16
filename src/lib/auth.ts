@@ -53,10 +53,6 @@ export const auth = betterAuth({
   hooks: authHooks,
 
   advanced: {
-    defaultCookieAttributes: {
-      sameSite: "none",
-      secure: true,
-    },
     database: {
       generateId: () => uuidv7(),
     },

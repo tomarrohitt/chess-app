@@ -16,6 +16,14 @@ const nextConfig: NextConfig = {
     ],
     dangerouslyAllowLocalIP: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "https://risenetup-chess-monolith.hf.space/api/:path*",
+      },
+    ];
+  },
   reactCompiler: true,
 };
 

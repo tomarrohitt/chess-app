@@ -1,6 +1,7 @@
 import type { Server, IncomingMessage } from "http";
 import WebSocket, { WebSocketServer } from "ws";
 import { randomBytes } from "crypto";
+import type { Express } from "express";
 
 import { routeMessage } from "./message-router";
 import {
@@ -25,7 +26,6 @@ import { handleLeaveQueue } from "../../core/matchmaking/queue";
 import { db } from "../db/db";
 import { user as userSchema } from "../db/schema";
 import { eq, InferSelectModel } from "drizzle-orm";
-import type { Express } from "express";
 
 type User = InferSelectModel<typeof userSchema>;
 
@@ -37,14 +37,19 @@ export interface AuthenticatedWebSocket extends WebSocket {
   chatRooms?: Set<string>;
 }
 
-// ── Ticket helpers ────────────────────────────────────────────────────────────
+// ── Ticket system ─────────────────────────────────────────────────────────────
 
-const TICKET_TTL = 30; // seconds
+const TICKET_TTL_SECONDS = 30;
 const TICKET_PREFIX = "ws:ticket:";
 
-export async function generateWsTicket(userId: string): Promise<string> {
+async function generateWsTicket(userId: string): Promise<string> {
   const ticket = randomBytes(32).toString("hex");
-  await redis.set(`${TICKET_PREFIX}${ticket}`, userId, "EX", TICKET_TTL);
+  await redis.set(
+    `${TICKET_PREFIX}${ticket}`,
+    userId,
+    "EX",
+    TICKET_TTL_SECONDS,
+  );
   return ticket;
 }
 
@@ -55,7 +60,7 @@ async function resolveUserFromTicket(ticket: string): Promise<User> {
     throw new AuthError("Invalid or expired ticket");
   }
 
-  // One-time use — delete immediately
+  // One-time use — delete immediately after resolving
   await redis.del(`${TICKET_PREFIX}${ticket}`);
 
   const user = await db.query.user.findFirst({
@@ -70,18 +75,15 @@ async function resolveUserFromTicket(ticket: string): Promise<User> {
 }
 
 // ── Ticket HTTP endpoint ──────────────────────────────────────────────────────
-// Call this from your main Express app setup:
-//   registerWsTicketRoute(app);
+// Register this in your main app.ts: registerWsTicketRoute(app)
 
 export function registerWsTicketRoute(app: Express): void {
   app.get("/api/ws/ticket", async (req, res) => {
-    console.log({ req });
     try {
+      // Request comes through Vercel proxy → same origin → cookies present
       const session = await auth.api.getSession({
         headers: req.headers as Record<string, string>,
       });
-
-      console.log({ session });
 
       if (!session?.user) {
         return res.status(401).json({ error: "Unauthorized" });
@@ -123,9 +125,9 @@ export function initializeWebSocketServer(server: Server): void {
       ws.spectatingRooms = new Set<string>();
       ws.chatRooms = new Set<string>();
 
-      // Kick unauthenticated sockets after 10 seconds
       const authTimeout = setTimeout(() => {
         if (!ws.isAuthenticated) {
+          console.warn("[WS] Auth timeout — closing socket.");
           ws.send(
             JSON.stringify({
               type: "ERROR",
@@ -180,6 +182,7 @@ export function initializeWebSocketServer(server: Server): void {
         try {
           parsed = JSON.parse(raw);
         } catch {
+          console.warn("[WS] Received non-JSON message. Ignoring.");
           return;
         }
 
@@ -208,7 +211,7 @@ export function initializeWebSocketServer(server: Server): void {
           return;
         }
 
-        // Authenticated — route normally
+        // Authenticated — route all messages normally
         routeMessage(ws, raw).catch((err) => {
           console.error("[Fatal Router Error]", err);
         });
