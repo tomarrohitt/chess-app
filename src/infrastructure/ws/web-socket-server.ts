@@ -75,11 +75,13 @@ async function resolveUserFromTicket(ticket: string): Promise<User> {
 
 export function registerWsTicketRoute(app: Express): void {
   app.get("/api/ws/ticket", async (req, res) => {
+    console.log({ req });
     try {
-      // auth.api.getSession works perfectly here — normal HTTP pipeline
       const session = await auth.api.getSession({
         headers: req.headers as Record<string, string>,
       });
+
+      console.log({ session });
 
       if (!session?.user) {
         return res.status(401).json({ error: "Unauthorized" });
