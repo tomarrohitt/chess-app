@@ -19,10 +19,7 @@ import {
 import { WsMessageSchema } from "../../types/events";
 import { v7 as uuidv7 } from "uuid";
 
-import type {
-  AuthenticatedWebSocket,
-  FullyAuthenticatedWebSocket,
-} from "./web-socket-server";
+import type { AuthenticatedWebSocket } from "./web-socket-server";
 import {
   sendToUser,
   broadcastGameUpdate,
@@ -54,7 +51,7 @@ function sendWs(
 }
 
 export async function routeMessage(
-  ws: FullyAuthenticatedWebSocket,
+  ws: AuthenticatedWebSocket,
   rawMessage: string,
 ): Promise<void> {
   try {

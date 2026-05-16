@@ -7,12 +7,12 @@ import {
   WsConnectionStatus,
   WsMessageType,
 } from "@/types/ws";
-import { getTokenFromSession } from "@/actions/session";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080";
 const MAX_RECONNECT_ATTEMPTS = 10;
 const MAX_QUEUE_SIZE = 50;
 const HEARTBEAT_INTERVAL = 5000;
+
 const HEARTBEAT_TIMEOUT = 3000;
 
 export function useWebSocket(user: User) {
@@ -47,6 +47,7 @@ export function useWebSocket(user: User) {
 
         heartbeatTimeout.current = setTimeout(() => {
           console.warn("[WS] Heartbeat timeout. Forcing reconnect...");
+
           const event = {
             code: 4000,
             reason: "Heartbeat timeout",
@@ -82,105 +83,98 @@ export function useWebSocket(user: User) {
     }
   }, []);
 
-  const handleMessage = useCallback(
-    (event: MessageEvent) => {
-      const raw = JSON.parse(event.data);
-      try {
-        const result = ServerMessageSchema.safeParse(raw);
+  const handleMessage = useCallback((event: MessageEvent) => {
+    const raw = JSON.parse(event.data);
+    try {
+      const result = ServerMessageSchema.safeParse(raw);
 
-        if (!result.success) {
-          console.error(
-            "[WS Client] Message validation failed! Raw:",
-            raw,
-            "Zod Errors:",
-            result.error.format(),
-          );
-          return;
-        }
-
-        const msg = result.data;
-
-        switch (msg.type) {
-          case WsMessageType.MOVE_MADE:
-            action.handleMoveMade(msg.payload);
-            break;
-          case WsMessageType.MOVE_REJECTED:
-            action.handleMoveRejected(msg.payload.reason);
-            break;
-          case WsMessageType.GAME_STARTED:
-            action.handleGameStarted(msg.payload);
-            break;
-          case WsMessageType.GAME_STATE:
-            action.handleGameState(msg.payload);
-            break;
-          case WsMessageType.GAME_OVER:
-            action.handleGameOver(msg.payload);
-            break;
-          case WsMessageType.QUEUE_JOINED:
-            action.setQueue(msg.payload.status, msg.payload.timeControl);
-            break;
-          case WsMessageType.MATCHMAKING_TIMEOUT:
-            action.setQueue(QueueStatus.IDLE);
-            break;
-          case WsMessageType.OFFER_DRAW:
-            action.setDrawOffer(msg.payload);
-            break;
-          case WsMessageType.DECLINE_DRAW:
-            action.setDrawOfferSent(DrawOffer.DECLINE);
-            setTimeout(() => action.setDrawOfferSent(null), 5000);
-            break;
-          case WsMessageType.GAME_ABORTED:
-            action.handleGameOver({
-              status: GameStatus.ABANDONED,
-              reason: msg.payload?.reason,
-            });
-            break;
-          case WsMessageType.OFFER_REMATCH:
-            action.setRematchOffer(msg.payload);
-            break;
-          case WsMessageType.DECLINE_REMATCH:
-            action.setRematchOfferSent(DrawOffer.DECLINE);
-            setTimeout(() => action.setRematchOfferSent(null), 5000);
-            break;
-          case WsMessageType.NEW_GAME_CHAT:
-            action.addChatMessage(msg.payload);
-            break;
-          case WsMessageType.CHALLENGE_RECEIVED:
-            action.setIncomingChallenge(msg.payload);
-            break;
-          case WsMessageType.RECEIVE_CHAT_MESSAGE:
-          case WsMessageType.CHAT_MESSAGE_ACK:
-            window.dispatchEvent(
-              new CustomEvent("chat_message", { detail: msg.payload }),
-            );
-            break;
-          case WsMessageType.PONG:
-            if (heartbeatTimeout.current)
-              clearTimeout(heartbeatTimeout.current);
-            break;
-          case WsMessageType.AUTH_SUCCESS:
-            console.log("[WS] Authentication confirmed by server.");
-            break;
-          case WsMessageType.ERROR:
-            console.error("[WS] Server error:", msg.payload);
-            break;
-          case WsMessageType.QUEUE_LEFT:
-          case WsMessageType.PLAYER_RECONNECTED:
-          case WsMessageType.PLAYER_DISCONNECTED:
-          case WsMessageType.CHALLENGE_DECLINED:
-            break;
-          default:
-            console.warn(`[WS Client] Unhandled message type:`, msg.type);
-        }
-      } catch (err) {
-        console.log("[WS] Failed to parse message:", err);
+      if (!result.success) {
+        console.error(
+          "[WS Client] Message validation failed! Raw:",
+          raw,
+          "Zod Errors:",
+          result.error.format(),
+        );
+        return;
       }
-    },
-    [action],
-  );
+
+      const msg = result.data;
+
+      switch (msg.type) {
+        case WsMessageType.MOVE_MADE:
+          action.handleMoveMade(msg.payload);
+          break;
+        case WsMessageType.MOVE_REJECTED:
+          action.handleMoveRejected(msg.payload.reason);
+          break;
+        case WsMessageType.GAME_STARTED:
+          action.handleGameStarted(msg.payload);
+          break;
+        case WsMessageType.GAME_STATE:
+          action.handleGameState(msg.payload);
+          break;
+        case WsMessageType.GAME_OVER:
+          action.handleGameOver(msg.payload);
+          break;
+        case WsMessageType.QUEUE_JOINED:
+          action.setQueue(msg.payload.status, msg.payload.timeControl);
+          break;
+        case WsMessageType.MATCHMAKING_TIMEOUT:
+          action.setQueue(QueueStatus.IDLE);
+          break;
+        case WsMessageType.OFFER_DRAW:
+          action.setDrawOffer(msg.payload);
+          break;
+        case WsMessageType.DECLINE_DRAW:
+          action.setDrawOfferSent(DrawOffer.DECLINE);
+          setTimeout(() => action.setDrawOfferSent(null), 5000);
+          break;
+        case WsMessageType.GAME_ABORTED:
+          action.handleGameOver({
+            status: GameStatus.ABANDONED,
+            reason: msg.payload?.reason,
+          });
+          break;
+        case WsMessageType.OFFER_REMATCH:
+          action.setRematchOffer(msg.payload);
+          break;
+        case WsMessageType.DECLINE_REMATCH:
+          action.setRematchOfferSent(DrawOffer.DECLINE);
+          setTimeout(() => action.setRematchOfferSent(null), 5000);
+          break;
+        case WsMessageType.NEW_GAME_CHAT:
+          action.addChatMessage(msg.payload);
+          break;
+        case WsMessageType.CHALLENGE_RECEIVED:
+          action.setIncomingChallenge(msg.payload);
+          break;
+        case WsMessageType.RECEIVE_CHAT_MESSAGE:
+        case WsMessageType.CHAT_MESSAGE_ACK:
+          window.dispatchEvent(
+            new CustomEvent("chat_message", { detail: msg.payload }),
+          );
+          break;
+        case WsMessageType.PONG:
+          if (heartbeatTimeout.current) clearTimeout(heartbeatTimeout.current);
+          break;
+        case WsMessageType.ERROR:
+          console.error(msg.payload);
+          break;
+        case WsMessageType.QUEUE_LEFT:
+        case WsMessageType.PLAYER_RECONNECTED:
+        case WsMessageType.PLAYER_DISCONNECTED:
+        case WsMessageType.CHALLENGE_DECLINED:
+          break;
+        default:
+          console.warn(`[WS Client] Unhandled message type:`, msg.type);
+      }
+    } catch (err) {
+      console.log("[WS] Failed to parse message:", err);
+    }
+  }, []);
 
   const connect = useCallback(
-    async function connectWebSocket() {
+    function connectWebSocket() {
       isIntentionalClose.current = false;
 
       if (
@@ -199,19 +193,7 @@ export function useWebSocket(user: User) {
       action.setConnection(WsConnectionStatus.CONNECTING);
       action.setUser(userRef.current);
 
-      // Read token directly from browser cookie — sync, no await needed
-      const token = await getTokenFromSession();
-
-      let wsUrl = WS_URL;
-      if (token) {
-        const urlObj = new URL(wsUrl);
-        urlObj.searchParams.set("token", token);
-        wsUrl = urlObj.toString();
-      } else {
-        console.warn("[WS] No session token found in cookies.");
-      }
-
-      const ws = new WebSocket(wsUrl);
+      const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
 
       const connectionTimeout = setTimeout(() => {
@@ -235,16 +217,6 @@ export function useWebSocket(user: User) {
         action.setConnection(WsConnectionStatus.CONNECTED);
         startHeartbeat(ws);
         reconnectAttempts.current = 0;
-
-        // Send AUTH message as fallback in case URL token was stripped by a proxy
-        if (token) {
-          ws.send(
-            JSON.stringify({
-              type: "AUTH",
-              payload: { token },
-            }),
-          );
-        }
 
         ws.send(JSON.stringify({ type: WsMessageType.SYNC_GAME }));
 
@@ -293,6 +265,7 @@ export function useWebSocket(user: User) {
           const finalDelay = Math.floor(exponentialDelay + jitter);
 
           reconnectAttempts.current++;
+
           reconnectTimeout.current = setTimeout(connectWebSocket, finalDelay);
         }
       };
@@ -385,6 +358,7 @@ export function useWebSocket(user: User) {
       },
       spectateGame: (gameId: string) => {
         const currentUser = userRef.current;
+
         if (
           activeGame?.gameId === gameId &&
           currentUser &&
@@ -393,6 +367,7 @@ export function useWebSocket(user: User) {
         ) {
           return;
         }
+
         action.setExpectedGameId(gameId);
         send(WsMessageType.SPECTATE_GAME, { gameId });
       },
@@ -400,6 +375,7 @@ export function useWebSocket(user: User) {
         const action = useGameStore.getState();
         const activeGame = action.activeGame;
         const currentUser = userRef.current;
+
         if (
           activeGame?.gameId === gameId &&
           currentUser &&
@@ -408,6 +384,7 @@ export function useWebSocket(user: User) {
         ) {
           return;
         }
+
         send(WsMessageType.LEAVE_SPECTATOR, { gameId });
       },
       sendChatMessage: (gameId: string, content: string) =>
