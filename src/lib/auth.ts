@@ -5,8 +5,11 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "../infrastructure/db/db";
 import { v7 as uuidv7 } from "uuid";
 import { authHooks } from "./utils/auth-hooks";
+import { env } from "../config/env";
 
 export const auth = betterAuth({
+  secret: env.BETTER_AUTH_SECRET,
+  baseURL: env.BETTER_AUTH_URL,
   database: drizzleAdapter(db, {
     provider: "pg",
   }),

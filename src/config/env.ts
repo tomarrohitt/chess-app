@@ -11,10 +11,14 @@ const schema = z.object({
   BETTER_AUTH_URL: z.string().default("http://localhost:7860"),
   CLOUDINARY_URL: z.string().default(""),
   REDIS_URL: z.string().default("redis://localhost:6379"),
-  BETTER_AUTH_SECRET: z.string().default(""),
+  BETTER_AUTH_SECRET: z.string().min(1, "BETTER_AUTH_SECRET is required"),
 });
 
 export function validateEnv<T>(schema: ZodType<T>): T {
+  if (process.env.SKIP_ENV_VALIDATION === "true") {
+    return process.env as unknown as T;
+  }
+
   const parsed = schema.safeParse(process.env);
 
   if (parsed.error) {
