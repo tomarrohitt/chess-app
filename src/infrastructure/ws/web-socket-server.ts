@@ -24,6 +24,9 @@ import { handleLeaveQueue } from "../../core/matchmaking/queue";
 import { db } from "../db/db";
 import { user as userSchema } from "../db/schema";
 import { eq, InferSelectModel } from "drizzle-orm";
+import { extractToken } from "@/lib/utils/auth-utils";
+import { Request } from "express";
+import { toFetchHeaders } from "@/lib/utils/to-fetch-headers";
 
 type User = InferSelectModel<typeof userSchema>;
 
@@ -34,12 +37,26 @@ export interface AuthenticatedWebSocket extends WebSocket {
   chatRooms?: Set<string>;
 }
 
-async function extractUser(req: IncomingMessage): Promise<User> {
+async function extractUser(req: Request): Promise<User> {
   try {
-    const session = await auth.api.getSession({
-      headers: req.headers as Record<string, string>,
-    });
+    const token = extractToken(req);
 
+    console.log({ token });
+
+    if (!token) throw new AuthError("Invalid or expired token");
+
+    const cacheKey = Keys.session(token);
+    const cachedSession = await redis.get(cacheKey);
+
+    if (cachedSession) {
+      const user = JSON.parse(cachedSession);
+      console.log({ user });
+      return user;
+    }
+
+    const session = await auth.api.getSession({
+      headers: toFetchHeaders(req.headers),
+    });
     if (!session || !session.user) {
       throw new AuthError("Invalid or expired session");
     }
@@ -75,7 +92,7 @@ export function initializeWebSocketServer(server: Server): void {
 
   wss.on("close", () => clearInterval(heartbeatInterval));
 
-  wss.on("connection", async (ws: AuthenticatedWebSocket, req) => {
+  wss.on("connection", async (ws: AuthenticatedWebSocket, req: Request) => {
     ws.isAlive = true;
     ws.spectatingRooms = new Set<string>();
     ws.chatRooms = new Set<string>();
