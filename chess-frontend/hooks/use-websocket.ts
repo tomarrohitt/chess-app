@@ -13,7 +13,6 @@ const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080";
 const MAX_RECONNECT_ATTEMPTS = 10;
 const MAX_QUEUE_SIZE = 50;
 const HEARTBEAT_INTERVAL = 5000;
-
 const HEARTBEAT_TIMEOUT = 3000;
 
 export function useWebSocket(user: User) {
@@ -48,7 +47,6 @@ export function useWebSocket(user: User) {
 
         heartbeatTimeout.current = setTimeout(() => {
           console.warn("[WS] Heartbeat timeout. Forcing reconnect...");
-
           const event = {
             code: 4000,
             reason: "Heartbeat timeout",
@@ -160,8 +158,11 @@ export function useWebSocket(user: User) {
             if (heartbeatTimeout.current)
               clearTimeout(heartbeatTimeout.current);
             break;
+          case "AUTH_SUCCESS":
+            console.log("[WS] Authentication confirmed by server.");
+            break;
           case WsMessageType.ERROR:
-            console.error(msg.payload);
+            console.error("[WS] Server error:", msg.payload);
             break;
           case WsMessageType.QUEUE_LEFT:
           case WsMessageType.PLAYER_RECONNECTED:
@@ -198,16 +199,16 @@ export function useWebSocket(user: User) {
       action.setConnection(WsConnectionStatus.CONNECTING);
       action.setUser(userRef.current);
 
+      // Read token directly from browser cookie — sync, no await needed
+      const token = await getTokenFromSession();
+
       let wsUrl = WS_URL;
-      try {
-        const token = await getTokenFromSession();
-        if (token) {
-          const urlObj = new URL(wsUrl);
-          urlObj.searchParams.set("token", token);
-          wsUrl = urlObj.toString();
-        }
-      } catch (err) {
-        console.error("[WS] Failed to get session token:", err);
+      if (token) {
+        const urlObj = new URL(wsUrl);
+        urlObj.searchParams.set("token", token);
+        wsUrl = urlObj.toString();
+      } else {
+        console.warn("[WS] No session token found in cookies.");
       }
 
       const ws = new WebSocket(wsUrl);
@@ -234,6 +235,16 @@ export function useWebSocket(user: User) {
         action.setConnection(WsConnectionStatus.CONNECTED);
         startHeartbeat(ws);
         reconnectAttempts.current = 0;
+
+        // Send AUTH message as fallback in case URL token was stripped by a proxy
+        if (token) {
+          ws.send(
+            JSON.stringify({
+              type: "AUTH",
+              payload: { token },
+            }),
+          );
+        }
 
         ws.send(JSON.stringify({ type: WsMessageType.SYNC_GAME }));
 
@@ -282,7 +293,6 @@ export function useWebSocket(user: User) {
           const finalDelay = Math.floor(exponentialDelay + jitter);
 
           reconnectAttempts.current++;
-
           reconnectTimeout.current = setTimeout(connectWebSocket, finalDelay);
         }
       };
@@ -375,7 +385,6 @@ export function useWebSocket(user: User) {
       },
       spectateGame: (gameId: string) => {
         const currentUser = userRef.current;
-
         if (
           activeGame?.gameId === gameId &&
           currentUser &&
@@ -384,7 +393,6 @@ export function useWebSocket(user: User) {
         ) {
           return;
         }
-
         action.setExpectedGameId(gameId);
         send(WsMessageType.SPECTATE_GAME, { gameId });
       },
@@ -392,7 +400,6 @@ export function useWebSocket(user: User) {
         const action = useGameStore.getState();
         const activeGame = action.activeGame;
         const currentUser = userRef.current;
-
         if (
           activeGame?.gameId === gameId &&
           currentUser &&
@@ -401,7 +408,6 @@ export function useWebSocket(user: User) {
         ) {
           return;
         }
-
         send(WsMessageType.LEAVE_SPECTATOR, { gameId });
       },
       sendChatMessage: (gameId: string, content: string) =>

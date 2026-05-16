@@ -1,6 +1,5 @@
 import type { Server, IncomingMessage } from "http";
 import WebSocket, { WebSocketServer } from "ws";
-
 import { routeMessage } from "./message-router";
 import {
   registerSession,
@@ -16,76 +15,53 @@ import {
 } from "../../core/game/timer";
 import { redis } from "../redis/redis-client";
 import { Keys } from "../../lib/keys";
-import { AuthError } from "../../lib/errors";
-import { auth } from "../../lib/auth";
+import { db } from "../db/db";
+import { session as sessionSchema, user as userSchema } from "../db/schema";
+import { eq, and, gt, InferSelectModel } from "drizzle-orm";
 import { getSyncState } from "../../core/game/engine";
 import { PlayerInfo, WsMessageType } from "../../types/types";
 import { handleLeaveQueue } from "../../core/matchmaking/queue";
-import { db } from "../db/db";
-import { user as userSchema } from "../db/schema";
-import { eq, InferSelectModel } from "drizzle-orm";
 
 type User = InferSelectModel<typeof userSchema>;
 
 export interface AuthenticatedWebSocket extends WebSocket {
-  user: PlayerInfo;
+  user?: PlayerInfo;
   isAlive: boolean;
+  isAuthenticated: boolean;
   spectatingRooms?: Set<string>;
   chatRooms?: Set<string>;
 }
 
-async function extractUser(req: IncomingMessage): Promise<User> {
-  try {
-    // 1. Shallow copy incoming headers
-    const headers = { ...req.headers } as Record<string, string>;
+// Bypass Better Auth entirely — query session table directly with the raw token
+async function resolveUserFromToken(token: string): Promise<User> {
+  const sessionRecord = await db.query.session.findFirst({
+    where: and(
+      eq(sessionSchema.token, token),
+      gt(sessionSchema.expiresAt, new Date()),
+    ),
+  });
 
-    // 2. Clear out cross-domain browser origins to prevent CSRF evaluation drops
-    delete headers.origin;
-    delete headers.referer;
-
-    // 3. Grab the token from the query parameters
-    const fallbackHost = req.headers.host || "localhost:7860";
-    const parsedUrl = new URL(req.url || "", `http://${fallbackHost}`);
-    const token = parsedUrl.searchParams.get("token");
-
-    if (token) {
-      const encodedToken = encodeURIComponent(token);
-      // Construct explicitly defined cookie headers
-      headers["cookie"] =
-        `better-auth.session-token=${encodedToken}; __Secure-better-auth.session-token=${encodedToken}`;
-      // Provide fallback bearer token fallback
-      headers["authorization"] = `Bearer ${token}`;
-    }
-
-    // 4. CRITICAL FIX: Pass a mock context options object alongside the headers
-    // Better Auth's internal getSession engine looks for request context parameters
-    // to match against its configured baseURL when verifying signatures.
-    const session = await auth.api.getSession({
-      headers: headers,
-      options: {
-        asResponse: false,
-      },
-    });
-
-    if (!session || !session.user) {
-      throw new AuthError("Invalid or expired session");
-    }
-
-    const user = await db.query.user.findFirst({
-      where: eq(userSchema.id, session.user.id),
-    });
-
-    if (!user) {
-      throw new AuthError("User not found");
-    }
-
-    return user;
-  } catch (err) {
-    console.error("[WS Auth Error Detailed]:", err);
-    if (err instanceof AuthError) throw err;
-    throw new AuthError("Authentication failed");
+  if (!sessionRecord) {
+    throw new Error("Invalid or expired session token");
   }
+
+  const user = await db.query.user.findFirst({
+    where: eq(userSchema.id, sessionRecord.userId),
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  return user;
 }
+
+function extractTokenFromUrl(req: IncomingMessage): string | null {
+  const fallbackHost = req.headers.host || "localhost:7860";
+  const parsedUrl = new URL(req.url || "", `http://${fallbackHost}`);
+  return parsedUrl.searchParams.get("token");
+}
+
 export function initializeWebSocketServer(server: Server): void {
   const wss = new WebSocketServer({ server });
 
@@ -103,87 +79,163 @@ export function initializeWebSocketServer(server: Server): void {
 
   wss.on("close", () => clearInterval(heartbeatInterval));
 
-  wss.on("connection", async (ws: AuthenticatedWebSocket, req) => {
-    ws.isAlive = true;
-    ws.spectatingRooms = new Set<string>();
-    ws.chatRooms = new Set<string>();
-    let user: User;
-
-    try {
-      user = await extractUser(req);
-    } catch (err: unknown) {
-      const msg = err instanceof AuthError ? err.userMessage : err;
-      ws.send(JSON.stringify({ type: "ERROR", payload: msg }));
-      ws.close(1008, "Unauthorized");
-      return;
-    }
-
-    ws.user = {
-      id: user.id,
-      username: user.username,
-      image: user.image,
-      rating: user.rating,
-    };
-
-    await registerSession(user.id, ws);
-
-    const activeGameId = await redis.get(Keys.userActiveGame(user.id));
-    if (activeGameId) {
-      await cancelReconnectTimer(activeGameId, user.id);
-    }
-
-    try {
-      const initialState = await getSyncState(user.id);
-      if (initialState) {
-        subscribeToGameUpdates(initialState.gameId, ws);
-        ws.send(
-          JSON.stringify({
-            type: WsMessageType.GAME_STATE,
-            payload: initialState,
-          }),
-        );
-      }
-    } catch (err) {
-      console.error(`[Sync Error] Failed to fetch state for ${user.id}:`, err);
-    }
-
-    ws.on("message", (message: Buffer) => {
-      routeMessage(ws, message.toString()).catch((err) => {
-        console.error("[Fatal Router Error]", err);
-      });
-    });
-
-    ws.on("pong", () => {
+  wss.on(
+    "connection",
+    async (ws: AuthenticatedWebSocket, req: IncomingMessage) => {
       ws.isAlive = true;
-    });
+      ws.isAuthenticated = false;
+      ws.spectatingRooms = new Set();
+      ws.chatRooms = new Set();
 
-    ws.on("close", async () => {
-      await unregisterSession(user.id, ws);
+      // Kick unauthenticated sockets after 10 seconds
+      const authTimeout = setTimeout(() => {
+        if (!ws.isAuthenticated) {
+          console.warn("[WS] Auth timeout. Closing unauthenticated socket.");
+          ws.send(
+            JSON.stringify({
+              type: "ERROR",
+              payload: "Authentication timeout",
+            }),
+          );
+          ws.close(1008, "Authentication timeout");
+        }
+      }, 10_000);
 
-      if (ws.spectatingRooms) {
-        for (const gameId of ws.spectatingRooms) {
+      async function onAuthSuccess(user: User) {
+        if (ws.isAuthenticated) return; // guard against double-auth (URL token + AUTH message both succeed)
+
+        clearTimeout(authTimeout);
+        ws.isAuthenticated = true;
+
+        ws.user = {
+          id: user.id,
+          username: user.username,
+          image: user.image,
+          rating: user.rating,
+        };
+
+        await registerSession(user.id, ws);
+
+        const activeGameId = await redis.get(Keys.userActiveGame(user.id));
+        if (activeGameId) {
+          await cancelReconnectTimer(activeGameId, user.id);
+        }
+
+        try {
+          const initialState = await getSyncState(user.id);
+          if (initialState) {
+            subscribeToGameUpdates(initialState.gameId, ws);
+            ws.send(
+              JSON.stringify({
+                type: WsMessageType.GAME_STATE,
+                payload: initialState,
+              }),
+            );
+          }
+        } catch (err) {
+          console.error(
+            `[Sync Error] Failed to fetch state for ${user.id}:`,
+            err,
+          );
+        }
+      }
+
+      // Layer 1: Try URL token immediately during handshake
+      const urlToken = extractTokenFromUrl(req);
+      if (urlToken) {
+        try {
+          const user = await resolveUserFromToken(urlToken);
+          await onAuthSuccess(user);
+        } catch (err) {
+          console.warn(
+            "[WS] URL token auth failed, waiting for AUTH message:",
+            err,
+          );
+        }
+      }
+
+      ws.on("message", async (message: Buffer) => {
+        const raw = message.toString();
+        let parsed: { type: string; payload?: any };
+
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          console.warn("[WS] Received non-JSON message. Ignoring.");
+          return;
+        }
+
+        if (!ws.isAuthenticated) {
+          if (parsed.type !== "AUTH" || !parsed.payload?.token) {
+            ws.send(
+              JSON.stringify({ type: "ERROR", payload: "Not authenticated" }),
+            );
+            return;
+          }
+
+          try {
+            const user = await resolveUserFromToken(parsed.payload.token);
+            await onAuthSuccess(user);
+            ws.send(JSON.stringify({ type: "AUTH_SUCCESS" }));
+          } catch (err) {
+            console.error("[WS] AUTH message failed:", err);
+            ws.send(
+              JSON.stringify({
+                type: "ERROR",
+                payload: "Authentication failed",
+              }),
+            );
+            ws.close(1008, "Unauthorized");
+          }
+          return;
+        }
+
+        // Already authenticated — handle AUTH message sent redundantly (URL token succeeded first)
+        if (parsed.type === "AUTH") {
+          ws.send(JSON.stringify({ type: "AUTH_SUCCESS" }));
+          return;
+        }
+
+        // Route all other messages normally
+        routeMessage(ws as any, raw).catch((err) => {
+          console.error("[Fatal Router Error]", err);
+        });
+      });
+
+      ws.on("pong", () => {
+        ws.isAlive = true;
+      });
+
+      ws.on("close", async () => {
+        clearTimeout(authTimeout);
+        if (!ws.isAuthenticated || !ws.user) return;
+
+        const userId = ws.user.id;
+        await unregisterSession(userId, ws);
+
+        for (const gameId of ws.spectatingRooms ?? []) {
           unsubscribeFromGameUpdates(gameId, ws);
         }
-      }
-
-      if (ws.chatRooms) {
-        for (const gameId of ws.chatRooms) {
+        for (const gameId of ws.chatRooms ?? []) {
           leaveGameChatRoom(gameId, ws);
         }
-      }
 
-      const otherSessions = await getActiveSessions(user.id);
-      if (otherSessions.length === 0) {
-        await handleLeaveQueue(user.id).catch(console.error);
-        const gameId = await redis.get(Keys.userActiveGame(user.id));
-        if (gameId) {
-          await startReconnectTimer(gameId, user.id);
+        const otherSessions = await getActiveSessions(userId);
+        if (otherSessions.length === 0) {
+          await handleLeaveQueue(userId).catch(console.error);
+          const gameId = await redis.get(Keys.userActiveGame(userId));
+          if (gameId) {
+            await startReconnectTimer(gameId, userId);
+          }
         }
-      }
-    });
+      });
 
-    ws.on("error", (err) => {
-      console.error(`[WS Error] User ${user.id}:`, err);
-    });
-  });
+      ws.on("error", (err) => {
+        console.error(
+          `[WS Error] User ${ws.user?.id ?? "unauthenticated"}:`,
+          err,
+        );
+      });
+    },
+  );
 }
