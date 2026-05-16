@@ -7,6 +7,7 @@ import {
   WsConnectionStatus,
   WsMessageType,
 } from "@/types/ws";
+import { apiClient } from "@/lib/clients/clientApi";
 
 const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ?? "wss://risenetup-chess-monolith.hf.space";
@@ -21,12 +22,10 @@ const HEARTBEAT_TIMEOUT = 3000;
 // Fetch a short-lived one-time ticket from the backend over credentialed HTTP
 async function getWsTicket(): Promise<string | null> {
   try {
-    const res = await fetch(`${API_URL}/ws/ticket`, {
+    const res = await apiClient<{ ticket: string }>(`${API_URL}/ws/ticket`, {
       credentials: "include",
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.ticket ?? null;
+    return res.ticket ?? null;
   } catch (err) {
     console.error("[WS] Failed to fetch ticket:", err);
     return null;

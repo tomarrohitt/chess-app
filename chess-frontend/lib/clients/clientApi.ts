@@ -48,6 +48,7 @@ export async function apiClient<T>(
   const contentType = res.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
   const data = isJson ? await res.json() : await res.text();
+  console.log({ data });
 
   if (!res.ok) {
     if (res.status === 401) {
