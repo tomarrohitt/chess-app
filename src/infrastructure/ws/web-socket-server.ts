@@ -36,16 +36,23 @@ export interface AuthenticatedWebSocket extends WebSocket {
 
 async function extractUser(req: IncomingMessage): Promise<User> {
   try {
+    // 1. Shallow copy existing headers
     const headers = { ...req.headers } as Record<string, string>;
 
+    // 2. Extract the token from the URL query parameters
     const fallbackHost = req.headers.host || "localhost:7860";
     const parsedUrl = new URL(req.url || "", `http://${fallbackHost}`);
     const token = parsedUrl.searchParams.get("token");
 
     if (token) {
-      headers["authorization"] = `Bearer ${token}`;
+      // 3. Reconstruct the cookie headers manually.
+      // We supply both the standard and production secure cookie names
+      // to guarantee Better Auth catches it regardless of environment configuration.
+      headers["cookie"] =
+        `better-auth.session-token=${token}; __Secure-better-auth.session-token=${token}`;
     }
 
+    // 4. Fire the session validation with the mocked cookie headers
     const session = await auth.api.getSession({
       headers: headers,
     });
