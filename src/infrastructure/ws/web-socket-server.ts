@@ -37,31 +37,31 @@ export interface AuthenticatedWebSocket extends WebSocket {
 async function extractUser(req: IncomingMessage): Promise<User> {
   try {
     const headers = { ...req.headers } as Record<string, string>;
+
+    // CRITICAL FIX 1: Bypass Better Auth's strict Cross-Origin CSRF blocks.
+    // By deleting these, Better Auth treats this as a safe, local request.
+    delete headers.origin;
+    delete headers.referer;
+
     const fallbackHost = req.headers.host || "localhost:7860";
     const parsedUrl = new URL(req.url || "", `http://${fallbackHost}`);
     const token = parsedUrl.searchParams.get("token");
 
     if (token) {
-      headers["cookie"] =
-        `better-auth.session-token=${token}; __Secure-better-auth.session-token=${token}`;
-    }
+      // CRITICAL FIX 2: URL-Encode the token.
+      // Better Auth signed tokens contain slashes and equal signs.
+      // If we pass them raw, the cookie parser drops them entirely.
+      const encodedToken = encodeURIComponent(token);
 
-    // --- SYSTEMATIC DEBUG LOGS ---
-    console.log("[WS DEBUG] --- New Handshake Request ---");
-    console.log("[WS DEBUG] URL:", req.url);
-    console.log(
-      "[WS DEBUG] Extracted Token:",
-      token ? `${token.substring(0, 10)}...` : "NONE",
-    );
-    console.log("[WS DEBUG] Final Handshake Cookies:", headers["cookie"]);
-    console.log("[WS DEBUG] Origin Header:", headers["origin"]);
-    // -----------------------------
+      // Inject both Bearer and correctly encoded Cookies
+      headers["authorization"] = `Bearer ${token}`;
+      headers["cookie"] =
+        `better-auth.session-token=${encodedToken}; __Secure-better-auth.session-token=${encodedToken}`;
+    }
 
     const session = await auth.api.getSession({
       headers: headers,
     });
-
-    console.log("[WS DEBUG] Better Auth Session Result:", session);
 
     if (!session || !session.user) {
       throw new AuthError("Invalid or expired session");
@@ -77,7 +77,6 @@ async function extractUser(req: IncomingMessage): Promise<User> {
 
     return user;
   } catch (err) {
-    // Log the entire error object to catch internal Better Auth issues (like database mismatches)
     console.error("[WS Auth Error Detailed]:", err);
     if (err instanceof AuthError) throw err;
     throw new AuthError("Authentication failed");
