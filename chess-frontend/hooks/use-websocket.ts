@@ -7,6 +7,7 @@ import {
   WsConnectionStatus,
   WsMessageType,
 } from "@/types/ws";
+import { getTokenFromSession } from "@/actions/session";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080";
 const MAX_RECONNECT_ATTEMPTS = 10;
@@ -83,98 +84,102 @@ export function useWebSocket(user: User) {
     }
   }, []);
 
-  const handleMessage = useCallback((event: MessageEvent) => {
-    const raw = JSON.parse(event.data);
-    try {
-      const result = ServerMessageSchema.safeParse(raw);
+  const handleMessage = useCallback(
+    (event: MessageEvent) => {
+      const raw = JSON.parse(event.data);
+      try {
+        const result = ServerMessageSchema.safeParse(raw);
 
-      if (!result.success) {
-        console.error(
-          "[WS Client] Message validation failed! Raw:",
-          raw,
-          "Zod Errors:",
-          result.error.format(),
-        );
-        return;
-      }
-
-      const msg = result.data;
-
-      switch (msg.type) {
-        case WsMessageType.MOVE_MADE:
-          action.handleMoveMade(msg.payload);
-          break;
-        case WsMessageType.MOVE_REJECTED:
-          action.handleMoveRejected(msg.payload.reason);
-          break;
-        case WsMessageType.GAME_STARTED:
-          action.handleGameStarted(msg.payload);
-          break;
-        case WsMessageType.GAME_STATE:
-          action.handleGameState(msg.payload);
-          break;
-        case WsMessageType.GAME_OVER:
-          action.handleGameOver(msg.payload);
-          break;
-        case WsMessageType.QUEUE_JOINED:
-          action.setQueue(msg.payload.status, msg.payload.timeControl);
-          break;
-        case WsMessageType.MATCHMAKING_TIMEOUT:
-          action.setQueue(QueueStatus.IDLE);
-          break;
-        case WsMessageType.OFFER_DRAW:
-          action.setDrawOffer(msg.payload);
-          break;
-        case WsMessageType.DECLINE_DRAW:
-          action.setDrawOfferSent(DrawOffer.DECLINE);
-          setTimeout(() => action.setDrawOfferSent(null), 5000);
-          break;
-        case WsMessageType.GAME_ABORTED:
-          action.handleGameOver({
-            status: GameStatus.ABANDONED,
-            reason: msg.payload?.reason,
-          });
-          break;
-        case WsMessageType.OFFER_REMATCH:
-          action.setRematchOffer(msg.payload);
-          break;
-        case WsMessageType.DECLINE_REMATCH:
-          action.setRematchOfferSent(DrawOffer.DECLINE);
-          setTimeout(() => action.setRematchOfferSent(null), 5000);
-          break;
-        case WsMessageType.NEW_GAME_CHAT:
-          action.addChatMessage(msg.payload);
-          break;
-        case WsMessageType.CHALLENGE_RECEIVED:
-          action.setIncomingChallenge(msg.payload);
-          break;
-        case WsMessageType.RECEIVE_CHAT_MESSAGE:
-        case WsMessageType.CHAT_MESSAGE_ACK:
-          window.dispatchEvent(
-            new CustomEvent("chat_message", { detail: msg.payload }),
+        if (!result.success) {
+          console.error(
+            "[WS Client] Message validation failed! Raw:",
+            raw,
+            "Zod Errors:",
+            result.error.format(),
           );
-          break;
-        case WsMessageType.PONG:
-          if (heartbeatTimeout.current) clearTimeout(heartbeatTimeout.current);
-          break;
-        case WsMessageType.ERROR:
-          console.error(msg.payload);
-          break;
-        case WsMessageType.QUEUE_LEFT:
-        case WsMessageType.PLAYER_RECONNECTED:
-        case WsMessageType.PLAYER_DISCONNECTED:
-        case WsMessageType.CHALLENGE_DECLINED:
-          break;
-        default:
-          console.warn(`[WS Client] Unhandled message type:`, msg.type);
+          return;
+        }
+
+        const msg = result.data;
+
+        switch (msg.type) {
+          case WsMessageType.MOVE_MADE:
+            action.handleMoveMade(msg.payload);
+            break;
+          case WsMessageType.MOVE_REJECTED:
+            action.handleMoveRejected(msg.payload.reason);
+            break;
+          case WsMessageType.GAME_STARTED:
+            action.handleGameStarted(msg.payload);
+            break;
+          case WsMessageType.GAME_STATE:
+            action.handleGameState(msg.payload);
+            break;
+          case WsMessageType.GAME_OVER:
+            action.handleGameOver(msg.payload);
+            break;
+          case WsMessageType.QUEUE_JOINED:
+            action.setQueue(msg.payload.status, msg.payload.timeControl);
+            break;
+          case WsMessageType.MATCHMAKING_TIMEOUT:
+            action.setQueue(QueueStatus.IDLE);
+            break;
+          case WsMessageType.OFFER_DRAW:
+            action.setDrawOffer(msg.payload);
+            break;
+          case WsMessageType.DECLINE_DRAW:
+            action.setDrawOfferSent(DrawOffer.DECLINE);
+            setTimeout(() => action.setDrawOfferSent(null), 5000);
+            break;
+          case WsMessageType.GAME_ABORTED:
+            action.handleGameOver({
+              status: GameStatus.ABANDONED,
+              reason: msg.payload?.reason,
+            });
+            break;
+          case WsMessageType.OFFER_REMATCH:
+            action.setRematchOffer(msg.payload);
+            break;
+          case WsMessageType.DECLINE_REMATCH:
+            action.setRematchOfferSent(DrawOffer.DECLINE);
+            setTimeout(() => action.setRematchOfferSent(null), 5000);
+            break;
+          case WsMessageType.NEW_GAME_CHAT:
+            action.addChatMessage(msg.payload);
+            break;
+          case WsMessageType.CHALLENGE_RECEIVED:
+            action.setIncomingChallenge(msg.payload);
+            break;
+          case WsMessageType.RECEIVE_CHAT_MESSAGE:
+          case WsMessageType.CHAT_MESSAGE_ACK:
+            window.dispatchEvent(
+              new CustomEvent("chat_message", { detail: msg.payload }),
+            );
+            break;
+          case WsMessageType.PONG:
+            if (heartbeatTimeout.current)
+              clearTimeout(heartbeatTimeout.current);
+            break;
+          case WsMessageType.ERROR:
+            console.error(msg.payload);
+            break;
+          case WsMessageType.QUEUE_LEFT:
+          case WsMessageType.PLAYER_RECONNECTED:
+          case WsMessageType.PLAYER_DISCONNECTED:
+          case WsMessageType.CHALLENGE_DECLINED:
+            break;
+          default:
+            console.warn(`[WS Client] Unhandled message type:`, msg.type);
+        }
+      } catch (err) {
+        console.log("[WS] Failed to parse message:", err);
       }
-    } catch (err) {
-      console.log("[WS] Failed to parse message:", err);
-    }
-  }, []);
+    },
+    [action],
+  );
 
   const connect = useCallback(
-    function connectWebSocket() {
+    async function connectWebSocket() {
       isIntentionalClose.current = false;
 
       if (
@@ -193,7 +198,19 @@ export function useWebSocket(user: User) {
       action.setConnection(WsConnectionStatus.CONNECTING);
       action.setUser(userRef.current);
 
-      const ws = new WebSocket(WS_URL);
+      let wsUrl = WS_URL;
+      try {
+        const token = await getTokenFromSession();
+        if (token) {
+          const urlObj = new URL(wsUrl);
+          urlObj.searchParams.set("token", token);
+          wsUrl = urlObj.toString();
+        }
+      } catch (err) {
+        console.error("[WS] Failed to get session token:", err);
+      }
+
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       const connectionTimeout = setTimeout(() => {

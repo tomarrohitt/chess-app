@@ -1,3 +1,5 @@
+"use server";
+
 import { User } from "@/types/auth";
 import { cookies } from "next/headers";
 

@@ -36,8 +36,18 @@ export interface AuthenticatedWebSocket extends WebSocket {
 
 async function extractUser(req: IncomingMessage): Promise<User> {
   try {
+    const headers = { ...req.headers } as Record<string, string>;
+
+    const fallbackHost = req.headers.host || "localhost:7860";
+    const parsedUrl = new URL(req.url || "", `http://${fallbackHost}`);
+    const token = parsedUrl.searchParams.get("token");
+
+    if (token) {
+      headers["authorization"] = `Bearer ${token}`;
+    }
+
     const session = await auth.api.getSession({
-      headers: req.headers as Record<string, string>,
+      headers: headers,
     });
 
     if (!session || !session.user) {
