@@ -48,9 +48,7 @@ async function extractUser(req: IncomingMessage): Promise<User> {
       where: eq(userSchema.id, session.user.id),
     });
 
-    if (!user) {
-      throw new AuthError("User not found");
-    }
+    if (!user) throw new AuthError("User not found");
 
     return user;
   } catch (err) {
