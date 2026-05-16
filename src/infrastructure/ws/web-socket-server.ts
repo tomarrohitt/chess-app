@@ -36,26 +36,32 @@ export interface AuthenticatedWebSocket extends WebSocket {
 
 async function extractUser(req: IncomingMessage): Promise<User> {
   try {
-    // 1. Shallow copy existing headers
     const headers = { ...req.headers } as Record<string, string>;
-
-    // 2. Extract the token from the URL query parameters
     const fallbackHost = req.headers.host || "localhost:7860";
     const parsedUrl = new URL(req.url || "", `http://${fallbackHost}`);
     const token = parsedUrl.searchParams.get("token");
 
     if (token) {
-      // 3. Reconstruct the cookie headers manually.
-      // We supply both the standard and production secure cookie names
-      // to guarantee Better Auth catches it regardless of environment configuration.
       headers["cookie"] =
         `better-auth.session-token=${token}; __Secure-better-auth.session-token=${token}`;
     }
 
-    // 4. Fire the session validation with the mocked cookie headers
+    // --- SYSTEMATIC DEBUG LOGS ---
+    console.log("[WS DEBUG] --- New Handshake Request ---");
+    console.log("[WS DEBUG] URL:", req.url);
+    console.log(
+      "[WS DEBUG] Extracted Token:",
+      token ? `${token.substring(0, 10)}...` : "NONE",
+    );
+    console.log("[WS DEBUG] Final Handshake Cookies:", headers["cookie"]);
+    console.log("[WS DEBUG] Origin Header:", headers["origin"]);
+    // -----------------------------
+
     const session = await auth.api.getSession({
       headers: headers,
     });
+
+    console.log("[WS DEBUG] Better Auth Session Result:", session);
 
     if (!session || !session.user) {
       throw new AuthError("Invalid or expired session");
@@ -71,8 +77,9 @@ async function extractUser(req: IncomingMessage): Promise<User> {
 
     return user;
   } catch (err) {
+    // Log the entire error object to catch internal Better Auth issues (like database mismatches)
+    console.error("[WS Auth Error Detailed]:", err);
     if (err instanceof AuthError) throw err;
-    console.error("[WS Auth Error]", err);
     throw new AuthError("Authentication failed");
   }
 }
