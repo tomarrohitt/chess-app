@@ -158,7 +158,7 @@ export function useWebSocket(user: User) {
             if (heartbeatTimeout.current)
               clearTimeout(heartbeatTimeout.current);
             break;
-          case "AUTH_SUCCESS":
+          case WsMessageType.AUTH_SUCCESS:
             console.log("[WS] Authentication confirmed by server.");
             break;
           case WsMessageType.ERROR:
