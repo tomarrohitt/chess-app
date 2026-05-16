@@ -74,9 +74,6 @@ async function resolveUserFromTicket(ticket: string): Promise<User> {
   return user;
 }
 
-// ── Ticket HTTP endpoint ──────────────────────────────────────────────────────
-// Register this in your main app.ts: registerWsTicketRoute(app)
-
 export function registerWsTicketRoute(app: Express): void {
   app.get("/api/ws/ticket", async (req, res) => {
     try {

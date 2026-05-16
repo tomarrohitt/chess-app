@@ -4,7 +4,10 @@ import express from "express";
 import { toNodeHandler } from "better-auth/node";
 
 import { auth } from "./lib/auth";
-import { initializeWebSocketServer } from "./infrastructure/ws/web-socket-server";
+import {
+  initializeWebSocketServer,
+  registerWsTicketRoute,
+} from "./infrastructure/ws/web-socket-server";
 import gameRouter from "./api/routes/game-router";
 import friendRouter from "./api/routes/friend-router";
 import chatRouter from "./api/routes/chat-router";
@@ -74,6 +77,7 @@ app.all("{*any}", (req, res) => {
   res.status(404).json({ error: "Endpoint not Found" });
 });
 
+registerWsTicketRoute(app);
 const server = http.createServer(app);
 
 initializeWebSocketServer(server);

@@ -25,6 +25,8 @@ async function getWsTicket(): Promise<string | null> {
       return null;
     }
     const data = await res.json();
+
+    console.log({ data });
     return data.ticket ?? null;
   } catch (err) {
     console.error("[WS] Failed to fetch ticket:", err);
