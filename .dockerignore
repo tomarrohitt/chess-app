@@ -1,8 +1,5 @@
+chess-frontend
 node_modules
-npm-debug.log
-.env
-.env.local
-.git
-.gitignore
 dist
-build
+.env
+uploads
