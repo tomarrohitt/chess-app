@@ -8,8 +8,11 @@ import {
   WsMessageType,
 } from "@/types/ws";
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080";
-const API_URL = process.env.INTERNAL_API_URL ?? "http://localhost:8080";
+const WS_URL =
+  process.env.NEXT_PUBLIC_WS_URL ?? "wss://risenetup-chess-monolith.hf.space";
+const API_URL =
+  process.env.INTERNAL_API_URL ??
+  "https://risenetup-chess-monolith.hf.space/api";
 const MAX_RECONNECT_ATTEMPTS = 10;
 const MAX_QUEUE_SIZE = 50;
 const HEARTBEAT_INTERVAL = 5000;
