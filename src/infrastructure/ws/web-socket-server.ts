@@ -32,7 +32,10 @@ export interface AuthenticatedWebSocket extends WebSocket {
   chatRooms?: Set<string>;
 }
 
-// Bypass Better Auth entirely — query session table directly with the raw token
+export interface FullyAuthenticatedWebSocket extends AuthenticatedWebSocket {
+  user: PlayerInfo;
+}
+
 async function resolveUserFromToken(token: string): Promise<User> {
   const sessionRecord = await db.query.session.findFirst({
     where: and(
@@ -197,7 +200,7 @@ export function initializeWebSocketServer(server: Server): void {
         }
 
         // Route all other messages normally
-        routeMessage(ws as any, raw).catch((err) => {
+        routeMessage(ws as FullyAuthenticatedWebSocket, raw).catch((err) => {
           console.error("[Fatal Router Error]", err);
         });
       });
