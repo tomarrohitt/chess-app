@@ -89,6 +89,7 @@ function extractToken(req: Request): string | null {
 
 async function extractUser(req: Request): Promise<User> {
   try {
+    console.log({ req });
     const token = extractToken(req);
 
     console.log({ token });
