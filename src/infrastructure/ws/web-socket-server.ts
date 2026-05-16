@@ -1,4 +1,4 @@
-import type { Server, IncomingMessage } from "http";
+import type { Server } from "http";
 import WebSocket, { WebSocketServer } from "ws";
 
 import { routeMessage } from "./message-router";
@@ -24,9 +24,11 @@ import { handleLeaveQueue } from "../../core/matchmaking/queue";
 import { db } from "../db/db";
 import { user as userSchema } from "../db/schema";
 import { eq, InferSelectModel } from "drizzle-orm";
-import { extractToken } from "@/lib/utils/auth-utils";
+
 import { Request } from "express";
 import { toFetchHeaders } from "@/lib/utils/to-fetch-headers";
+
+import * as cookie from "cookie";
 
 type User = InferSelectModel<typeof userSchema>;
 
@@ -35,6 +37,42 @@ export interface AuthenticatedWebSocket extends WebSocket {
   isAlive: boolean;
   spectatingRooms?: Set<string>;
   chatRooms?: Set<string>;
+}
+
+const BEARER_PREFIX = "Bearer ";
+const COOKIE_NAMES = [
+  "__Secure-better-auth.session_token",
+  "better-auth.session_token",
+  "auth_token",
+  "session",
+];
+
+function extractToken(req: Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith(BEARER_PREFIX)) {
+    return authHeader.substring(BEARER_PREFIX.length);
+  }
+
+  let parsedCookies = req.cookies;
+  if (!parsedCookies && req.headers.cookie) {
+    parsedCookies =
+      typeof cookie.parseCookie === "function"
+        ? cookie.parseCookie(req.headers.cookie)
+        : cookie.parse(req.headers.cookie);
+  }
+
+  for (const cookieName of COOKIE_NAMES) {
+    const cookieToken = parsedCookies?.[cookieName];
+    if (cookieToken) {
+      return cookieToken;
+    }
+  }
+
+  if (req.query.token && typeof req.query.token === "string") {
+    return req.query.token;
+  }
+
+  return null;
 }
 
 async function extractUser(req: Request): Promise<User> {
