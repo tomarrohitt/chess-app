@@ -36,31 +36,35 @@ export interface AuthenticatedWebSocket extends WebSocket {
 
 async function extractUser(req: IncomingMessage): Promise<User> {
   try {
+    // 1. Shallow copy incoming headers
     const headers = { ...req.headers } as Record<string, string>;
 
-    // CRITICAL FIX 1: Bypass Better Auth's strict Cross-Origin CSRF blocks.
-    // By deleting these, Better Auth treats this as a safe, local request.
+    // 2. Clear out cross-domain browser origins to prevent CSRF evaluation drops
     delete headers.origin;
     delete headers.referer;
 
+    // 3. Grab the token from the query parameters
     const fallbackHost = req.headers.host || "localhost:7860";
     const parsedUrl = new URL(req.url || "", `http://${fallbackHost}`);
     const token = parsedUrl.searchParams.get("token");
 
     if (token) {
-      // CRITICAL FIX 2: URL-Encode the token.
-      // Better Auth signed tokens contain slashes and equal signs.
-      // If we pass them raw, the cookie parser drops them entirely.
       const encodedToken = encodeURIComponent(token);
-
-      // Inject both Bearer and correctly encoded Cookies
-      headers["authorization"] = `Bearer ${token}`;
+      // Construct explicitly defined cookie headers
       headers["cookie"] =
         `better-auth.session-token=${encodedToken}; __Secure-better-auth.session-token=${encodedToken}`;
+      // Provide fallback bearer token fallback
+      headers["authorization"] = `Bearer ${token}`;
     }
 
+    // 4. CRITICAL FIX: Pass a mock context options object alongside the headers
+    // Better Auth's internal getSession engine looks for request context parameters
+    // to match against its configured baseURL when verifying signatures.
     const session = await auth.api.getSession({
       headers: headers,
+      options: {
+        asResponse: false,
+      },
     });
 
     if (!session || !session.user) {
@@ -82,7 +86,6 @@ async function extractUser(req: IncomingMessage): Promise<User> {
     throw new AuthError("Authentication failed");
   }
 }
-
 export function initializeWebSocketServer(server: Server): void {
   const wss = new WebSocketServer({ server });
 
