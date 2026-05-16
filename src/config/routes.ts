@@ -18,6 +18,10 @@ export const routeConfigs: RouteConfig[] = [
     rules: [{ method: "ALL", protected: true }],
   },
   {
+    path: "/api/ws/ticket",
+    rules: [{ method: "ALL", protected: true }],
+  },
+  {
     path: "/api/games",
     rules: [{ method: "ALL", protected: true }],
   },
