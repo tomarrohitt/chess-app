@@ -1,36 +1,186 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+{
+req: IncomingMessage {
+\_events: {
+close: undefined,
+error: undefined,
+data: undefined,
+end: undefined,
+readable: undefined
+},
+\_readableState: ReadableState {
+highWaterMark: 65536,
+buffer: [],
+bufferIndex: 0,
+length: 0,
+pipes: [],
+awaitDrainWriters: null,
+Symbol(kState): 1331980
+},
+\_maxListeners: undefined,
+socket: Socket {
+connecting: false,
+\_hadError: false,
+\_parent: null,
+\_host: null,
+\_closeAfterHandlingError: false,
+\_events: [Object],
+\_readableState: [ReadableState],
+\_writableState: [WritableState],
+allowHalfOpen: true,
+\_maxListeners: undefined,
+\_eventsCount: 4,
+\_sockname: null,
+\_pendingData: null,
+\_pendingEncoding: '',
+server: [Server],
+\_server: [Server],
+parser: null,
+on: [Function (anonymous)],
+addListener: [Function (anonymous)],
+prependListener: [Function: prependListener],
+setEncoding: [Function: socketSetEncoding],
+\_paused: false,
+timeout: 0,
+Symbol(async_id_symbol): 765,
+Symbol(kHandle): [TCP],
+Symbol(lastWriteQueueSize): 0,
+Symbol(timeout): null,
+Symbol(kBuffer): null,
+Symbol(kBufferCb): null,
+Symbol(kBufferGen): null,
+Symbol(shapeMode): true,
+Symbol(kCapture): false,
+Symbol(kSetNoDelay): true,
+Symbol(kSetKeepAlive): false,
+Symbol(kSetKeepAliveInitialDelay): 0,
+Symbol(kSetTOS): undefined,
+Symbol(kBytesRead): 0,
+Symbol(kBytesWritten): 0,
+Symbol(websocket): [WebSocket]
+},
+httpVersionMajor: 1,
+httpVersionMinor: 1,
+httpVersion: '1.1',
+complete: true,
+rawHeaders: [
+'x-forwarded-for',
+'112.79.20.110',
+'x-forwarded-proto',
+'https',
+'x-forwarded-port',
+'443',
+'host',
+'risenetup-chess-monolith.hf.space',
+'x-amzn-trace-id',
+'Root=1-6a085fae-4d260a9a74465c1810cc1831',
+'x-ip-token',
+'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpcCI6IjExMi43OS4yMC4xMTAiLCJ1c2VyIjpudWxsLCJ1dWlkIjpudWxsLCJlcnJvciI6bnVsbCwiZXhwIjoxNzc4OTMzNzM4fQ.yPKKTstDUwoFotJ4SnNBYwGtaMbPkxjtvS14D2u0VS0',
+'x-direct-url',
+'https://risenetup-chess-monolith.hf.space/--replicas/skj5j',
+'pragma',
+'no-cache',
+'cache-control',
+'no-cache',
+'user-agent',
+'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+'origin',
+'https://chess-app-blush-eight.vercel.app',
+'sec-websocket-version',
+'13',
+'accept-encoding',
+'gzip, deflate, br, zstd',
+'accept-language',
+'en-IN,en-GB;q=0.9,en-US;q=0.8,en;q=0.7',
+'sec-websocket-key',
+'w2dWmJzn1ntBbvs1/XKsVg==',
+'sec-websocket-extensions',
+'permessage-deflate; client_max_window_bits',
+'x-request-id',
+'JDRL7m',
+'x-request-id',
+'JDRL7m',
+'upgrade',
+'websocket',
+'connection',
+'Upgrade'
+],
+rawTrailers: [],
+joinDuplicateHeaders: null,
+aborted: false,
+upgrade: true,
+url: '/',
+method: 'GET',
+statusCode: null,
+statusMessage: null,
+client: Socket {
+connecting: false,
+\_hadError: false,
+\_parent: null,
+\_host: null,
+\_closeAfterHandlingError: false,
+\_events: [Object],
+\_readableState: [ReadableState],
+\_writableState: [WritableState],
+allowHalfOpen: true,
+\_maxListeners: undefined,
+\_eventsCount: 4,
+\_sockname: null,
+\_pendingData: null,
+\_pendingEncoding: '',
+server: [Server],
+\_server: [Server],
+parser: null,
+on: [Function (anonymous)],
+addListener: [Function (anonymous)],
+prependListener: [Function: prependListener],
+setEncoding: [Function: socketSetEncoding],
+\_paused: false,
+timeout: 0,
+Symbol(async_id_symbol): 765,
+Symbol(kHandle): [TCP],
+Symbol(lastWriteQueueSize): 0,
+Symbol(timeout): null,
+Symbol(kBuffer): null,
+Symbol(kBufferCb): null,
+Symbol(kBufferGen): null,
+Symbol(shapeMode): true,
+Symbol(kCapture): false,
+Symbol(kSetNoDelay): true,
+Symbol(kSetKeepAlive): false,
+Symbol(kSetKeepAliveInitialDelay): 0,
+Symbol(kSetTOS): undefined,
+Symbol(kBytesRead): 0,
+Symbol(kBytesWritten): 0,
+Symbol(websocket): [WebSocket]
+},
+\_consuming: false,
+\_dumped: false,
+parser: null,
+Symbol(shapeMode): true,
+Symbol(kCapture): false,
+Symbol(kHeaders): {
+'x-forwarded-for': '112.79.20.110',
+'x-forwarded-proto': 'https',
+'x-forwarded-port': '443',
+host: 'risenetup-chess-monolith.hf.space',
+'x-amzn-trace-id': 'Root=1-6a085fae-4d260a9a74465c1810cc1831',
+'x-ip-token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpcCI6IjExMi43OS4yMC4xMTAiLCJ1c2VyIjpudWxsLCJ1dWlkIjpudWxsLCJlcnJvciI6bnVsbCwiZXhwIjoxNzc4OTMzNzM4fQ.yPKKTstDUwoFotJ4SnNBYwGtaMbPkxjtvS14D2u0VS0',
+'x-direct-url': 'https://risenetup-chess-monolith.hf.space/--replicas/skj5j',
+pragma: 'no-cache',
+'cache-control': 'no-cache',
+'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+origin: 'https://chess-app-blush-eight.vercel.app',
+'sec-websocket-version': '13',
+'accept-encoding': 'gzip, deflate, br, zstd',
+'accept-language': 'en-IN,en-GB;q=0.9,en-US;q=0.8,en;q=0.7',
+'sec-websocket-key': 'w2dWmJzn1ntBbvs1/XKsVg==',
+'sec-websocket-extensions': 'permessage-deflate; client_max_window_bits',
+'x-request-id': 'JDRL7m, JDRL7m',
+upgrade: 'websocket',
+connection: 'Upgrade'
+},
+Symbol(kHeadersCount): 40,
+Symbol(kTrailers): null,
+Symbol(kTrailersCount): 0
+}
+}
