@@ -9,5 +9,13 @@ jobs:
   ping-endpoint:
     runs-on: ubuntu-latest
     steps:
-      - name: Hit Keep-Alive Endpoint
-        run: curl -s -o /dev/null https://risenetup-chess-monolith.hf.space/api/keep-alive
+      - name: Wake up Hugging Face and trigger Ping
+        run: |
+          # 1. Hit the Space to trigger the wake-up process
+          curl -s -o /dev/null https://risenetup-chess-monolith.hf.space/api/keep-alive
+          
+          # 2. Wait 60 seconds for the Node container to fully boot
+          sleep 60
+          
+          # 3. Hit it again to execute your actual Express route
+          curl -f -s -o /dev/null https://risenetup-chess-monolith.hf.space/api/keep-alive
