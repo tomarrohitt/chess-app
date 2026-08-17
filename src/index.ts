@@ -69,21 +69,24 @@ app.all("/api/auth/{*any}", toNodeHandler(auth));
 
 app.get("/api/keep-alive", async (req, res) => {
   try {
-    await db.execute(sql`SELECT 1`);
+    // 1. Ping Redis
     const redisPing = await redis.ping();
+    if (redisPing !== "PONG") throw new Error("Redis failed");
 
-    if (redisPing !== "PONG") {
-      throw new Error("Redis did not respond with PONG");
-    }
+    await db.execute(sql`SELECT 1`);
 
-    return res.status(200).json({
-      status: "awake",
-      db: "active",
-      redis: "active",
-      timestamp: new Date().toISOString(),
+    await fetch("https://jiyefbodgwkipexkhuzu.supabase.co/auth/v1/health", {
+      headers: {
+        apikey: process.env.SUPABASE_ANON_KEY || "",
+      },
     });
+
+    return res
+      .status(200)
+      .json({ status: "awake", timestamp: new Date().toISOString() });
   } catch (err) {
     console.error("Keep-alive failed:", err);
+    return res.status(500).json({ error: "Ping failed" });
   }
 });
 
