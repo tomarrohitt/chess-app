@@ -50,13 +50,6 @@ export default async function AuthLayout({
 
       <div className="flex-1 flex items-center justify-center px-8 py-10 relative bg-neutral-6">
         <span
-          className="absolute top-8 right-8 text-xs tracking-1 text-green-5/70 font-light z-2 uppercase select-none"
-          style={{ fontFamily: "'DM Mono', monospace" }}
-        >
-          ♙ Your move
-        </span>
-
-        <span
           className="absolute bottom-8 left-8 text-xs tracking-1 text-green-5/70  font-light  z-2 uppercase  select-none"
           style={{ fontFamily: "'DM Mono', monospace" }}
         >
